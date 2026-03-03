@@ -57,6 +57,10 @@ openyoung run <agent-name>
 | `openyoung package list` | List available agent packages |
 | `openyoung package create <name>` | Create new agent from template |
 | `openyoung package install <name>` | Install agent dependencies via pip |
+| `openyoung package export <name>` | Export agent package |
+| `openyoung package import <path>` | Import agent package |
+| `openyoung mcp list` | List available MCP configs |
+| `openyoung hooks list` | List available hooks |
 | `openyoung --help` | Show help message |
 
 ### Agent Package Management
