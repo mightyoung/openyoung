@@ -1,0 +1,48 @@
+# OpenYoung 默认 Agent 配置
+name: "default"
+version: "1.0.0"
+
+description: "OpenYoung 默认 Agent - 通用任务处理"
+
+# 模型配置
+model:
+  provider: "deepseek"
+  model: "deepseek-chat"
+  temperature: 0.7
+  max_tokens: 4096
+
+# 工具配置
+tools:
+  - read
+  - write
+  - edit
+  - glob
+  - grep
+  - bash
+
+# 权限配置
+permission:
+  _global: ask
+  rules: []
+
+# Flow 配置
+flow:
+  default: "development"
+  available:
+    - development  # 完整开发流程
+    - sequential   # 串行执行
+    - parallel     # 并行执行
+    - conditional  # 条件分支
+    - loop         # 循环执行
+
+# 评估配置
+evaluation:
+  enabled: true
+  metrics:
+    - task_completion
+    - safety_score
+    - code_quality
+
+# 依赖 Packages (可选)
+# dependencies:
+#   - "@openyoung/coding-skills"

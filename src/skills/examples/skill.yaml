@@ -1,0 +1,13 @@
+name: code-reviewer
+description: "Reviews code for best practices and common issues.
+               Use when: PR review, code quality check, finding bugs."
+disable_model_invocation: false
+trigger_patterns:
+  - "review"
+  - "PR"
+  - "code quality"
+  - "check"
+tags:
+  - code-review
+  - quality
+  - security
