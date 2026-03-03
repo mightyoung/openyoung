@@ -324,12 +324,21 @@ class YoungAgent:
                 from src.evaluation.hub import EvaluationResult
                 from src.evaluation.task_eval import TaskCompletionEval
 
-                # 使用真实的 Task 评估器
+                # 使用 Task 评估器
                 evaluator = TaskCompletionEval()
-                eval_result = await evaluator.evaluate(
-                    task=task.description,
-                    result=result,
-                    context={"session_id": self._session_id}
+                # 简单评估：task_description + expected(空) + actual_result
+                eval_dict = await evaluator.evaluate(
+                    task_description=task.description,
+                    expected_result=None,
+                    actual_result=result,
+                )
+
+                # 转换为 EvaluationResult
+                eval_result = EvaluationResult(
+                    metric="task_completion",
+                    score=eval_dict.get("completion_rate", 0.9),
+                    details=eval_dict,
+                    evaluator="task_completion",
                 )
                 self._evaluation_hub._results.append(eval_result)
                 quality_score = eval_result.score
