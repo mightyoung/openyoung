@@ -1,4 +1,4 @@
-# OpenYoung / OpenYoung 开放青年
+# OpenYoung
 
 [English](#english) | [中文](#中文)
 
@@ -111,7 +111,7 @@ MIT License - see LICENSE file for details
 
 ### 概述
 
-OpenYoung（开放青年）是一个 AI Agent 平台，提供统一的接口来与各种大型语言模型（LLM）交互。它提供 CLI 工具来执行任务、管理包，并在交互式 REPL 环境中运行代理。
+OpenYoung是一个 AI Agent 平台，提供统一的接口来与各种大型语言模型（LLM）交互。它提供 CLI 工具来执行任务、管理包，并在交互式 REPL 环境中运行代理。
 
 ### 功能特性
 
