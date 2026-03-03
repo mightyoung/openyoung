@@ -1,0 +1,6 @@
+[project]
+name = "agent-reviewer"
+version = "1.0.0"
+description = "Reviewer Agent - OpenYoung"
+requires-python = ">=3.10"
+dependencies = []

@@ -54,7 +54,37 @@ openyoung run <agent-name>
 | `openyoung llm list` | List available LLM configurations |
 | `openyoung agent list` | List available agents |
 | `openyoung run <name>` | Run an agent |
+| `openyoung package list` | List available agent packages |
+| `openyoung package create <name>` | Create new agent from template |
+| `openyoung package install <name>` | Install agent dependencies via pip |
 | `openyoung --help` | Show help message |
+
+### Agent Package Management
+
+OpenYoung uses a lightweight pip + folder + YAML approach for agent packages:
+
+```bash
+# List available agents in packages/
+python3 -m src.cli.main package list
+
+# Create new agent from template (default/coder/reviewer)
+python3 -m src.cli.main package create my-agent --template coder
+
+# Install agent dependencies
+python3 -m src.cli.main package install my-agent
+```
+
+Agent package structure:
+```
+packages/
+├── agent-coder/
+│   ├── agent.yaml          # Agent configuration
+│   ├── pyproject.toml     # pip dependencies
+│   └── src/               # Agent code
+└── agent-reviewer/
+    ├── agent.yaml
+    └── pyproject.toml
+```
 
 ### Configuration
 

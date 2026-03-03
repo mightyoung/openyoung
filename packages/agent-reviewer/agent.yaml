@@ -1,0 +1,20 @@
+name: "agent-reviewer"
+version: "1.0.0"
+description: "Reviewer Agent - 专注于代码审查"
+
+model:
+  name: "deepseek-chat"
+  temperature: 0.5
+  max_tokens: 4096
+
+tools:
+  - read
+  - glob
+  - grep
+
+skills:
+  - code-review
+
+permission:
+  _global: ask
+  rules: []

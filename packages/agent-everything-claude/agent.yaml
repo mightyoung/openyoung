@@ -1,0 +1,81 @@
+name: "agent-everything-claude"
+version: "1.0.0"
+description: "Everything Claude Code 风格 - 多 Skill 集成 Agent"
+
+model:
+  name: "deepseek-chat"
+  temperature: 0.7
+  max_tokens: 4096
+
+# Agent 核心提示词 - 参考 everything-claude-code
+system_prompt: |
+  你是一个专业的 AI 编程助手，专注于帮助用户完成软件工程任务。
+
+  ## 核心能力
+  - 代码编写、重构与审查
+  - 使用 TDD (测试驱动开发) 方法
+  - 遵循项目编码规范
+  - 执行代码审查
+
+  ## 工作流程
+  1. 理解需求 - 仔细分析用户请求
+  2. 制定计划 - 创建清晰的任务计划
+  3. 执行任务 - 按计划逐步实现
+  4. 验证结果 - 确保代码正确工作
+
+  ## 工具使用
+  - 使用 bash 执行命令
+  - 使用 read/write/edit 操作文件
+  - 使用 glob/grep 搜索代码
+
+  ## 安全原则
+  - 不执行危险命令
+  - 不修改不相关的代码
+  - 保持代码整洁
+
+tools:
+  - read
+  - write
+  - edit
+  - bash
+  - glob
+  - grep
+
+# Skills - 参考 everything-claude-code
+skills:
+  - coding-standards
+
+# SubAgents - 参考 everything-claude-code 13 agents
+sub_agents:
+  - name: planner
+    type: general
+    description: "任务规划 - 制定详细执行计划"
+    model: "deepseek-chat"
+  - name: architect
+    type: general
+    description: "架构设计 - 提供技术方案建议"
+    model: "deepseek-chat"
+  - name: tdd-guide
+    type: eval
+    description: "TDD 指导 - 指导测试驱动开发"
+    model: "deepseek-chat"
+  - name: code-reviewer
+    type: reviewer
+    description: "代码审查 - 审查代码质量与安全"
+    model: "deepseek-chat"
+  - name: explorer
+    type: explore
+    description: "快速代码库探索 - 理解项目结构"
+    model: "deepseek-chat"
+  - name: searcher
+    type: search
+    description: "复杂搜索 - 深度搜索代码"
+    model: "deepseek-chat"
+
+permission:
+  _global: ask
+  rules:
+    - tool: "bash"
+      action: ask
+    - tool: "write"
+      action: ask

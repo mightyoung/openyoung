@@ -15,8 +15,9 @@ class ToolResult:
 
 
 class ToolExecutor:
-    def __init__(self, workspace: str = None):
+    def __init__(self, workspace: str = None, permission_evaluator=None):
         self.workspace = workspace or "/Users/muyi/Downloads/dev/openyoung"
+        self.permission_evaluator = permission_evaluator  # 权限评估器
         self.tools = {
             "bash": self.execute_bash,
             "write": self.execute_write,
@@ -121,6 +122,22 @@ class ToolExecutor:
         ]
 
     async def execute(self, tool_name: str, arguments: Dict[str, Any]) -> ToolResult:
+        # 权限检查 - 参考 OpenCode
+        if self.permission_evaluator:
+            from src.core.types import PermissionAction
+            action = await self.permission_evaluator.check(tool_name, arguments)
+
+            if action == PermissionAction.DENY:
+                return ToolResult(
+                    success=False,
+                    result="",
+                    error=f"Permission denied: {tool_name} is not allowed"
+                )
+
+            if action == PermissionAction.ASK:
+                # TODO: 实现用户确认流程
+                print(f"[Permission] {tool_name} requires confirmation")
+
         tool = self.tools.get(tool_name)
         if not tool:
             return ToolResult(

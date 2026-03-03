@@ -81,6 +81,12 @@ class AgentConfig:
     # System Prompt
     system_prompt: str = "你是一个有帮助的AI助手。"
 
+    # Skills - 参考 Anthropic SKILL.md 格式
+    skills: List[str] = field(default_factory=list)
+
+    # SubAgents - 内置子代理配置
+    sub_agents: List[SubAgentConfig] = field(default_factory=list)
+
 
 # ============================================================================
 # 4.1 SubAgent Type

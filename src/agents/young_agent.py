@@ -132,10 +132,101 @@ class YoungAgent:
         self._packages = {}
         self._loaded_skills = {}
         self._tools = {}
-        self._tool_executor = ToolExecutor()
+        self._tool_executor = ToolExecutor(permission_evaluator=self._permission)
         self._max_tool_calls = 10
 
         self._init_builtin_subagents()
+        self._load_skills()
+
+    def _load_skills(self):
+        """加载配置的 Skills - 参考 Anthropic SKILL.md 格式"""
+        if not hasattr(self.config, 'skills') or not self.config.skills:
+            return
+
+        try:
+            from src.skills.loader import SkillLoader
+            from pathlib import Path
+            import yaml
+            import os
+
+            # 从 packages/ 目录加载 skills (使用绝对路径)
+            packages_dir = Path(__file__).parent.parent.parent / "packages"
+            self._loaded_skills = {}
+
+            # 加载配置的 skills
+            for skill_name in self.config.skills:
+                # 尝试从 packages/ 目录加载 (skill-xxx 或 xxx)
+                skill_paths = [
+                    packages_dir / f"skill-{skill_name}",
+                    packages_dir / skill_name,
+                ]
+
+                skill_path = None
+                for sp in skill_paths:
+                    if sp.exists() and (sp / "skill.yaml").exists():
+                        skill_path = sp / "skill.yaml"
+                        break
+
+                if skill_path:
+                    with open(skill_path, "r", encoding="utf-8") as f:
+                        skill_config = yaml.safe_load(f)
+
+                    # 加载 skill 内容
+                    skill_dir = skill_path.parent
+                    entry_file = skill_config.get("entry", "skill.md")
+                    content_file = skill_dir / entry_file
+
+                    if content_file.exists():
+                        content = content_file.read_text(encoding="utf-8")
+                        self._loaded_skills[skill_name] = {
+                            "config": skill_config,
+                            "content": content,
+                            "path": str(skill_dir),
+                        }
+                        print(f"[Skill] Loaded: {skill_name}")
+                    else:
+                        # 只加载配置
+                        self._loaded_skills[skill_name] = {
+                            "config": skill_config,
+                            "content": "",
+                            "path": str(skill_dir),
+                        }
+                        print(f"[Skill] Loaded (config only): {skill_name}")
+                else:
+                    print(f"[Skill] Not found: {skill_name}")
+
+            # 构建 system prompt
+            self._build_skill_prompt()
+
+        except Exception as e:
+            print(f"[Warning] Skill loading failed: {e}")
+
+    def _build_skill_prompt(self):
+        """构建包含 skills 的 system prompt"""
+        if not self._loaded_skills:
+            return
+
+        skill_instructions = []
+        for name, data in self._loaded_skills.items():
+            config = data["config"]
+            content = data["content"]
+
+            desc = config.get("description", "")
+            entry = config.get("entry", "skill.md")
+
+            instruction = f"\n## Skill: {name}\n"
+            instruction += f"Description: {desc}\n"
+            instruction += f"Entry: {entry}\n"
+
+            if content:
+                instruction += f"\n{content[:500]}..."
+
+            skill_instructions.append(instruction)
+
+        # 追加到 system prompt
+        skills_section = "\n\n".join(skill_instructions)
+        self.config.system_prompt += f"\n\n# Available Skills\n{skills_section}\n"
+        print(f"[Skill] Built system prompt with {len(self._loaded_skills)} skills")
 
     def _init_default_genes(self):
         """初始化默认 genes"""
@@ -157,15 +248,34 @@ class YoungAgent:
             print(f"[Warning] Default genes init failed: {e}")
 
     def _init_builtin_subagents(self):
+        """初始化 SubAgents - 从配置加载，参考 Claude Code Task 协议"""
         from src.core.types import SubAgentType
 
-        builtin = [
-            SubAgentConfig(
-                name="general", type=SubAgentType.GENERAL, description="General"
-            )
+        # 默认内置 SubAgents
+        default_agents = [
+            SubAgentConfig(name="explore", type=SubAgentType.EXPLORE,
+                description="快速探索代码库，只读操作", model="deepseek-chat"),
+            SubAgentConfig(name="general", type=SubAgentType.GENERAL,
+                description="通用任务处理", model="deepseek-chat"),
+            SubAgentConfig(name="search", type=SubAgentType.SEARCH,
+                description="复杂搜索任务", model="deepseek-chat"),
+            SubAgentConfig(name="builder", type=SubAgentType.BUILDER,
+                description="构建和执行任务", model="deepseek-coder"),
+            SubAgentConfig(name="reviewer", type=SubAgentType.REVIEWER,
+                description="代码审查", model="deepseek-chat"),
+            SubAgentConfig(name="eval", type=SubAgentType.EVAL,
+                description="评估任务", model="deepseek-chat"),
         ]
-        for sc in builtin:
+
+        # 添加默认
+        for sc in default_agents:
             self._sub_agents[sc.name] = SubAgent(sc)
+
+        # 从配置加载用户定义的 SubAgents（覆盖默认）
+        if hasattr(self.config, 'sub_agents') and self.config.sub_agents:
+            for sc in self.config.sub_agents:
+                self._sub_agents[sc.name] = SubAgent(sc)
+                print(f"[SubAgent] Loaded: {sc.name} ({sc.type.value})")
 
     async def run(self, user_input: str) -> str:
         # 启动 harness
@@ -212,18 +322,21 @@ class YoungAgent:
         if self._evaluation_hub and result:
             try:
                 from src.evaluation.hub import EvaluationResult
+                from src.evaluation.task_eval import TaskCompletionEval
 
-                # 使用 task 评估器
-                eval_result = EvaluationResult(
-                    metric="task_completion",
-                    score=0.9 if not result.startswith("Error") else 0.3,
-                    details={"task": task.description, "result_length": len(result)},
-                    evaluator="task",
+                # 使用真实的 Task 评估器
+                evaluator = TaskCompletionEval()
+                eval_result = await evaluator.evaluate(
+                    task=task.description,
+                    result=result,
+                    context={"session_id": self._session_id}
                 )
                 self._evaluation_hub._results.append(eval_result)
                 quality_score = eval_result.score
+                print(f"[EvaluationHub] Score: {quality_score:.2f}")
             except Exception as e:
-                print(f"[EvaluationHub] Error: {e}")
+                print(f"[EvaluationHub] Error: {e}, using default score")
+                quality_score = 0.9 if not result.startswith("Error") else 0.3
 
         # ========== 3. EvolutionEngine - 触发进化 ==========
         if self._evolver:
@@ -299,16 +412,74 @@ class YoungAgent:
                 print(f"[Harness] Save error: {e}")
 
     async def _parse_input(self, user_input: str) -> Task:
+        """解析用户输入 - 支持 @mention 触发 SubAgent"""
         import re
 
+        # 参考 Claude Code Task 协议: @subagent task_description
         match = re.match(r"@(\w+)\s+(.+)", user_input.strip())
         if match:
+            subagent_name = match.group(1)
+            description = match.group(2)
+
+            # 查找对应的 SubAgentType
+            from src.core.types import SubAgentType
+            subagent_type = None
+            for sat in SubAgentType:
+                if sat.value == subagent_name:
+                    subagent_type = sat
+                    break
+
             return Task(
-                id=str(uuid.uuid4()), description=match.group(2), input=match.group(2)
+                id=str(uuid.uuid4()),
+                description=description,
+                input=description,
+                subagent_type=subagent_type
             )
         return Task(id=str(uuid.uuid4()), description=user_input, input=user_input)
 
+    async def _delegate_to_subagent(self, task: Task) -> str:
+        """委托任务给 SubAgent - 参考 Claude Code Task 协议"""
+        subagent_type = task.subagent_type.value if task.subagent_type else None
+
+        # 查找 SubAgent
+        sub_agent = None
+        for sa in self._sub_agents.values():
+            if sa.type == task.subagent_type:
+                sub_agent = sa
+                break
+
+        if not sub_agent:
+            return f"[Error] SubAgent not found: {subagent_type}"
+
+        print(f"[SubAgent] Delegating to @{subagent_type}: {task.description[:50]}...")
+
+        # 创建子任务
+        sub_task = Task(
+            id=str(uuid.uuid4()),
+            description=task.description,
+            input=task.description,
+        )
+
+        # 构建子上下文
+        context = {
+            "session_id": self._session_id,
+            "parent_summary": "",
+            "task": task.description,
+        }
+
+        try:
+            # 执行 SubAgent
+            result = await sub_agent.run(sub_task, context)
+            return result
+        except Exception as e:
+            return f"[Error] SubAgent execution failed: {str(e)}"
+
     async def _execute(self, task: Task) -> str:
+        """执行任务 - 支持 SubAgent 委托"""
+        # 如果是 SubAgent 调用，委托给对应 SubAgent
+        if task.subagent_type:
+            return await self._delegate_to_subagent(task)
+
         messages = []
         system_prompt = (
             self.config.system_prompt

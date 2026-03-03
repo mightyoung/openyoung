@@ -17,8 +17,17 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from src.agents.young_agent import YoungAgent
-from src.core.types import AgentConfig, AgentMode
+from src.core.types import (
+    AgentConfig,
+    AgentMode,
+    PermissionConfig,
+    PermissionRule,
+    PermissionAction,
+    SubAgentConfig,
+    SubAgentType,
+)
 from src.package_manager.manager import PackageManager
+from src.package_manager.registry import AgentRegistry
 from src.evaluation import EvaluationHub
 
 
@@ -37,13 +46,27 @@ class AgentLoader:
         self.agent_dir.mkdir(parents=True, exist_ok=True)
 
     def load_agent(self, name: str) -> AgentConfig:
-        """加载 Agent 配置"""
+        """加载 Agent 配置 - 支持多个目录"""
+        # 1. 直接文件路径
         if Path(name).exists() and Path(name).is_file():
             return self._load_from_file(Path(name))
 
+        # 2. src/agents/ 目录
         agent_file = self.agent_dir / f"{name}.yaml"
         if agent_file.exists():
             return self._load_from_file(agent_file)
+
+        # 3. packages/ 目录 (agent-xxx/agent.yaml)
+        packages_dir = Path("packages")
+        if packages_dir.exists():
+            for item in packages_dir.iterdir():
+                if item.is_dir():
+                    # 支持 agent-xxx 或 xxx 两种命名
+                    expected = f"agent-{name}"
+                    if item.name == expected or item.name == name:
+                        yaml_file = item / "agent.yaml"
+                        if yaml_file.exists():
+                            return self._load_from_file(yaml_file)
 
         if name == "default":
             return self._get_default_config()
@@ -69,16 +92,78 @@ class AgentLoader:
         )
 
     def _parse_config(self, config: dict) -> AgentConfig:
+        """解析完整配置 - 参考 OpenCode 架构"""
         model_config = config.get("model", {})
-        model = model_config.get("model", "deepseek-chat")
-        temperature = model_config.get("temperature", 0.7)
+        permission_config = config.get("permission", {})
+
+        # 解析 permission
+        permission = self._parse_permission(permission_config)
+
+        # 解析 sub_agents
+        sub_agents = self._parse_sub_agents(config.get("sub_agents", []))
+
+        # 解析 system_prompt (支持多行字符串)
+        system_prompt = config.get("system_prompt")
+        if not system_prompt:
+            system_prompt = "你是一个有帮助的AI助手。"
 
         return AgentConfig(
             name=config.get("name", "unknown"),
             mode=AgentMode.PRIMARY,
-            model=model,
-            temperature=temperature,
+            model=model_config.get("name", model_config.get("model", "deepseek-chat")),
+            temperature=model_config.get("temperature", 0.7),
+            max_tokens=model_config.get("max_tokens"),
+            tools=config.get("tools", []),
+            permission=permission,
+            skills=config.get("skills", []),
+            sub_agents=sub_agents,
+            system_prompt=system_prompt,
         )
+
+    def _parse_permission(self, config: dict) -> PermissionConfig:
+        """解析权限配置 - 参考 OpenCode PermissionNext"""
+        # 解析全局默认
+        global_action = config.get("_global", "ask")
+        if isinstance(global_action, str):
+            global_action = PermissionAction(global_action)
+
+        # 解析规则
+        rules = []
+        for rule in config.get("rules", []):
+            tool_pattern = rule.get("tool", "*")
+            action_str = rule.get("action", "ask")
+            action = PermissionAction(action_str) if isinstance(action_str, str) else action_str
+            rules.append(PermissionRule(
+                tool_pattern=tool_pattern,
+                action=action
+            ))
+
+        return PermissionConfig(
+            _global=global_action,
+            rules=rules,
+            confirm_message=config.get("confirm_message", "确认执行此操作?")
+        )
+
+    def _parse_sub_agents(self, config: list) -> List[SubAgentConfig]:
+        """解析 SubAgent 配置 - 参考 Claude Code Task 协议"""
+        sub_agents = []
+        for item in config:
+            try:
+                sub_type = SubAgentType(item.get("type", "general"))
+            except ValueError:
+                sub_type = SubAgentType.GENERAL
+
+            sub_agents.append(SubAgentConfig(
+                name=item.get("name", sub_type.value),
+                type=sub_type,
+                description=item.get("description", ""),
+                model=item.get("model", "default"),
+                temperature=item.get("temperature", 0.7),
+                instructions=item.get("instructions"),
+                hidden=item.get("hidden", False),
+            ))
+
+        return sub_agents
 
     def list_agents(self) -> List[str]:
         agents = []
@@ -303,14 +388,38 @@ def package():
 
 @package.command("list")
 def package_list():
-    """List installed packages"""
-    manager = PackageManager()
-    packages = manager.list_packages()
-    if packages:
-        for pkg in packages:
-            click.echo(f"  • {pkg}")
+    """List available agents (from packages/)"""
+    registry = AgentRegistry()
+    agents = registry.discover_agents()
+    if agents:
+        click.echo("Available agents:")
+        for a in agents:
+            click.echo(f"  • {a.name} ({a.version}) - {a.description}")
+            click.echo(f"    model: {a.model}, tools: {len(a.tools)}")
     else:
-        click.echo("No packages installed")
+        click.echo("No agents found in packages/")
+
+
+@package.command("install")
+@click.argument("agent_name")
+def package_install(agent_name: str):
+    """Install agent dependencies (via pip)"""
+    registry = AgentRegistry()
+    success = registry.install_agent(agent_name)
+    if success:
+        click.echo(f"[OK] Installed dependencies for {agent_name}")
+    else:
+        click.echo(f"[Error] Failed to install {agent_name}", err=True)
+
+
+@package.command("create")
+@click.argument("agent_name")
+@click.option("--template", "-t", default="default", help="Template: default, coder, reviewer")
+def package_create(agent_name: str, template: str):
+    """Create a new agent from template"""
+    registry = AgentRegistry()
+    path = registry.create_agent_template(agent_name, template)
+    click.echo(f"[OK] Created: {path}")
 
 
 # ========================

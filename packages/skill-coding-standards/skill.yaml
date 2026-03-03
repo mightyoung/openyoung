@@ -1,0 +1,24 @@
+name: "coding-standards"
+version: "1.0.0"
+description: "编码规范检查 - 提供代码质量检查和能力"
+
+# Skill 类型
+type: skill
+
+# 入口文件
+entry: "./coding-standards.md"
+
+# 允许的工具（可选）
+allowed_tools:
+  - read
+  - glob
+  - grep
+  - bash
+
+# 元数据
+metadata:
+  author: "OpenYoung"
+  tags:
+    - code-quality
+    - standards
+  created: "2026-03-04"

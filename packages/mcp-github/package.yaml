@@ -1,0 +1,21 @@
+name: "@openyoung/mcp-github"
+version: "1.0.0"
+description: "GitHub MCP Server - 提供 GitHub API 集成"
+
+type: mcp
+
+entry: "./mcp.json"
+
+mcp:
+  server_type: remote
+  command: ["npx", "-y", "@modelcontextprotocol/server-github"]
+  env:
+    GITHUB_PERSONAL_ACCESS_TOKEN: "${GITHUB_TOKEN}"
+
+metadata:
+  author: "OpenYoung"
+  tags:
+    - github
+    - mcp
+    - integration
+  created: "2026-03-04"

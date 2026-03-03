@@ -1,0 +1,7 @@
+[project]
+name = "agent-test-agent"
+version = "0.1.0"
+description = "Agent: test-agent"
+requires-python = ">=3.10"
+dependencies = [
+]
