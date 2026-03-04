@@ -669,6 +669,109 @@ def source_add(source_name: str, url: str):
     click.echo("Note: Source persistence not yet implemented")
 
 
+# ========================
+# Import Commands - GitHub 一键导入
+# ========================
+
+
+@cli.group()
+def import_cmd():
+    """Import from external sources"""
+    pass
+
+
+@import_cmd.command("github")
+@click.argument("github_url")
+@click.option("--name", "-n", default=None, help="Agent name (default: auto-detect)")
+def import_github(github_url: str, name: str = None):
+    """Import agent from GitHub URL
+
+    Example:
+        openyoung import github https://github.com/affaan-m/everything-claude-code
+    """
+    from src.package_manager.github_importer import GitHubImporter
+
+    click.echo(f"Importing from: {github_url}")
+
+    importer = GitHubImporter()
+    result = importer.import_from_url(github_url)
+
+    if "error" in result:
+        click.echo(f"Error: {result['error']}", err=True)
+    else:
+        click.echo(f"Successfully imported!")
+        if result.get("agent"):
+            click.echo(f"  Agent: {result['agent']}")
+        if result.get("skills"):
+            click.echo(f"  Skills: {', '.join(result['skills'])}")
+        if result.get("mcps"):
+            click.echo(f"  MCPs: {', '.join(result['mcps'])}")
+
+
+# ========================
+# Run Commands - Agent 运行
+# ========================
+
+
+@cli.command("run")
+@click.argument("agent_name", default="default")
+@click.argument("task", required=False)
+@click.option("--interactive", "-i", is_flag=True, help="Interactive mode")
+def run_agent(agent_name: str, task: str = None, interactive: bool = False):
+    """Run an agent
+
+    Examples:
+        openyoung run agent-coder "Hello"
+        openyoung run agent-coder -i
+    """
+    import asyncio
+
+    async def _run():
+        # Load agent
+        loader = AgentLoader()
+        try:
+            config = loader.load_agent(agent_name)
+        except ValueError as e:
+            click.echo(f"Error: {e}", err=True)
+            return
+
+        # Create agent
+        agent = YoungAgent(config)
+
+        if interactive:
+            click.echo(f"Interactive mode with {agent_name}. Type 'exit' to quit.")
+            while True:
+                try:
+                    user_input = input("\n> ")
+                except EOFError:
+                    break
+
+                if user_input.lower() in ["exit", "quit"]:
+                    break
+
+                if not user_input.strip():
+                    continue
+
+                result = await agent.run(user_input)
+                click.echo(f"\n{result}")
+        else:
+            if not task:
+                click.echo("Error: Task required (or use -i for interactive mode)", err=True)
+                return
+
+            result = await agent.run(task)
+            click.echo(result)
+
+            # Show stats
+            stats = agent.get_all_stats()
+            click.echo(f"\n--- Stats ---")
+            click.echo(f"Traces: {stats.get('datacenter_traces_count', 0)}")
+            click.echo(f"Evaluations: {stats.get('evaluation_results_count', 0)}")
+            click.echo(f"Capsules: {stats.get('evolver_capsules_count', 0)}")
+
+    asyncio.run(_run())
+
+
 def main():
     cli()
 
