@@ -87,6 +87,9 @@ class AgentConfig:
     # SubAgents - 内置子代理配置
     sub_agents: List[SubAgentConfig] = field(default_factory=list)
 
+    # 数据目录 - 存储数据中心、评估结果等
+    data_dir: Optional[str] = None
+
 
 # ============================================================================
 # 4.1 SubAgent Type

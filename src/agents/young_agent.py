@@ -96,9 +96,11 @@ class YoungAgent:
         self._evolver = None
         self._evolver = None
         
-        # Data persistence directory
+        # Data persistence directory - 默认项目本地，可通过配置修改
         import os
-        self._data_dir = os.path.join(os.path.expanduser("~"), ".young")
+        # 默认使用项目本地的 .young 目录
+        default_data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".young")
+        self._data_dir = getattr(config, 'data_dir', None) or default_data_dir
         try:
             from src.harness import Harness
 
