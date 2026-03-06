@@ -163,6 +163,11 @@ class AgentRunData:
     # 元数据
     metadata: Dict[str, Any] = field(default_factory=dict)
 
+    def __post_init__(self):
+        """自动计算 total_tokens"""
+        if self.total_tokens == 0 and (self.prompt_tokens > 0 or self.completion_tokens > 0):
+            object.__setattr__(self, 'total_tokens', self.prompt_tokens + self.completion_tokens)
+
     def to_dict(self) -> Dict[str, Any]:
         """转换为字典"""
         return {

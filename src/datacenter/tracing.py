@@ -32,6 +32,14 @@ class TraceSpan:
     status_code: int = 0
     status_message: str = ""
 
+    def __post_init__(self):
+        """自动生成 span_id 和 trace_id"""
+        import uuid
+        if not self.span_id:
+            object.__setattr__(self, 'span_id', str(uuid.uuid4())[:16])
+        if not self.trace_id:
+            object.__setattr__(self, 'trace_id', str(uuid.uuid4()))
+
     def duration_ms(self) -> float:
         """获取持续时间(毫秒)"""
         if self.end_time:
