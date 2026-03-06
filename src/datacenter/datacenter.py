@@ -37,16 +37,204 @@ class TraceRecord:
 
 
 class TraceCollector:
-    """Trace collector - collects execution traces"""
+    """Trace collector - collects execution traces with SQLite persistence"""
 
-    def __init__(self):
+    def __init__(self, db_path: str = ".young/traces.db"):
         self._traces: List[TraceRecord] = []
+        self.db_path = db_path
+        self._init_db()
+
+    def _init_db(self):
+        """Initialize SQLite database"""
+        import sqlite3
+        Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
+
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        # Enhanced traces table with more fields
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS traces (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                run_id TEXT,
+                session_id TEXT NOT NULL,
+                agent_name TEXT,
+                user_id TEXT,
+                task_description TEXT,
+                start_time TIMESTAMP,
+                end_time TIMESTAMP,
+                duration_ms INTEGER,
+                model TEXT,
+                prompt_tokens INTEGER,
+                completion_tokens INTEGER,
+                total_tokens INTEGER,
+                cost_usd REAL,
+                status TEXT,
+                error TEXT,
+                metadata TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # Create indexes for better query performance
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_traces_session ON traces(session_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_traces_agent ON traces(agent_name)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_traces_user ON traces(user_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_traces_time ON traces(start_time)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_traces_run ON traces(run_id)")
+
+        conn.commit()
+        conn.close()
 
     def record(self, trace: TraceRecord):
+        """Record a trace to memory and SQLite"""
         self._traces.append(trace)
+        self._save_to_db(trace)
+
+    def _save_to_db(self, trace: TraceRecord):
+        """Save trace to SQLite"""
+        import sqlite3
+        import json
+
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO traces (
+                run_id, session_id, agent_name, user_id, task_description,
+                start_time, end_time, duration_ms, model,
+                prompt_tokens, completion_tokens, total_tokens, cost_usd,
+                status, error, metadata
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            trace.metadata.get("run_id") if trace.metadata else None,
+            trace.session_id,
+            trace.agent_name,
+            trace.metadata.get("user_id") if trace.metadata else None,
+            trace.metadata.get("task_description") if trace.metadata else None,
+            trace.start_time.isoformat() if trace.start_time else None,
+            trace.end_time.isoformat() if trace.end_time else None,
+            trace.duration_ms,
+            trace.model,
+            trace.prompt_tokens,
+            trace.completion_tokens,
+            trace.total_tokens,
+            trace.cost_usd,
+            trace.status.value if hasattr(trace.status, 'value') else str(trace.status),
+            trace.error,
+            json.dumps(trace.metadata) if trace.metadata else None,
+        ))
+
+        conn.commit()
+        conn.close()
 
     def get_by_session(self, session_id: str) -> List[TraceRecord]:
+        """Get traces by session ID (from memory)"""
         return [t for t in self._traces if t.session_id == session_id]
+
+    def query(
+        self,
+        session_id: str = None,
+        agent_name: str = None,
+        user_id: str = None,
+        status: str = None,
+        limit: int = 100
+    ) -> List[Dict]:
+        """Query traces from SQLite with filters"""
+        import sqlite3
+        import json
+
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        sql = "SELECT * FROM traces WHERE 1=1"
+        params = []
+
+        if session_id:
+            sql += " AND session_id = ?"
+            params.append(session_id)
+        if agent_name:
+            sql += " AND agent_name = ?"
+            params.append(agent_name)
+        if user_id:
+            sql += " AND user_id = ?"
+            params.append(user_id)
+        if status:
+            sql += " AND status = ?"
+            params.append(status)
+
+        sql += " ORDER BY created_at DESC LIMIT ?"
+        params.append(limit)
+
+        cursor.execute(sql, params)
+        rows = cursor.fetchall()
+        conn.close()
+
+        results = []
+        for row in rows:
+            d = dict(row)
+            if d.get("metadata"):
+                try:
+                    d["metadata"] = json.loads(d["metadata"])
+                except:
+                    pass
+            results.append(d)
+
+        return results
+
+    def get_agent_stats(self, agent_name: str = None) -> Dict[str, Any]:
+        """Get statistics for agent(s)"""
+        import sqlite3
+
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        if agent_name:
+            cursor.execute("""
+                SELECT
+                    agent_name,
+                    COUNT(*) as total_runs,
+                    SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) as success_count,
+                    SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed_count,
+                    SUM(total_tokens) as total_tokens,
+                    SUM(cost_usd) as total_cost,
+                    AVG(duration_ms) as avg_duration
+                FROM traces
+                WHERE agent_name = ?
+                GROUP BY agent_name
+            """, (agent_name,))
+        else:
+            cursor.execute("""
+                SELECT
+                    agent_name,
+                    COUNT(*) as total_runs,
+                    SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) as success_count,
+                    SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed_count,
+                    SUM(total_tokens) as total_tokens,
+                    SUM(cost_usd) as total_cost,
+                    AVG(duration_ms) as avg_duration
+                FROM traces
+                GROUP BY agent_name
+            """)
+
+        rows = cursor.fetchall()
+        conn.close()
+
+        stats = []
+        for row in rows:
+            stats.append({
+                "agent_name": row[0],
+                "total_runs": row[1],
+                "success_count": row[2],
+                "failed_count": row[3],
+                "total_tokens": row[4] or 0,
+                "total_cost": row[5] or 0.0,
+                "avg_duration_ms": row[6] or 0,
+                "success_rate": row[2] / row[1] if row[1] > 0 else 0.0,
+            })
+
+        return stats
 
     def get_summary(self) -> Dict[str, Any]:
         total = len(self._traces)
@@ -260,20 +448,96 @@ class Checkpoint:
     session_id: str
     data: Dict[str, Any]
     created_at: datetime = field(default_factory=datetime.now)
+    agent_id: str = ""
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 class CheckpointManager:
-    """Checkpoint manager - state persistence"""
+    """Checkpoint manager - state persistence with SQLite support"""
 
-    def __init__(self, checkpoint_dir: str = ".young/checkpoints"):
+    def __init__(self, checkpoint_dir: str = ".young/checkpoints", db_path: str = ".young/checkpoints.db"):
         self.checkpoint_dir = Path(checkpoint_dir)
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
         self.max_checkpoints = 10
         self._checkpoints: Dict[str, List[Checkpoint]] = {}
+        self.db_path = db_path
+        self._init_db()
+        self._load_from_db()
 
-    def save_checkpoint(self, session_id: str, data: Dict[str, Any]) -> str:
-        checkpoint_id = f"{session_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        checkpoint = Checkpoint(id=checkpoint_id, session_id=session_id, data=data)
+    def _init_db(self):
+        """Initialize SQLite database for checkpoints"""
+        import sqlite3
+        Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
+
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS checkpoints (
+                id TEXT PRIMARY KEY,
+                session_id TEXT NOT NULL,
+                agent_id TEXT,
+                data TEXT NOT NULL,
+                metadata TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_checkpoints_session ON checkpoints(session_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_checkpoints_agent ON checkpoints(agent_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_checkpoints_time ON checkpoints(created_at)")
+
+        conn.commit()
+        conn.close()
+
+    def _load_from_db(self):
+        """Load checkpoints from SQLite"""
+        import sqlite3
+        import json
+
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT session_id, COUNT(*) as cnt
+            FROM checkpoints
+            GROUP BY session_id
+        """)
+
+        for row in cursor.fetchall():
+            session_id = row["session_id"]
+            cursor.execute("""
+                SELECT * FROM checkpoints
+                WHERE session_id = ?
+                ORDER BY created_at DESC
+                LIMIT ?
+            """, (session_id, self.max_checkpoints))
+
+            self._checkpoints[session_id] = []
+            for cp_row in cursor.fetchall():
+                cp = Checkpoint(
+                    id=cp_row["id"],
+                    session_id=cp_row["session_id"],
+                    agent_id=cp_row["agent_id"] or "",
+                    data=json.loads(cp_row["data"]),
+                    metadata=json.loads(cp_row["metadata"]) if cp_row["metadata"] else {},
+                    created_at=datetime.fromisoformat(cp_row["created_at"])
+                )
+                self._checkpoints[session_id].append(cp)
+
+        conn.close()
+
+    def save_checkpoint(self, session_id: str, data: Dict[str, Any], agent_id: str = "", metadata: Dict[str, Any] = None) -> str:
+        """Save checkpoint to memory and SQLite"""
+        checkpoint_id = f"{session_id}_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
+        checkpoint = Checkpoint(
+            id=checkpoint_id,
+            session_id=session_id,
+            agent_id=agent_id,
+            data=data,
+            metadata=metadata or {}
+        )
 
         if session_id not in self._checkpoints:
             self._checkpoints[session_id] = []
@@ -282,10 +546,36 @@ class CheckpointManager:
         # Cleanup old checkpoints
         if len(self._checkpoints[session_id]) > self.max_checkpoints:
             self._checkpoints[session_id] = self._checkpoints[session_id][
-                -self.max_checkpoints :
+                -self.max_checkpoints:
             ]
 
+        # Save to SQLite
+        self._save_to_db(checkpoint)
+
         return checkpoint_id
+
+    def _save_to_db(self, checkpoint: Checkpoint):
+        """Save checkpoint to SQLite"""
+        import sqlite3
+        import json
+
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT OR REPLACE INTO checkpoints (id, session_id, agent_id, data, metadata, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (
+            checkpoint.id,
+            checkpoint.session_id,
+            checkpoint.agent_id,
+            json.dumps(checkpoint.data),
+            json.dumps(checkpoint.metadata),
+            checkpoint.created_at.isoformat()
+        ))
+
+        conn.commit()
+        conn.close()
 
     def load_checkpoint(self, checkpoint_id: str) -> Optional[Checkpoint]:
         for checkpoints in self._checkpoints.values():
@@ -298,14 +588,61 @@ class CheckpointManager:
         checkpoints = self._checkpoints.get(session_id, [])
         return checkpoints[-1] if checkpoints else None
 
+    def get_session_checkpoints(self, session_id: str) -> List[Checkpoint]:
+        """Get all checkpoints for a session"""
+        return self._checkpoints.get(session_id, [])
+
+    def delete_session_checkpoints(self, session_id: str) -> int:
+        """Delete all checkpoints for a session"""
+        import sqlite3
+
+        # Delete from memory
+        count = len(self._checkpoints.get(session_id, []))
+        if session_id in self._checkpoints:
+            del self._checkpoints[session_id]
+
+        # Delete from SQLite
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM checkpoints WHERE session_id = ?", (session_id,))
+        conn.commit()
+        conn.close()
+
+        return count
+
+    def get_stats(self) -> Dict[str, Any]:
+        """Get checkpoint statistics"""
+        import sqlite3
+
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT COUNT(*) as total FROM checkpoints")
+        total = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(DISTINCT session_id) as sessions FROM checkpoints")
+        sessions = cursor.fetchone()[0]
+
+        cursor.execute("SELECT agent_id, COUNT(*) as cnt FROM checkpoints GROUP BY agent_id")
+        by_agent = [{"agent_id": row[0] or "default", "count": row[1]} for row in cursor.fetchall()]
+
+        conn.close()
+
+        return {
+            "total": total,
+            "sessions": sessions,
+            "by_agent": by_agent
+        }
+
 
 class DataCenter:
-    """DataCenter - unified data management"""
+    """DataCenter - unified data management with SQLite support"""
 
     def __init__(
         self,
         checkpoint_dir: str = ".young/checkpoints",
         max_tokens: int = 100000,
+        data_dir: str = ".young",
     ):
         # Harness components
         self.trace_collector = TraceCollector()
@@ -317,8 +654,18 @@ class DataCenter:
         self.semantic_memory = SemanticMemory()
         self.working_memory = WorkingMemory()
 
-        # Checkpoint
-        self.checkpoint_manager = CheckpointManager(checkpoint_dir)
+        # Checkpoint (with SQLite persistence)
+        checkpoint_db = f"{data_dir}/checkpoints.db"
+        self.checkpoint_manager = CheckpointManager(checkpoint_dir, checkpoint_db)
+
+        # SQLite storage (新增)
+        db_path = f"{data_dir}/data.db"
+        try:
+            from src.datacenter.sqlite_storage import SQLiteStorage
+            self.sqlite = SQLiteStorage(db_path)
+        except Exception as e:
+            print(f"[Warning] SQLite init failed: {e}")
+            self.sqlite = None
 
     def record_trace(self, trace: TraceRecord):
         self.trace_collector.record(trace)
@@ -329,8 +676,8 @@ class DataCenter:
     def use_budget(self, tokens: int, time_seconds: int = 0):
         self.budget_controller.use(tokens, time_seconds)
 
-    def save_checkpoint(self, session_id: str, data: Dict[str, Any]) -> str:
-        return self.checkpoint_manager.save_checkpoint(session_id, data)
+    def save_checkpoint(self, session_id: str, data: Dict[str, Any], agent_id: str = "", metadata: Dict[str, Any] = None) -> str:
+        return self.checkpoint_manager.save_checkpoint(session_id, data, agent_id, metadata)
 
     def load_checkpoint(self, checkpoint_id: str) -> Optional[Checkpoint]:
         return self.checkpoint_manager.load_checkpoint(checkpoint_id)
