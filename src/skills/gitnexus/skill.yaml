@@ -25,3 +25,4 @@ requires:
     - node
     - npm
     - npx
+    - gitnexus

@@ -29,25 +29,107 @@ requires:
 
 # GitNexus - 代码知识图谱分析
 
+## 首要步骤：环境检查 + 索引健康检查 ⚠️
+
+**在执行任何代码分析之前，必须首先完成此检查！**
+
+### 步骤 1: 安装检查 (仅首次或缺失时)
+
+```
+# 检查 gitnexus 是否已安装
+which gitnexus || npx -y gitnexus@latest --version
+
+# 如果不存在，执行安装
+npm install -g gitnexus
+
+# 验证安装
+gitnexus --version
+```
+
+### 步骤 2: 索引健康检查
+
+```
+# 步骤 A: 检查当前 git 状态
+git status --porcelain
+
+# 步骤 B: 检查是否有未提交的更改
+# 如果有修改 → 需要重新索引
+
+# 步骤 C: 运行 gitnexus analyze (任选一种)
+# 方式 A: 标准索引
+npx gitnexus analyze
+# 方式 B: 跳过 embedding (更快)
+npx gitnexus analyze --skip-embeddings
+
+# 步骤 D: 验证索引状态
+npx gitnexus status
+```
+
+### 自动检测逻辑
+
+```
+# 伪代码: 每次 Skill 触发时执行
+
+IF gitnexus 未安装:
+    → npm install -g gitnexus
+    → 继续下一步
+
+ELSE IF 索引不存在:
+    → 执行 npx gitnexus analyze
+    → 继续下一步
+
+ELSE IF git 有新 commit (commitsBehind > 0):
+    → 执行 npx gitnexus analyze --skip-embeddings
+    → 继续下一步
+
+ELSE:
+    → 直接继续下一步
+```
+
+### 验证索引状态
+
+每次工具调用后，检查返回内容是否包含 `staleness` 警告：
+
+```
+IF 工具返回包含 "Index is stale" 或 "stale":
+    → 停止当前操作
+    → 执行 npx gitnexus analyze
+    → 重新执行原操作
+```
+
 ## 先决条件检查
 
-在首次使用前，必须完成以下设置：
+### 安装 (仅首次)
 
 ```bash
 # 1. 安装 gitnexus CLI
 npm install -g gitnexus
 
-# 2. 在目标代码库建立索引
-cd your-project
-npx gitnexus analyze
-
-# 3. (可选) 配置 MCP 自动启动
+# 2. (可选) 配置 MCP 自动启动
 npx gitnexus setup
 ```
 
-> 如果看到 "Index is stale" 警告，重新运行 `npx gitnexus analyze`
+### ⚠️ 每次使用前的强制检查清单
+
+```
+- [ ] 运行 git status --porcelain 检查是否有未提交更改
+- [ ] 运行 npx gitnexus status 检查索引状态
+- [ ] 如果有更改或索引不存在: npx gitnexus analyze
+- [ ] 如果索引 stale: npx gitnexus analyze --skip-embeddings
+```
+
+> **关键原则**: 永远不要在未确认索引是最新的情况下进行代码分析！
 
 ## 核心工作流
+
+### 0. 【必须】健康检查 (每次)
+
+```
+1. git status --porcelain                  → 检查是否有未提交更改
+2. npx gitnexus status                    → 检查索引状态
+3. 如需要 → npx gitnexus analyze          → 更新索引
+4. READ gitnexus://repo/{name}/context    → 确认索引正常
+```
 
 ### 1. 代码探索 (理解代码)
 
@@ -178,6 +260,28 @@ gitnexus_rename({
 | 工具返回空 | 检查是否在正确的已索引仓库目录 |
 | MCP 连接失败 | 运行 `npx gitnexus setup` 重新配置 |
 | 多仓库冲突 | 使用 `repo` 参数指定目标仓库 |
+
+## 运行时自愈机制
+
+### 场景：工具返回 stale 警告
+
+当 MCP 工具返回 `staleness` 警告时：
+
+```
+1. 立即停止当前操作
+2. 执行: npx gitnexus analyze --skip-embeddings
+3. 等待索引完成
+4. 重新执行原工具调用
+5. 确认结果正常后继续
+```
+
+### 场景：工具返回空结果
+
+```
+1. 检查: gitnexus://repo/{name}/context
+2. 如果 symbols = 0 → 索引未完成 → 重新 analyze
+3. 如果 symbols > 0 但结果空 → 尝试其他查询方式
+```
 
 ## 配置 MCP (如需手动)
 
