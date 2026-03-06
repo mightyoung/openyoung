@@ -1,89 +1,117 @@
 # OpenYoung
 
+**智能 Agent 发现与部署平台** | Intelligent Agent Discovery & Deployment Platform
+
 [English](#english) | [中文](#中文)
 
 ---
 
 ## English
 
-### Overview
+### What is OpenYoung?
 
-OpenYoung is an AI Agent Platform that provides a unified interface for interacting with various large language models (LLMs). It offers a CLI tool for executing tasks, managing packages, and running agents in an interactive REPL environment.
+OpenYoung is an AI agent platform that **automatically discovers, evaluates, and deploys** high-quality agents based on your task input.
 
-### Features
+Instead of manually searching and configuring agents, just describe what you want to do — OpenYoung handles the rest.
 
-- **Multi-LLM Support**: Connect to various LLM providers (OpenAI, Anthropic, local models, etc.)
-- **Interactive REPL**: Enter conversation mode directly from CLI, similar to Claude Code, OpenCode, or Codex
-- **Tool Execution**: Execute bash commands, read/write files, search code, and more
-- **Agent System**: Built-in agent system with permission control and session management
-- **Package Manager**: Load and manage skill packages dynamically
-- **Evaluation Framework**: Comprehensive evaluation system with multiple evaluators
-- **Evolution Engine**: Gene-based evolution system for agent self-improvement
-- **Data Persistence**: All component data persists to disk for future sessions
+### Core Features
 
-### Installation
-
-```bash
-# Install from source
-pip install -e .
-
-# Or install from PyPI (when published)
-pip install openyoung
 ```
+┌─────────────────────────────────────────────────────────────────┐
+│                      OpenYoung Pipeline                          │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+                    ┌─────────────────┐
+                    │  Intent        │
+                    │  Analysis      │ ◄── LLM-powered intent detection
+                    └────────┬────────┘
+                             │
+                             ▼
+                    ┌─────────────────┐
+                    │  Semantic       │ ◄── Vector similarity search
+                    │  Search        │
+                    └────────┬────────┘
+                             │
+                             ▼
+                    ┌─────────────────┐
+                    │  Quality        │ ◄── Multi-dimensional evaluation
+                    │  Evaluation     │
+                    └────────┬────────┘
+                             │
+                    ┌────────┴────────┐
+                    ▼                 ▼
+              ┌─────────┐       ┌─────────┐
+              │ Badges  │       │ Version │
+              │ Display │       │ History │
+              └────┬────┘       └────┬────┘
+                   │                 │
+                   └────────┬────────┘
+                            ▼
+                    ┌─────────────────┐
+                    │  Auto-Config   │ ◄── Always Skills loading
+                    └────────┬────────┘
+                             │
+                             ▼
+                    ┌─────────────────┐
+                    │  Execute Task  │
+                    └─────────────────┘
+```
+
+| Feature | Description |
+|---------|-------------|
+| **Semantic Search** | Find agents using natural language, not keywords |
+| **Quality Evaluation** | 6-dimension scoring: completeness, validity, dependencies, documentation, security, runtime |
+| **Intent Analysis** | Understand what you want to do, recommend the right agent |
+| **Badge System** | Visual quality indicators: Verified, Top Rated, Trending, New, Popular |
+| **Version Management** | Track agent versions with SemVer support |
+| **Usage Tracking** | Monitor which agents are most popular |
 
 ### Quick Start
 
 ```bash
-# List available LLMs
-openyoung llm list
+# Run agent with natural language
+openyoung run "帮我写一个排序算法"
 
-# List available agents
-openyoung agent list
+# List all available agents with badges
+openyoung agent list --all --badges --stats
 
-# Run default agent (interactive mode)
-openyoung run default
+# Search agents semantically
+openyoung agent search "代码审查"
 
-# Or run a specific agent
-openyoung run <agent-name>
+# Compare two agents
+openyoung agent compare default coder
+
+# Analyze your intent
+openyoung agent intent "我想要自动化测试"
+
+# Check version history
+openyoung agent versions agent-coder
+openyoung agent version-add agent-coder 1.0.0 --changelog "Initial release"
 ```
 
 ### CLI Commands
 
 | Command | Description |
 |---------|-------------|
-| `openyoung llm list` | List available LLM configurations |
+| `openyoung run <task>` | Run agent with task description |
 | `openyoung agent list` | List available agents |
-| `openyoung run <name>` | Run an agent |
-| `openyoung package list` | List available agent packages |
-| `openyoung package create <name>` | Create new agent from template |
-| `openyoung package install <name>` | Install agent dependencies via pip |
-| `openyoung package export <name>` | Export agent package |
-| `openyoung package import <path>` | Import agent package |
-| `openyoung mcp list` | List available MCP configs |
-| `openyoung hooks list` | List available hooks |
-| `openyoung --help` | Show help message |
+| `openyoung agent search <query>` | Semantic search agents |
+| `openyoung agent compare <a> <b>` | Compare two agents |
+| `openyoung agent evaluate <agent>` | Quality evaluation |
+| `openyoung agent intent <query>` | Intent analysis |
+| `openyoung agent stats` | Usage statistics |
+| `openyoung agent versions <agent>` | Version history |
+| `openyoung import github <repo>` | Import from GitHub |
+| `openyoung --help` | Show help |
 
-### Agent Package Management
+### Agent Package Structure
 
-OpenYoung uses a lightweight pip + folder + YAML approach for agent packages:
-
-```bash
-# List available agents in packages/
-python3 -m src.cli.main package list
-
-# Create new agent from template (default/coder/reviewer)
-python3 -m src.cli.main package create my-agent --template coder
-
-# Install agent dependencies
-python3 -m src.cli.main package install my-agent
-```
-
-Agent package structure:
 ```
 packages/
 ├── agent-coder/
 │   ├── agent.yaml          # Agent configuration
-│   ├── pyproject.toml     # pip dependencies
+│   ├── pyproject.toml     # Dependencies
 │   └── src/               # Agent code
 └── agent-reviewer/
     ├── agent.yaml
@@ -92,15 +120,16 @@ packages/
 
 ### Configuration
 
-Create a `.env` file in your project root:
+Create `.env` in your project root:
 
 ```bash
-# OpenAI
-OPENAI_API_KEY=your-api-key
-OPENAI_BASE_URL=https://api.openai.com/v1
-
-# Anthropic (optional)
+# Required: At least one LLM provider
+OPENAI_API_KEY=your-openai-key
+# or
 ANTHROPIC_API_KEY=your-anthropic-key
+
+# Optional: Vector search (for semantic search)
+DASHSCOPE_API_KEY=your-dashscope-key
 ```
 
 ### Architecture
@@ -108,136 +137,169 @@ ANTHROPIC_API_KEY=your-anthropic-key
 ```
 openyoung/
 ├── src/
-│   ├── agents/          # Agent system
-│   ├── cli/             # CLI interface
-│   ├── core/            # Core types
-│   ├── datacenter/      # Trace collection
-│   ├── evaluation/      # Evaluation framework
-│   ├── evolver/         # Evolution engine
-│   ├── harness/         # Runtime harness
-│   ├── llm/             # LLM clients
-│   ├── memory/          # Memory system
-│   ├── package_manager/ # Package management
-│   ├── prompts/         # Prompt templates
-│   ├── skills/          # Skill system
-│   └── tools/           # Tool executor
-├── tests/               # Test suite
-└── docs/               # Documentation
-```
-
-### Development
-
-```bash
-# Run tests
-pytest tests/
-
-# Run specific test file
-pytest tests/agents/test_dispatcher.py
+│   ├── agents/           # Agent system
+│   ├── cli/              # CLI interface
+│   ├── core/             # Core types
+│   ├── evaluation/       # Quality evaluation
+│   ├── llm/              # LLM clients
+│   ├── memory/           # Vector store
+│   └── package_manager/  # Discovery, badges, versions
+├── packages/             # Agent packages
+├── skills/              # Always-loaded skills
+└── docs/                # Documentation
 ```
 
 ### License
 
-MIT License - see LICENSE file for details
+MIT License
 
 ---
 
 ## 中文
 
-### 概述
+### 什么是 OpenYoung？
 
-OpenYoung是一个 AI Agent 平台，提供统一的接口来与各种大型语言模型（LLM）交互。它提供 CLI 工具来执行任务、管理包，并在交互式 REPL 环境中运行代理。
+OpenYoung 是一个 **智能 Agent 发现与部署平台**，能够根据你的任务输入自动发现、评估和部署高质量 Agent。
 
-### 功能特性
+无需手动搜索和配置 Agent，只需描述你想要做什么 —— OpenYoung 会帮你完成其余工作。
 
-- **多 LLM 支持**：连接各种 LLM 提供商（OpenAI、Anthropic、本地模型等）
-- **交互式 REPL**：直接从 CLI 进入对话模式，类似于 Claude Code、OpenCode 或 Codex
-- **工具执行**：执行 bash 命令、读写文件、搜索代码等
-- **代理系统**：内置代理系统，带有权限控制和会话管理
-- **包管理器**：动态加载和管理技能包
-- **评估框架**：综合评估系统，包含多个评估器
-- **进化引擎**：基于基因的进化系统，用于代理自我改进
-- **数据持久化**：所有组件数据持久化到磁盘，供后续会话使用
+### 核心功能
 
-### 安装
-
-```bash
-# 从源码安装
-pip install -e .
-
-# 或从 PyPI 安装（发布后）
-pip install openyoung
 ```
+┌─────────────────────────────────────────────────────────────────┐
+│                      OpenYoung 工作流程                         │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+                    ┌─────────────────┐
+                    │  意图理解       │ ◄── LLM 驱动的意图分析
+                    │  Intent        │
+                    └────────┬────────┘
+                             │
+                             ▼
+                    ┌─────────────────┐
+                    │  语义搜索       │ ◄── 向量相似度匹配
+                    │  Semantic      │
+                    └────────┬────────┘
+                             │
+                             ▼
+                    ┌─────────────────┐
+                    │  质量评估       │ ◄── 多维度评分
+                    │  Quality       │
+                    └────────┬────────┘
+                             │
+                    ┌────────┴────────┐
+                    ▼                 ▼
+              ┌─────────┐       ┌─────────┐
+              │  徽章系统 │       │ 版本管理 │
+              │  Badges │       │ Versions│
+              └────┬────┘       └────┬────┘
+                   │                 │
+                   └────────┬────────┘
+                            ▼
+                    ┌─────────────────┐
+                    │  自动配置       │ ◄── Always Skills 加载
+                    │  Auto-Config   │
+                    └────────┬────────┘
+                             │
+                             ▼
+                    ┌─────────────────┐
+                    │  执行任务       │
+                    │  Execute       │
+                    └─────────────────┘
+```
+
+| 功能 | 描述 |
+|------|------|
+| **语义搜索** | 用自然语言而非关键词搜索 Agent |
+| **质量评估** | 6 维度评分：完整性、有效性、依赖、文档、安全、运行时 |
+| **意图理解** | 理解你想要做什么，推荐合适的 Agent |
+| **徽章系统** | 可视化质量标识：官方验证、高评分、趋势上升、新增、热门 |
+| **版本管理** | SemVer 版本的版本历史追踪 |
+| **使用追踪** | 监控哪些 Agent 最受欢迎 |
 
 ### 快速开始
 
 ```bash
-# 列出可用的 LLM
-openyoung llm list
+# 用自然语言运行 agent
+openyoung run "帮我写一个排序算法"
 
-# 列出可用的代理
-openyoung agent list
+# 列出所有 agents（含徽章和统计）
+openyoung agent list --all --badges --stats
 
-# 运行默认代理（交互模式）
-openyoung run default
+# 语义搜索 agents
+openyoung agent search "代码审查"
 
-# 或运行特定代理
-openyoung run <代理名称>
+# 对比两个 agents
+openyoung agent compare default coder
+
+# 分析你的意图
+openyoung agent intent "我想要自动化测试"
+
+# 查看版本历史
+openyoung agent versions agent-coder
+openyoung agent version-add agent-coder 1.0.0 --changelog "初始版本"
 ```
 
 ### CLI 命令
 
 | 命令 | 描述 |
 |------|------|
-| `openyoung llm list` | 列出可用的 LLM 配置 |
-| `openyoung agent list` | 列出可用的代理 |
-| `openyoung run <名称>` | 运行代理 |
-| `openyoung --help` | 显示帮助信息 |
+| `openyoung run <任务>` | 使用任务描述运行 agent |
+| `openyoung agent list` | 列出可用 agents |
+| `openyoung agent search <查询>` | 语义搜索 agents |
+| `openyoung agent compare <a> <b>` | 对比两个 agents |
+| `openyoung agent evaluate <agent>` | 质量评估 |
+| `openyoung agent intent <查询>` | 意图分析 |
+| `openyoung agent stats` | 使用统计 |
+| `openyoung agent versions <agent>` | 版本历史 |
+| `openyoung import github <仓库>` | 从 GitHub 导入 |
+| `openyoung --help` | 显示帮助 |
+
+### Agent 包结构
+
+```
+packages/
+├── agent-coder/
+│   ├── agent.yaml        # Agent 配置
+│   ├── pyproject.toml   # 依赖
+│   └── src/             # Agent 代码
+└── agent-reviewer/
+    ├── agent.yaml
+    └── pyproject.toml
+```
 
 ### 配置
 
 在项目根目录创建 `.env` 文件：
 
 ```bash
-# OpenAI
-OPENAI_API_KEY=你的-api-key
-OPENAI_BASE_URL=https://api.openai.com/v1
+# 必需：至少一个 LLM 提供商
+OPENAI_API_KEY=your-openai-key
+# 或
+ANTHROPIC_API_KEY=your-anthropic-key
 
-# Anthropic（可选）
-ANTHROPIC_API_KEY=你的-anthropic-key
+# 可选：向量搜索（用于语义搜索）
+DASHSCOPE_API_KEY=your-dashscope-key
 ```
 
-### 架构
+### 项目架构
 
 ```
 openyoung/
 ├── src/
-│   ├── agents/          # 代理系统
-│   ├── cli/             # CLI 接口
-│   ├── core/            # 核心类型
-│   ├── datacenter/      # 追踪收集
-│   ├── evaluation/      # 评估框架
-│   ├── evolver/         # 进化引擎
-│   ├── harness/         # 运行时管理器
-│   ├── llm/             # LLM 客户端
-│   ├── memory/          # 记忆系统
-│   ├── package_manager/ # 包管理
-│   ├── prompts/         # 提示模板
-│   ├── skills/          # 技能系统
-│   └── tools/           # 工具执行器
-├── tests/               # 测试套件
-└── docs/               # 文档
-```
-
-### 开发
-
-```bash
-# 运行测试
-pytest tests/
-
-# 运行特定测试文件
-pytest tests/agents/test_dispatcher.py
+│   ├── agents/           # Agent 系统
+│   ├── cli/              # CLI 接口
+│   ├── core/             # 核心类型
+│   ├── evaluation/       # 质量评估
+│   ├── llm/              # LLM 客户端
+│   ├── memory/           # 向量存储
+│   └── package_manager/  # 发现、徽章、版本
+├── packages/             # Agent 包
+├── skills/               # Always Skills
+└── docs/                 # 文档
 ```
 
 ### 许可证
 
-MIT 许可证 - 详见 LICENSE 文件
+MIT License
