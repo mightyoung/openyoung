@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Optional, List, Dict
 from datetime import datetime
 
-from .metadata import SkillMetadata, LoadedSkill, RetrievalConfig
+from .metadata import SkillMetadata, LoadedSkill, RetrievalConfig, SkillRequires
 
 
 class SkillLoader:
@@ -110,23 +110,48 @@ class SkillLoader:
 
     async def find_skills_for_task(self, task_description: str) -> List[LoadedSkill]:
         """根据任务描述找到相关 Skills - 统一检索入口"""
+        # 优先尝试语义检索
         if self._retriever and self.config.semantic_enabled:
-            # 使用统一检索器 (语义检索)
             results = await self._retriever.retrieve(task_description)
 
-            loaded = []
-            for result in results[: self.config.final_top_k]:
-                skill = await self.load_skill(result.skill.name)
-                if skill:
-                    loaded.append(skill)
-            return loaded
-        else:
-            # 回退到简单标签匹配
-            return await self._simple_search(task_description)
+            if results:
+                loaded = []
+                for result in results[: self.config.final_top_k]:
+                    skill = await self.load_skill(result.skill.name)
+                    if skill:
+                        loaded.append(skill)
+                return loaded
+
+        # 回退到简单搜索
+        return await self._simple_search(task_description)
+
+    def _tokenize(self, text: str) -> List[str]:
+        """分词处理 - 支持中英文"""
+        text_lower = text.lower()
+
+        # 尝试使用 jieba 分词
+        try:
+            import jieba
+            words = list(jieba.cut(text_lower))
+            return [w for w in words if w.strip()]
+        except ImportError:
+            pass
+
+        # 回退: 英文按空格, 中文按字符 (2-4gram)
+        words = text_lower.split()
+        if len(words) == 1 and any('\u4e00' <= c <= '\u9fff' for c in text):
+            # 中文: 生成 2-4 字词组
+            chinese_text = ''.join(c for c in text_lower if '\u4e00' <= c <= '\u9fff')
+            ngrams = []
+            for n in range(2, 5):
+                ngrams.extend([chinese_text[i:i+n] for i in range(len(chinese_text) - n + 1)])
+            words = ngrams
+
+        return words
 
     async def _simple_search(self, query: str) -> List[LoadedSkill]:
         """简单搜索 (无 Embedding 时回退)"""
-        query_words = query.lower().split()
+        query_words = self._tokenize(query)
         results = []
 
         for name, metadata in self._metadata_index.items():
@@ -187,11 +212,31 @@ class SkillLoader:
         return list(self._metadata_index.values())
 
     def _parse_metadata(self, skill_yaml: Path) -> SkillMetadata:
-        """解析 Skill 元数据"""
+        """解析 Skill 元数据
+
+        支持两种格式:
+        1. skill.yaml - YAML 格式
+        2. SKILL.md - YAML frontmatter 格式
+        """
+        # 优先尝试 SKILL.md (YAML frontmatter)
+        skill_md = skill_yaml.parent / "SKILL.md"
+        if skill_md.exists():
+            metadata = self._parse_frontmatter(skill_md)
+            if metadata:
+                return metadata
+
+        # 回退到 skill.yaml
         try:
             data = yaml.safe_load(skill_yaml.read_text()) or {}
         except Exception:
             data = {}
+
+        # 解析 requires 字段
+        requires_data = data.get("requires", {})
+        requires = SkillRequires(
+            bins=requires_data.get("bins", []),
+            env=requires_data.get("env", []),
+        )
 
         return SkillMetadata(
             name=data.get("name", skill_yaml.parent.name),
@@ -201,7 +246,93 @@ class SkillLoader:
             disable_model_invocation=data.get("disable_model_invocation", False),
             trigger_patterns=data.get("trigger_patterns", []),
             version=data.get("version"),
+            always=data.get("always", False),
+            requires=requires,
+            tools=data.get("tools", []),
         )
+
+    def _parse_frontmatter(self, skill_md: Path) -> SkillMetadata:
+        """解析 SKILL.md 的 YAML frontmatter
+
+        格式:
+        ---
+        name: github
+        description: GitHub 操作技能
+        version: 1.0.0
+        always: false
+        requires:
+          bins: [gh, git]
+          env: [GH_TOKEN]
+        tools:
+          - create_issue
+          - create_pr
+        ---
+
+        # Skill 内容...
+        """
+        try:
+            content = skill_md.read_text()
+            if not content.startswith("---"):
+                return None
+
+            # 提取 frontmatter
+            parts = content.split("---", 2)
+            if len(parts) < 3:
+                return None
+
+            frontmatter = parts[1].strip()
+            data = yaml.safe_load(frontmatter) or {}
+
+            # 解析 requires
+            requires_data = data.get("requires", {})
+            requires = SkillRequires(
+                bins=requires_data.get("bins", []),
+                env=requires_data.get("env", []),
+            )
+
+            return SkillMetadata(
+                name=data.get("name", skill_md.parent.name),
+                description=data.get("description", ""),
+                file_path=skill_md.parent,
+                tags=data.get("tags", []),
+                version=data.get("version"),
+                always=data.get("always", False),
+                requires=requires,
+                tools=data.get("tools", []),
+                trigger_patterns=data.get("trigger_patterns", []),
+            )
+        except Exception:
+            return None
+
+    def check_requirements(self, metadata: SkillMetadata) -> tuple[bool, List[str]]:
+        """检查 Skill 依赖是否满足
+
+        Returns:
+            (是否满足, 缺失的依赖列表)
+        """
+        import shutil
+        import os
+
+        missing = []
+
+        # 检查 CLI 工具
+        for bin in metadata.requires.bins:
+            if not shutil.which(bin):
+                missing.append(f"bin: {bin}")
+
+        # 检查环境变量
+        for env in metadata.requires.env:
+            if not os.getenv(env):
+                missing.append(f"env: {env}")
+
+        return len(missing) == 0, missing
+
+    def get_always_skills(self) -> List[SkillMetadata]:
+        """获取总是加载的 Skills"""
+        return [
+            meta for meta in self._metadata_index.values()
+            if meta.always
+        ]
 
     async def _load_skill_content(self, skill_dir: Path) -> str:
         """加载 Skill 完整内容"""

@@ -1,0 +1,27 @@
+name: gitnexus
+description: "代码知识图谱分析与 AI 增强导航。使用场景：理解代码架构、追踪依赖关系、分析修改影响范围、代码重构规划、调试追踪。前提：需先安装 gitnexus (npm install -g gitnexus) 并在代码库运行 npx gitnexus analyze 建立索引。"
+disable_model_invocation: false
+trigger_patterns:
+  - "代码结构"
+  - "架构分析"
+  - "依赖关系"
+  - "影响分析"
+  - "blast radius"
+  - "what depends"
+  - "代码追踪"
+  - "调用链"
+  - "explore"
+  - "understand code"
+  - "impact analysis"
+  - "refactor"
+tags:
+  - code-analysis
+  - knowledge-graph
+  - dependencies
+  - refactoring
+  - debugging
+requires:
+  bins:
+    - node
+    - npm
+    - npx
