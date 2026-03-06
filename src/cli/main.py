@@ -5,6 +5,8 @@ OpenYoung CLI - 命令行入口
 import click
 import asyncio
 import sys
+import os
+import json
 from pathlib import Path
 from typing import Optional, List
 
@@ -15,6 +17,46 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# ========================
+# 配置持久化
+# ========================
+_CONFIG_DIR = Path.home() / ".openyoung"
+_CONFIG_FILE = _CONFIG_DIR / "config.json"
+
+
+def _load_config() -> dict:
+    """加载配置"""
+    if _CONFIG_FILE.exists():
+        try:
+            return json.loads(_CONFIG_FILE.read_text())
+        except Exception:
+            pass
+    return {}
+
+
+def _save_config(config: dict) -> bool:
+    """保存配置"""
+    try:
+        _CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+        _CONFIG_FILE.write_text(json.dumps(config, indent=2))
+        return True
+    except Exception as e:
+        print(f"Config save error: {e}")
+        return False
+
+
+def _get_config(key: str, default=None):
+    """获取配置值"""
+    config = _load_config()
+    return config.get(key, default)
+
+
+def _set_config(key: str, value: str) -> bool:
+    """设置配置值"""
+    config = _load_config()
+    config[key] = value
+    return _save_config(config)
 
 from src.agents.young_agent import YoungAgent
 from src.core.types import (
@@ -95,6 +137,7 @@ class AgentLoader:
         """解析完整配置 - 参考 OpenCode 架构"""
         model_config = config.get("model", {})
         permission_config = config.get("permission", {})
+        execution_config = config.get("execution", {})
 
         # 解析 permission
         permission = self._parse_permission(permission_config)
@@ -116,8 +159,10 @@ class AgentLoader:
             tools=config.get("tools", []),
             permission=permission,
             skills=config.get("skills", []),
+            always_skills=config.get("always_skills", []),
             sub_agents=sub_agents,
             system_prompt=system_prompt,
+            execution=execution_config,
         )
 
     def _parse_permission(self, config: dict) -> PermissionConfig:
@@ -157,7 +202,7 @@ class AgentLoader:
                 name=item.get("name", sub_type.value),
                 type=sub_type,
                 description=item.get("description", ""),
-                model=item.get("model", "default"),
+                model=item.get("model", "deepseek-chat"),
                 temperature=item.get("temperature", 0.7),
                 instructions=item.get("instructions"),
                 hidden=item.get("hidden", False),
@@ -257,6 +302,8 @@ class AgentRunner:
         self.package_manager = PackageManager()
         self.evaluation_hub = EvaluationHub()
         self.agent: Optional[YoungAgent] = None
+        self._last_task = None
+        self._last_result = None
 
     def load_agent(self, name: str) -> YoungAgent:
         config = self.loader.load_agent(name)
@@ -266,7 +313,33 @@ class AgentRunner:
     async def run(self, task: str) -> str:
         if not self.agent:
             raise RuntimeError("Agent not loaded")
-        return await self.agent.run(task)
+        self._last_task = task
+        self._last_result = await self.agent.run(task)
+        return self._last_result
+
+    async def evaluate_last_result(self, task: str, result: str = None) -> dict:
+        """评估上一次执行的结果"""
+        if result is None:
+            result = self._last_result
+        if task is None:
+            task = self._last_task
+
+        if not result:
+            return {"error": "No result to evaluate"}
+
+        # 使用 EvaluationHub 评估
+        try:
+            eval_result = await self.evaluation_hub.evaluate(
+                task_description=task,
+                actual_result=result,
+            )
+            return {
+                "task": task,
+                "result": result[:200] + "..." if len(result) > 200 else result,
+                "evaluation": eval_result,
+            }
+        except Exception as e:
+            return {"error": str(e), "task": task, "result": result[:200]}
 
 
 # ========================
@@ -295,6 +368,15 @@ def run(
     interactive: bool,
 ):
     """Run an agent with a task"""
+    # 自动设置非交互式模式的环境变量
+    import os
+    if not task or interactive:
+        # 交互式模式：清除自动允许设置
+        os.environ.pop("OPENYOUNG_AUTO_ALLOW", None)
+    else:
+        # 非交互式模式：自动允许安全命令
+        os.environ["OPENYOUNG_AUTO_ALLOW"] = "true"
+
     # 启动交互式 REPL
     if not task or interactive:
         from src.cli.repl import start_repl
@@ -335,13 +417,102 @@ def agent():
 
 
 @agent.command("list")
-def agent_list():
+@click.option("--badges", is_flag=True, help="Show badges")
+@click.option("--stats", is_flag=True, help="Show usage statistics")
+@click.option("--all", "show_all", is_flag=True, help="Show all agents including from packages")
+def agent_list(badges: bool, stats: bool, show_all: bool):
     """List available agents"""
     loader = AgentLoader()
     agents = loader.list_agents()
+
+    # 如果显示所有，也从 packages 目录获取
+    if show_all:
+        try:
+            from src.package_manager.registry import AgentRegistry
+            registry = AgentRegistry("packages")
+            pkg_agents = registry.discover_items()
+            for pa in pkg_agents:
+                if pa not in agents:
+                    agents.append(pa)
+        except Exception:
+            pass
+
+    # 导入徽章系统
+    from src.package_manager.badge_system import BadgeSystem, BADGE_DEFINITIONS
+
+    # 导入版本管理（如果存在）
+    try:
+        from src.package_manager.version_manager import VersionManager
+        has_version_manager = True
+    except ImportError:
+        has_version_manager = False
+
     click.echo("Available agents:")
+
+    # 获取使用统计
+    usage_list = []
+    if stats:
+        try:
+            from src.package_manager.registry import AgentRegistry
+            registry = AgentRegistry("packages")
+            usage_list = registry.get_usage_stats(100)
+        except Exception:
+            pass
+
     for a in agents:
-        click.echo(f"  • {a}")
+        line = f"  • {a}"
+
+        # 显示徽章
+        if badges:
+            try:
+                # 从注册表获取使用统计
+                from src.package_manager.registry import AgentRegistry
+                registry = AgentRegistry("packages")
+                usage_list = registry.get_usage_stats(100)
+                use_count = 0
+                rating = 0.0
+                for item in usage_list:
+                    if item.get("agent_name") == a:
+                        use_count = item.get("use_count", 0)
+                        rating = item.get("rating", 0.0)
+                        break
+
+                # 尝试获取评估分数
+                quality_score = 0
+                try:
+                    from src.package_manager.agent_evaluator import AgentEvaluator
+                    evaluator = AgentEvaluator()
+                    report = asyncio.run(evaluator.evaluate(f"packages/{a}"))
+                    if report:
+                        quality_score = report.overall_score
+                except:
+                    pass
+
+                agent_data = {
+                    "downloads": use_count,
+                    "rating": rating,
+                    "dimensions": {"documentation": 0.5},  # 默认值
+                    "quality_score": quality_score,
+                    "recent_downloads": use_count // 2 if use_count else 0,
+                    "created_at": ""
+                }
+                badge_system = BadgeSystem()
+                agent_badges = asyncio.run(badge_system.evaluate_badges(a, agent_data))
+                if agent_badges:
+                    badge_str = badge_system.format_badges(agent_badges)
+                    line += f" {badge_str}"
+            except Exception as e:
+                pass
+
+        # 显示统计
+        if stats:
+            for item in usage_list:
+                if item.get("agent_name") == a:
+                    count = item.get("use_count", 0)
+                    line += f" | 使用: {count}次"
+                    break
+
+        click.echo(line)
 
 
 @agent.command("info")
@@ -363,8 +534,255 @@ def agent_info(agent_name: str):
 @click.argument("agent_name")
 def agent_use(agent_name: str):
     """Set default agent"""
-    click.echo(f"Set default agent to: {agent_name}")
-    # TODO: Save to config
+    if _set_config("default_agent", agent_name):
+        click.echo(f"Set default agent to: {agent_name}")
+    else:
+        click.echo(f"Failed to set default agent: {agent_name}")
+
+
+@agent.command("search")
+@click.argument("query")
+@click.option("--limit", "-l", default=10, help="Maximum results")
+@click.option("--intent/--no-intent", default=True, help="Show intent analysis")
+def agent_search(query: str, limit: int, intent: bool):
+    """Search agents by keyword, with optional intent analysis"""
+    import asyncio
+
+    async def _search():
+        # 先分析意图
+        if intent:
+            from src.package_manager.intent_analyzer import IntentAnalyzer
+            analyzer = IntentAnalyzer()
+            intent_result = await analyzer.analyze(query)
+
+            click.echo(f"=== Intent Analysis ===\n")
+            click.echo(f"Query: {query}")
+            click.echo(f"Intent: {intent_result.type.value} ({intent_result.confidence:.0%})")
+            click.echo(f"Description: {intent_result.description}")
+            click.echo(f"\nSuggested Agents: {', '.join(intent_result.suggested_agents)}")
+            click.echo("\n" + "="*40 + "\n")
+
+        # 然后搜索
+        from src.package_manager.import_manager import ImportManager
+        manager = ImportManager()
+        results = await manager.search(query, limit=limit)
+
+        if not results:
+            click.echo(f"No agents found matching: {query}")
+            return
+
+        click.echo(f"Search results for '{query}':\n")
+        for r in results:
+            score = r.get('quality_score', 'N/A')
+            if score is not None and isinstance(score, float):
+                score = round(score, 2)
+            click.echo(f"  • {r['name']}")
+            click.echo(f"    Description: {r.get('description', 'N/A')[:60]}...")
+            click.echo(f"    Version: {r.get('version', 'N/A')}")
+            click.echo(f"    Quality: {score}")
+            click.echo()
+
+    asyncio.run(_search())
+
+
+@agent.command("intent")
+@click.argument("user_input")
+def agent_intent(user_input: str):
+    """Analyze user intent and recommend agents"""
+    import asyncio
+
+    async def _analyze():
+        from src.package_manager.intent_analyzer import IntentAnalyzer
+        analyzer = IntentAnalyzer()
+        intent = await analyzer.analyze(user_input)
+
+        click.echo(f"=== Intent Analysis ===\n")
+        click.echo(f"Input: {user_input}\n")
+        click.echo(f"Intent Type: {intent.type.value}")
+        click.echo(f"Confidence: {intent.confidence:.0%}")
+        click.echo(f"Description: {intent.description}")
+        click.echo(f"\nSuggested Agents:")
+        for agent in intent.suggested_agents:
+            click.echo(f"  • {agent}")
+        if intent.required_capabilities:
+            click.echo(f"\nRequired Capabilities:")
+            for cap in intent.required_capabilities:
+                click.echo(f"  • {cap}")
+
+    asyncio.run(_analyze())
+
+
+@agent.command("evaluate")
+@click.argument("agent_name")
+def agent_evaluate(agent_name: str):
+    """Evaluate agent quality"""
+    import asyncio
+
+    async def _evaluate():
+        from src.package_manager.import_manager import ImportManager
+        manager = ImportManager()
+        report = await manager.evaluate_agent(agent_name)
+
+        if not report:
+            click.echo(f"Agent not found: {agent_name}")
+            return
+
+        click.echo(f"=== Agent Quality Report: {agent_name} ===\n")
+        click.echo(f"Overall Score: {round(report.overall_score, 2)}/1.0")
+        click.echo(f"Passed: {'✓ Yes' if report.passed else '✗ No'}\n")
+
+        click.echo("Dimensions:")
+        for d in report.dimensions:
+            status = "✓" if d.passed else "✗"
+            click.echo(f"  {status} {d.dimension.value:20s} {round(d.score, 2)}/1.0")
+            if d.suggestions:
+                for s in d.suggestions[:2]:
+                    click.echo(f"    → {s}")
+
+        if report.warnings:
+            click.echo(f"\nWarnings ({len(report.warnings)}):")
+            for w in report.warnings[:5]:
+                click.echo(f"  ⚠ {w}")
+
+    asyncio.run(_evaluate())
+
+
+@agent.command("stats")
+@click.option("--limit", "-n", default=10, help="Number of agents to show")
+def agent_stats(limit: int):
+    """Show agent usage statistics"""
+    from src.package_manager.registry import AgentRegistry
+
+    registry = AgentRegistry()
+    stats = registry.get_usage_stats(limit)
+
+    if not stats:
+        click.echo("No usage data yet. Agents will be tracked when used.")
+        return
+
+    click.echo("=== Agent Usage Statistics ===\n")
+    for i, s in enumerate(stats, 1):
+        click.echo(f"{i}. {s['agent_name']}")
+        click.echo(f"   Uses: {s['use_count']} | Last used: {s['last_used'][:10]}")
+    click.echo(f"\nShowing top {len(stats)} agents")
+
+
+@agent.command("compare")
+@click.argument("agent_a")
+@click.argument("agent_b")
+def agent_compare(agent_a: str, agent_b: str):
+    """Compare two agents"""
+    import asyncio
+
+    async def _compare():
+        from src.package_manager.agent_compare import AgentComparer
+        comparer = AgentComparer()
+        result = await comparer.compare(agent_a, agent_b)
+
+        if not result.dimensions:
+            click.echo(f"Error: One or both agents not found")
+            return
+
+        click.echo("=" * 50)
+        click.echo(f"         Agent Comparison")
+        click.echo("=" * 50)
+        click.echo()
+
+        # 表头
+        click.echo(f"{'Dimension':<20} {agent_a:<15} {agent_b:<15} Winner")
+        click.echo("-" * 60)
+
+        # 各维度结果
+        for d in result.dimensions:
+            winner_mark = "✓" if d.winner == "a" else "✓" if d.winner == "b" else "="
+            a_display = f"{d.agent_a_value}"
+            b_display = f"{d.agent_b_value}"
+
+            if d.winner == "a":
+                a_display += " ✓"
+            elif d.winner == "b":
+                b_display += " ✓"
+
+            click.echo(f"{d.dimension:<20} {a_display:<15} {b_display:<15}")
+
+        click.echo("-" * 60)
+        click.echo()
+        click.echo(f"🏆 Winner: {result.summary}")
+
+    asyncio.run(_compare())
+
+
+@agent.command("versions")
+@click.argument("agent_name")
+@click.option("--limit", default=10, help="Number of versions to show")
+def agent_versions(agent_name: str, limit: int):
+    """Show agent version history"""
+    from src.package_manager.version_manager import VersionManager
+
+    manager = VersionManager()
+    versions = manager.list_versions(agent_name, limit)
+
+    if not versions:
+        click.echo(f"No version history for: {agent_name}")
+        click.echo(f"Use 'agent version-add {agent_name} 1.0.0' to register first version")
+        return
+
+    current = manager.get_current_version(agent_name)
+
+    click.echo(f"=== {agent_name} Versions ===")
+    click.echo(f"\nCurrent: {current}")
+    click.echo("\nVersion History:")
+
+    for v in versions:
+        is_current = " (latest)" if v.version == current else ""
+        click.echo(f"\n  v{v.version}{is_current}")
+        click.echo(f"    Released: {v.released_at[:10]}")
+        if v.changelog:
+            click.echo(f"    Changelog:")
+            for line in v.changelog.split("\n"):
+                if line.strip():
+                    click.echo(f"      {line}")
+        if v.breaking_changes:
+            click.echo(f"    Breaking: {', '.join(v.breaking_changes)}")
+
+
+@agent.command("version-add")
+@click.argument("agent_name")
+@click.argument("version")
+@click.option("--changelog", default="", help="Changelog message")
+@click.option("--compatible", default="*", help="Compatible version (e.g., 1.x)")
+def agent_version_add(agent_name: str, version: str, changelog: str, compatible: str):
+    """Add a new version for an agent"""
+    from src.package_manager.version_manager import VersionManager, VersionError
+
+    manager = VersionManager()
+
+    try:
+        v = manager.register_version(
+            agent_name,
+            version,
+            changelog=changelog,
+            compatible_with=compatible
+        )
+        click.echo(f"✓ Registered {agent_name} v{version}")
+    except VersionError as e:
+        click.echo(f"Error: {e}", err=True)
+
+
+@agent.command("version-check")
+@click.argument("agent_name")
+@click.option("--current", default="0.0.0", help="Current version")
+def agent_version_check(agent_name: str, current: str):
+    """Check if there's a newer version available"""
+    from src.package_manager.version_manager import VersionManager
+
+    manager = VersionManager()
+    latest = manager.check_update_available(agent_name, current)
+
+    if latest:
+        click.echo(f"Update available: v{current} → v{latest}")
+    else:
+        click.echo(f"Already on latest version: v{current}")
 
 
 @cli.command()
@@ -595,23 +1013,39 @@ def config():
 @config.command("list")
 def config_list():
     """List all configuration settings"""
+    # 首先显示持久化配置
+    config = _load_config()
+    if config:
+        click.echo("=== Persistent Configuration ===")
+        for key, value in config.items():
+            click.echo(f"  {key}: {value}")
+
+    # 然后显示默认配置
     from src.config.loader import ConfigLoader
-
     loader = ConfigLoader()
-    config = loader.load_all()
+    default_config = loader.load_all()
 
-    click.echo("Current configuration:")
-    click.echo(f"  Default LLM: {config.get('llm', {}).get('model', 'not set')}")
-    click.echo(f"  Temperature: {config.get('llm', {}).get('temperature', 'not set')}")
-    click.echo(f"  Max Tokens: {config.get('llm', {}).get('max_tokens', 'not set')}")
+    click.echo("\n=== Default Configuration ===")
+    click.echo(f"  Default LLM: {default_config.get('llm', {}).get('model', 'not set')}")
+    click.echo(f"  Temperature: {default_config.get('llm', {}).get('temperature', 'not set')}")
+    click.echo(f"  Max Tokens: {default_config.get('llm', {}).get('max_tokens', 'not set')}")
+
+    # 显示配置路径
+    click.echo(f"\nConfig file: {_CONFIG_FILE}")
 
 
 @config.command("get")
 @click.argument("key")
 def config_get(key: str):
     """Get a configuration value"""
-    from src.config.loader import ConfigLoader
+    # 首先检查持久化配置
+    value = _get_config(key)
+    if value is not None:
+        click.echo(f"{key}: {value}")
+        return
 
+    # 如果没有，则检查 ConfigLoader
+    from src.config.loader import ConfigLoader
     loader = ConfigLoader()
     config = loader.load_all()
 
@@ -635,8 +1069,73 @@ def config_get(key: str):
 @click.argument("value")
 def config_set(key: str, value: str):
     """Set a configuration value"""
-    click.echo(f"Set {key} = {value}")
-    click.echo("Note: Config persistence not yet implemented")
+    # 尝试解析值为适当的类型
+    parsed_value = value
+    if value.lower() == "true":
+        parsed_value = True
+    elif value.lower() == "false":
+        parsed_value = False
+    elif value.isdigit():
+        parsed_value = int(value)
+    elif value.replace(".", "", 1).isdigit():
+        parsed_value = float(value)
+
+    if _set_config(key, parsed_value):
+        click.echo(f"Set {key} = {parsed_value}")
+    else:
+        click.echo(f"Failed to save config: {key}")
+
+
+# ========================
+# Evaluation Commands
+# ========================
+
+
+@cli.group()
+def eval():
+    """Evaluation history and trends"""
+    pass
+
+
+@eval.command("history")
+@click.argument("agent_name", default="default")
+@click.option("--limit", "-n", default=10, help="Number of records to show")
+def eval_history(agent_name: str, limit: int):
+    """Show evaluation history for an agent"""
+    from src.evaluation.hub import EvaluationHub
+
+    hub = EvaluationHub()
+    history = hub.get_history(agent_name, limit)
+
+    if not history:
+        click.echo(f"No evaluation history found for '{agent_name}'")
+        return
+
+    click.echo(f"=== Evaluation History: {agent_name} ===")
+    for i, record in enumerate(history, 1):
+        click.echo(f"{i}. [{record['timestamp'][:19]}] {record['metric']}: {record['score']:.2f}")
+
+
+@eval.command("trend")
+@click.argument("agent_name", default="default")
+@click.option("--metric", "-m", default=None, help="Filter by metric")
+def eval_trend(agent_name: str, metric: str):
+    """Show evaluation trend for an agent"""
+    from src.evaluation.hub import EvaluationHub
+
+    hub = EvaluationHub()
+    trend = hub.get_trend(agent_name, metric)
+
+    if not trend:
+        click.echo(f"No evaluation trend found for '{agent_name}'")
+        return
+
+    click.echo(f"=== Evaluation Trend: {agent_name} ===")
+    click.echo(f"Total evaluations: {trend['count']}")
+    click.echo(f"Average score: {trend['average']:.2f}")
+    click.echo(f"Best score: {trend['max']:.2f}")
+    click.echo(f"Worst score: {trend['min']:.2f}")
+    click.echo(f"Latest score: {trend['latest']:.2f}")
 
 
 # ========================
@@ -670,6 +1169,446 @@ def source_add(source_name: str, url: str):
 
 
 # ========================
+# Init Commands - 初始化向导
+# ========================
+
+
+@cli.command()
+@click.option("--force", "-f", is_flag=True, help="Force reinitialize")
+def init(force: bool):
+    """Initialize OpenYoung configuration
+
+    Interactive wizard to set up:
+    - LLM Provider selection and API keys
+    - Default channel configuration
+    - Agent settings
+
+    Example:
+        openyoung init
+        openyoung init --force
+    """
+    import os
+
+    click.echo("=== OpenYoung Initialization Wizard ===\n")
+
+    # 检查是否已初始化
+    config = _load_config()
+    if config and not force:
+        click.echo("OpenYoung is already initialized!")
+        click.echo(f"Config file: {_CONFIG_FILE}")
+        click.echo("\nUse --force to reinitialize")
+        return
+
+    # Step 1: LLM Provider 选择
+    click.echo("Step 1: Select LLM Provider")
+    click.echo("  1) DeepSeek (default)")
+    click.echo("  2) OpenAI")
+    click.echo("  3) Anthropic")
+    click.echo("  4) Moonshot (月之暗面)")
+    click.echo("  5) Qwen (阿里)")
+    click.echo("  6) GLM (智谱)")
+
+    provider_map = {
+        "1": "deepseek",
+        "2": "openai",
+        "3": "anthropic",
+        "4": "moonshot",
+        "5": "qwen",
+        "6": "glm",
+    }
+
+    provider_choice = click.prompt("Select provider (1-6)", default="1", type=click.Choice(["1", "2", "3", "4", "5", "6"]))
+    provider = provider_map[provider_choice]
+
+    # Step 2: API Key
+    click.echo(f"\nStep 2: Enter API Key for {provider}")
+    api_key = click.prompt("API Key", hide_input=True)
+
+    # Step 3: Channel 选择
+    click.echo("\nStep 3: Select Channel")
+    click.echo("  1) CLI (命令行)")
+    click.echo("  2) Telegram")
+    click.echo("  3) Discord")
+    click.echo("  4) QQ (Go-CQHTTP)")
+    click.echo("  5) 钉钉")
+    click.echo("  6) 飞书")
+
+    channel_choice = click.prompt("Select channel (1-6)", default="1", type=click.Choice(["1", "2", "3", "4", "5", "6"]))
+
+    channel_map = {
+        "1": "cli",
+        "2": "telegram",
+        "3": "discord",
+        "4": "qq",
+        "5": "dingtalk",
+        "6": "feishu",
+    }
+    channel = channel_map[channel_choice]
+
+    # Step 4: Channel 特定配置
+    channel_config = {}
+    if channel == "telegram":
+        click.echo("\nStep 4: Telegram Configuration")
+        bot_token = click.prompt("Bot Token (from @BotFather)", hide_input=True)
+        channel_config["bot_token"] = bot_token
+    elif channel == "discord":
+        click.echo("\nStep 4: Discord Configuration")
+        bot_token = click.prompt("Bot Token", hide_input=True)
+        channel_config["bot_token"] = bot_token
+    elif channel == "dingtalk":
+        click.echo("\nStep 4: DingTalk Configuration")
+        webhook_url = click.prompt("Webhook URL", type=str)
+        secret = click.prompt("Secret (optional, press Enter to skip)", default="", type=str, hide_input=True)
+        channel_config["webhook_url"] = webhook_url
+        if secret:
+            channel_config["secret"] = secret
+    elif channel == "feishu":
+        click.echo("\nStep 4: Feishu Configuration")
+        app_id = click.prompt("App ID", type=str)
+        app_secret = click.prompt("App Secret", hide_input=True)
+        channel_config["app_id"] = app_id
+        channel_config["app_secret"] = app_secret
+
+    # 保存配置
+    config = {
+        "provider": provider,
+        "api_key": api_key,
+        "channel": channel,
+        "channel_config": channel_config,
+    }
+
+    # 写入 .env 文件
+    env_file = Path(".env")
+    env_lines = []
+
+    # 读取现有 .env
+    if env_file.exists():
+        env_lines = env_file.read_text().splitlines()
+
+    # 更新或添加 provider
+    env_found = False
+    for i, line in enumerate(env_lines):
+        if line.startswith(f"{provider.upper()}_API_KEY="):
+            env_lines[i] = f"{provider.upper()}_API_KEY={api_key}"
+            env_found = True
+            break
+
+    if not env_found:
+        env_lines.append(f"{provider.upper()}_API_KEY={api_key}")
+
+    env_file.write_text("\n".join(env_lines) + "\n")
+
+    # 保存到配置文件
+    if _save_config(config):
+        click.echo(f"\n✓ Configuration saved to {_CONFIG_FILE}")
+        click.echo(f"✓ API key saved to .env")
+    else:
+        click.echo("\n✗ Failed to save configuration", err=True)
+        return
+
+    # 生成 channels.yaml
+    channels_config = {
+        "channels": [
+            {"platform": "cli", "enabled": True, "config": {"timeout": 300}},
+        ],
+        "agent": {
+            "default_model": f"{provider}-chat" if provider == "deepseek" else "gpt-4o-mini",
+        }
+    }
+
+    # 添加选中的 channel
+    if channel != "cli":
+        channels_config["channels"].append({
+            "platform": channel,
+            "enabled": True,
+            "config": channel_config
+        })
+
+    # 保存 channels.yaml
+    channels_file = Path("config/channels.yaml")
+    channels_file.parent.mkdir(parents=True, exist_ok=True)
+
+    import yaml
+    with open(channels_file, "w") as f:
+        yaml.dump(channels_config, f, default_flow_style=False, allow_unicode=True)
+
+    click.echo(f"✓ Channels config saved to {channels_file}")
+
+    click.echo("\n=== Initialization Complete! ===")
+    click.echo("\nNext steps:")
+    click.echo("  1. Run: openyoung run default -i")
+    click.echo("  2. Or start channel: openyoung channel start")
+
+
+# ========================
+# Channel Commands - 通道管理
+# ========================
+
+
+@cli.group()
+def channel():
+    """Channel management"""
+    pass
+
+
+@channel.command("list")
+def channel_list():
+    """List available channels"""
+    from src.channels import (
+        CLIChannel, REPLChannel, TelegramChannel, DiscordChannel,
+        QQChannel, DingTalkChannel, FeishuChannel
+    )
+
+    click.echo("Available channels:")
+    click.echo("  • cli       - Command line interface")
+    click.echo("  • repl      - Interactive REPL mode")
+    click.echo("  • telegram  - Telegram bot")
+    click.echo("  • discord   - Discord bot")
+    click.echo("  • qq        - QQ (Go-CQHTTP)")
+    click.echo("  • dingtalk  - DingTalk webhook")
+    click.echo("  • feishu    - Feishu/Lark")
+
+    # 检查配置文件
+    channels_file = Path("config/channels.yaml")
+    if channels_file.exists():
+        click.echo(f"\nConfigured channels (in {channels_file}):")
+        try:
+            import yaml
+            config = yaml.safe_load(channels_file.read_text())
+            for ch in config.get("channels", []):
+                status = "✓ enabled" if ch.get("enabled") else "○ disabled"
+                click.echo(f"  • {ch['platform']} [{status}]")
+        except Exception as e:
+            click.echo(f"  Error loading config: {e}")
+
+
+@channel.command("config")
+@click.argument("action", type=click.Choice(["show", "add", "remove", "enable", "disable"]))
+@click.argument("platform", required=False)
+@click.option("--webhook-url", help="Webhook URL for DingTalk/Feishu")
+@click.option("--app-id", help="App ID for Feishu")
+@click.option("--app-secret", help="App Secret for Feishu")
+@click.option("--bot-token", help="Bot token for Telegram/Discord")
+def channel_config_cmd(action: str, platform: str = None, webhook_url: str = None, app_id: str = None, app_secret: str = None, bot_token: str = None):
+    """Configure channels
+
+    Actions:
+        show              - Show current channel configuration
+        add <platform>   - Add a channel (telegram/discord/dingtalk/feishu/qq)
+        remove <platform> - Remove a channel
+        enable <platform> - Enable a channel
+        disable <platform> - Disable a channel
+
+    Examples:
+        openyoung channel config show
+        openyoung channel config add feishu --app-id xxx --app-secret xxx
+        openyoung channel config enable telegram
+        openyoung channel config disable dingtalk
+    """
+    channels_file = Path("config/channels.yaml")
+
+    # 加载或创建配置
+    config = {"channels": []}
+    if channels_file.exists():
+        try:
+            import yaml
+            config = yaml.safe_load(channels_file.read_text()) or {"channels": []}
+        except Exception as e:
+            click.echo(f"Error loading config: {e}")
+            config = {"channels": []}
+
+    if action == "show":
+        click.echo("=== Channel Configuration ===\n")
+        if not config.get("channels"):
+            click.echo("No channels configured")
+            return
+
+        for ch in config["channels"]:
+            status = "✓ enabled" if ch.get("enabled") else "○ disabled"
+            click.echo(f"Platform: {ch['platform']}")
+            click.echo(f"  Status: {status}")
+            if ch.get("config"):
+                for k, v in ch["config"].items():
+                    # 隐藏敏感信息
+                    if "secret" in k.lower() or "token" in k.lower() or "key" in k.lower():
+                        v = "***" if v else ""
+                    click.echo(f"  {k}: {v}")
+            click.echo()
+        return
+
+    if action == "add":
+        if not platform:
+            click.echo("Error: Platform required for add action", err=True)
+            return
+
+        valid_platforms = ["cli", "telegram", "discord", "qq", "dingtalk", "feishu"]
+        if platform not in valid_platforms:
+            click.echo(f"Error: Invalid platform. Choose from: {', '.join(valid_platforms)}", err=True)
+            return
+
+        # 检查是否已存在
+        for ch in config["channels"]:
+            if ch["platform"] == platform:
+                click.echo(f"Channel '{platform}' already exists. Use 'update' or remove first.")
+                return
+
+        # 构建配置
+        new_ch = {"platform": platform, "enabled": True, "config": {}}
+
+        if platform == "telegram":
+            token = bot_token or os.getenv("TELEGRAM_BOT_TOKEN", "")
+            new_ch["config"]["bot_token"] = token
+        elif platform == "discord":
+            token = bot_token or os.getenv("DISCORD_BOT_TOKEN", "")
+            new_ch["config"]["bot_token"] = token
+        elif platform == "dingtalk":
+            url = webhook_url or os.getenv("DINGTALK_WEBHOOK_URL", "")
+            new_ch["config"]["webhook_url"] = url
+            secret = os.getenv("DINGTALK_SECRET", "")
+            if secret:
+                new_ch["config"]["secret"] = secret
+        elif platform == "feishu":
+            aid = app_id or os.getenv("FEISHU_APP_ID", "")
+            asec = app_secret or os.getenv("FEISHU_APP_SECRET", "")
+            new_ch["config"]["app_id"] = aid
+            new_ch["config"]["app_secret"] = asec
+        elif platform == "qq":
+            new_ch["config"]["http_port"] = 5700
+            new_ch["config"]["ws_port"] = 5701
+
+        config["channels"].append(new_ch)
+
+        # 保存
+        channels_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(channels_file, "w") as f:
+            yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
+
+        click.echo(f"✓ Added channel: {platform}")
+        return
+
+    if action == "remove":
+        if not platform:
+            click.echo("Error: Platform required for remove action", err=True)
+            return
+
+        original_len = len(config["channels"])
+        config["channels"] = [ch for ch in config["channels"] if ch["platform"] != platform]
+
+        if len(config["channels"]) == original_len:
+            click.echo(f"Channel '{platform}' not found")
+            return
+
+        with open(channels_file, "w") as f:
+            yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
+
+        click.echo(f"✓ Removed channel: {platform}")
+        return
+
+    if action in ["enable", "disable"]:
+        if not platform:
+            click.echo(f"Error: Platform required for {action} action", err=True)
+            return
+
+        found = False
+        for ch in config["channels"]:
+            if ch["platform"] == platform:
+                ch["enabled"] = (action == "enable")
+                found = True
+                break
+
+        if not found:
+            click.echo(f"Channel '{platform}' not found. Add it first with 'add' command.")
+            return
+
+        with open(channels_file, "w") as f:
+            yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
+
+        status = "enabled" if action == "enable" else "disabled"
+        click.echo(f"✓ Channel '{platform}' {status}")
+
+
+@channel.command("start")
+@click.argument("platform", required=False)
+@click.option("--port", "-p", default=8080, help="Server port for callback channels")
+def channel_start(platform: str = None, port: int = 8080):
+    """Start a channel server
+
+    Examples:
+        openyoung channel start
+        openyoung channel start feishu
+        openyoung channel start feishu --port 3000
+    """
+    import asyncio
+
+    async def _start():
+        from src.channels.manager import ChannelManager
+
+        click.echo("Starting channel server...")
+
+        # 加载配置
+        channels_file = Path("config/channels.yaml")
+        if not channels_file.exists():
+            click.echo("No channel configuration found. Run 'openyoung init' first.")
+            return
+
+        try:
+            import yaml
+            config = yaml.safe_load(channels_file.read_text())
+        except Exception as e:
+            click.echo(f"Error loading config: {e}")
+            return
+
+        # 创建 ChannelManager
+        manager = ChannelManager()
+
+        # 启用配置的通道
+        for ch in config.get("channels", []):
+            if not ch.get("enabled", True):
+                continue
+
+            if platform and ch["platform"] != platform:
+                continue
+
+            click.echo(f"Starting {ch['platform']} channel...")
+
+            if ch["platform"] == "cli":
+                from src.channels import CLIChannel
+                manager.register("cli", CLIChannel(ch.get("config", {})))
+
+            elif ch["platform"] == "telegram":
+                from src.channels import TelegramChannel
+                manager.register("telegram", TelegramChannel(ch.get("config", {})))
+
+            elif ch["platform"] == "discord":
+                from src.channels import DiscordChannel
+                manager.register("discord", DiscordChannel(ch.get("config", {})))
+
+            elif ch["platform"] == "qq":
+                from src.channels import QQChannel
+                manager.register("qq", QQChannel(ch.get("config", {})))
+
+            elif ch["platform"] == "dingtalk":
+                from src.channels import DingTalkChannel
+                manager.register("dingtalk", DingTalkChannel(ch.get("config", {})))
+
+            elif ch["platform"] == "feishu":
+                from src.channels import FeishuChannel
+                manager.register("feishu", FeishuChannel(ch.get("config", {})))
+
+        click.echo("Channels started. Press Ctrl+C to stop.")
+        click.echo(f"Server running on port {port}...")
+
+        # 保持运行
+        try:
+            while True:
+                await asyncio.sleep(1)
+        except KeyboardInterrupt:
+            click.echo("\nStopping...")
+
+    asyncio.run(_start())
+
+
+# ========================
 # Import Commands - GitHub 一键导入
 # ========================
 
@@ -682,30 +1621,324 @@ def import_cmd():
 
 @import_cmd.command("github")
 @click.argument("github_url")
-@click.option("--name", "-n", default=None, help="Agent name (default: auto-detect)")
-def import_github(github_url: str, name: str = None):
+@click.argument("agent_name", required=False)
+@click.option("--enhanced/--basic", default=True, help="Use enhanced import with git clone + agent analysis")
+@click.option("--lazy/--no-lazy", default=False, help="Lazy clone (faster but incomplete)")
+@click.option("--validate/--no-validate", default=True, help="Validate after import")
+def import_github(github_url: str, agent_name: str = None, enhanced: bool = True, lazy: bool = False, validate: bool = True):
     """Import agent from GitHub URL
 
     Example:
-        openyoung import github https://github.com/affaan-m/everything-claude-code
+        openyoung import github https://github.com/affaan-m/everything-claude-code my-agent
+        openyoung import github https://github.com/anthropics/claude-code claude-code --no-lazy
     """
-    from src.package_manager.github_importer import GitHubImporter
+    if enhanced:
+        from src.package_manager.enhanced_importer import EnhancedGitHubImporter
 
-    click.echo(f"Importing from: {github_url}")
+        click.echo(f"[Enhanced] Importing from: {github_url}")
+        if lazy:
+            click.echo(f"[Mode] Lazy clone (fast, partial)")
 
-    importer = GitHubImporter()
-    result = importer.import_from_url(github_url)
+        importer = EnhancedGitHubImporter()
+        result = importer.import_from_url(github_url, agent_name, lazy_clone=lazy, validate=validate)
 
-    if "error" in result:
-        click.echo(f"Error: {result['error']}", err=True)
+        if "error" in result:
+            click.echo(f"Error: {result['error']}", err=True)
+        else:
+            click.echo(f"Successfully imported!")
+            if result.get("agent"):
+                click.echo(f"  Agent: {result['agent']}")
+            if result.get("flowskill"):
+                click.echo(f"  FlowSkill: {result['flowskill']}")
+            if result.get("skills"):
+                click.echo(f"  Skills: {len(result['skills'])}")
+            if result.get("mcps"):
+                click.echo(f"  MCPs: {len(result['mcps'])}")
+            if result.get("subagents"):
+                click.echo(f"  SubAgents: {len(result['subagents'])}")
     else:
-        click.echo(f"Successfully imported!")
-        if result.get("agent"):
-            click.echo(f"  Agent: {result['agent']}")
-        if result.get("skills"):
-            click.echo(f"  Skills: {', '.join(result['skills'])}")
-        if result.get("mcps"):
-            click.echo(f"  MCPs: {', '.join(result['mcps'])}")
+        from src.package_manager.github_importer import GitHubImporter
+
+        click.echo(f"Importing from: {github_url}")
+
+        importer = GitHubImporter()
+        result = importer.import_from_url(github_url, agent_name)
+
+        if "error" in result:
+            click.echo(f"Error: {result['error']}", err=True)
+        else:
+            click.echo(f"Successfully imported!")
+            if result.get("agent"):
+                click.echo(f"  Agent: {result['agent']}")
+            if result.get("skills"):
+                click.echo(f"  Skills: {', '.join(result['skills'])}")
+            if result.get("mcps"):
+                click.echo(f"  MCPs: {', '.join(result['mcps'])}")
+
+
+@cli.group()
+def subagent():
+    """SubAgent management"""
+    pass
+
+
+@subagent.command("list")
+def subagent_list():
+    """List all subagents"""
+    from src.package_manager.subagent_registry import SubAgentRegistry
+
+    registry = SubAgentRegistry()
+    subagents = registry.discover_subagents()
+
+    if not subagents:
+        click.echo("No subagents found")
+        return
+
+    click.echo("Available subagents:")
+    for sa in subagents:
+        subagent = registry.load_subagent(sa)
+        if subagent:
+            click.echo(f"  • {sa}")
+            click.echo(f"    Type: {subagent.type}")
+            click.echo(f"    Description: {subagent.description}")
+            click.echo(f"    Skills: {len(subagent.skills)}")
+            click.echo(f"    MCPs: {len(subagent.mcps)}")
+
+
+@subagent.command("info")
+@click.argument("subagent_name")
+def subagent_info(subagent_name: str):
+    """Show subagent details"""
+    from src.package_manager.subagent_registry import SubAgentRegistry
+
+    registry = SubAgentRegistry()
+    subagent = registry.load_subagent(subagent_name)
+
+    if not subagent:
+        click.echo(f"Subagent not found: {subagent_name}", err=True)
+        return
+
+    click.echo(f"SubAgent: {subagent.name}")
+    click.echo(f"Type: {subagent.type}")
+    click.echo(f"Description: {subagent.description}")
+    click.echo(f"Model: {subagent.model}")
+    click.echo(f"Temperature: {subagent.temperature}")
+    click.echo(f"Skills: {subagent.skills}")
+    click.echo(f"MCPs: {subagent.mcps}")
+    click.echo(f"Evaluations: {subagent.evaluations}")
+
+
+@cli.group()
+def mcp():
+    """MCP Server management"""
+    pass
+
+
+@mcp.command("servers")
+def mcp_servers():
+    """List available MCP servers"""
+    from src.package_manager.mcp_manager import MCPServerManager
+
+    manager = MCPServerManager()
+    servers = manager.discover_mcp_servers()
+
+    if not servers:
+        click.echo("No MCP servers found")
+        return
+
+    click.echo("Available MCP servers:")
+    for name, configs in servers.items():
+        for config in configs:
+            click.echo(f"  • {name}")
+            click.echo(f"    Command: {config.command}")
+
+
+@mcp.command("start")
+@click.argument("server_name")
+def mcp_start(server_name: str):
+    """Start an MCP server"""
+    from src.package_manager.mcp_manager import MCPServerManager
+
+    manager = MCPServerManager()
+    success = manager.start_mcp_server(server_name)
+
+    if success:
+        click.echo(f"[OK] Started MCP server: {server_name}")
+    else:
+        click.echo(f"[Error] Failed to start MCP server: {server_name}", err=True)
+
+
+@mcp.command("stop")
+@click.argument("server_name")
+def mcp_stop(server_name: str):
+    """Stop an MCP server"""
+    from src.package_manager.mcp_manager import MCPServerManager
+
+    manager = MCPServerManager()
+    success = manager.stop_mcp_server(server_name)
+
+    if success:
+        click.echo(f"[OK] Stopped MCP server: {server_name}")
+    else:
+        click.echo(f"[Error] Failed to stop MCP server: {server_name}", err=True)
+
+
+# ========== Template Commands ==========
+
+@cli.group()
+def templates():
+    """Template marketplace commands"""
+    pass
+
+
+@templates.command("list")
+@click.option("--tag", "-t", multiple=True, help="Filter by tags")
+@click.option("--sort", "-s", default="rating", type=click.Choice(["rating", "installs", "name"]), help="Sort by")
+def templates_list(tag, sort):
+    """List available templates"""
+    from src.package_manager.template_registry import get_registry
+
+    registry = get_registry()
+    template_list = registry.list(tags=list(tag) if tag else None, sort_by=sort)
+
+    if not template_list:
+        click.echo("No templates found")
+        return
+
+    click.echo(f"Found {len(template_list)} templates:\n")
+    for t in template_list:
+        click.echo(f"  {t.name}")
+        click.echo(f"    Source: {t.source}")
+        click.echo(f"    Rating: {'⭐' * int(t.rating)} ({t.rating:.1f})")
+        click.echo(f"    Installs: {t.installs}")
+        if t.tags:
+            click.echo(f"    Tags: {', '.join(t.tags)}")
+        click.echo()
+
+
+@templates.command("search")
+@click.argument("query")
+def templates_search(query):
+    """Search templates"""
+    from src.package_manager.template_registry import get_registry
+
+    registry = get_registry()
+    results = registry.search(query)
+
+    if not results:
+        click.echo(f"No templates found matching '{query}'")
+        return
+
+    click.echo(f"Found {len(results)} templates:\n")
+    for t in results:
+        click.echo(f"  {t.name}")
+        click.echo(f"    {t.description}")
+        click.echo(f"    Rating: {'⭐' * int(t.rating)} ({t.rating:.1f})")
+        click.echo()
+
+
+@templates.command("add")
+@click.argument("name")
+@click.argument("source")
+@click.option("--description", "-d", default="", help="Template description")
+@click.option("--tags", "-t", multiple=True, help="Template tags")
+@click.option("--author", "-a", default="", help="Template author")
+def templates_add(name, source, description, tags, author):
+    """Add a template to the registry"""
+    from src.package_manager.template_registry import add_template
+
+    template = add_template(
+        name=name,
+        source=source,
+        description=description,
+        tags=list(tags) if tags else None,
+        author=author,
+    )
+    click.echo(f"[OK] Added template: {name}")
+
+
+@templates.command("remove")
+@click.argument("name")
+def templates_remove(name):
+    """Remove a template from the registry"""
+    from src.package_manager.template_registry import get_registry
+
+    registry = get_registry()
+    if registry.remove(name):
+        click.echo(f"[OK] Removed template: {name}")
+    else:
+        click.echo(f"[Error] Template not found: {name}", err=True)
+
+
+@templates.command("info")
+@click.argument("name")
+def templates_info(name):
+    """Show template details"""
+    from src.package_manager.template_registry import get_registry
+
+    registry = get_registry()
+    template = registry.get(name)
+
+    if not template:
+        click.echo(f"[Error] Template not found: {name}", err=True)
+        return
+
+    click.echo(f"Template: {template.name}")
+    click.echo(f"  Source: {template.source}")
+    click.echo(f"  Description: {template.description}")
+    click.echo(f"  Author: {template.author or 'Unknown'}")
+    click.echo(f"  Version: {template.version}")
+    click.echo(f"  Rating: {'⭐' * int(template.rating)} ({template.rating:.1f})")
+    click.echo(f"  Installs: {template.installs}")
+    click.echo(f"  Tags: {', '.join(template.tags) or 'None'}")
+    click.echo(f"  Added: {template.added_at}")
+    click.echo(f"  Updated: {template.updated_at}")
+
+
+# ========== Memory Commands ==========
+
+@cli.group()
+def memory():
+    """Memory and vector search commands"""
+    pass
+
+
+@memory.command("search")
+@click.argument("query")
+@click.option("--namespace", "-n", default="default", help="Namespace to search in")
+@click.option("--limit", "-l", default=5, help="Maximum results")
+@click.option("--threshold", "-t", default=0.0, help="Similarity threshold")
+def memory_search(query: str, namespace: str, limit: int, threshold: float):
+    """Search memory using semantic vector search"""
+    from src.memory.vector_store import get_vector_store
+
+    store = get_vector_store()
+    results = store.search(query, namespace=namespace, limit=limit, threshold=threshold)
+
+    if not results:
+        click.echo("No results found")
+        return
+
+    click.echo(f"Found {len(results)} results:\n")
+    for i, r in enumerate(results, 1):
+        similarity = r.get("similarity", 0)
+        content = r.get("content", "")[:200]
+        click.echo(f"{i}. [similarity: {similarity:.3f}] {content}...")
+
+
+@memory.command("stats")
+def memory_stats():
+    """Show memory statistics"""
+    from src.memory.vector_store import get_vector_store
+
+    store = get_vector_store()
+    stats = store.get_stats()
+
+    click.echo("=== Vector Store Stats ===")
+    click.echo(f"Status: {stats.get('status')}")
+    click.echo(f"Namespaces: {stats.get('namespaces', 0)}")
+    if stats.get('namespace_list'):
+        click.echo(f"Namespace list: {', '.join(stats['namespace_list'])}")
 
 
 # ========================
@@ -717,16 +1950,25 @@ def import_github(github_url: str, name: str = None):
 @click.argument("agent_name", default="default")
 @click.argument("task", required=False)
 @click.option("--interactive", "-i", is_flag=True, help="Interactive mode")
-def run_agent(agent_name: str, task: str = None, interactive: bool = False):
+@click.option("--github", "-g", "github_url", default=None, help="GitHub URL to clone and analyze first")
+def run_agent(agent_name: str, task: str = None, interactive: bool = False, github_url: str = None):
     """Run an agent
 
     Examples:
-        openyoung run agent-coder "Hello"
-        openyoung run agent-coder -i
+        openyoung run default "Hello"
+        openyoung run default -i
+        openyoung run default --github https://github.com/user/repo "analyze this"
     """
     import asyncio
+    import os
+    import tempfile
 
-    async def _run():
+    async def _run(initial_task):
+        # 保存原始任务
+        user_task = initial_task or ""
+
+        # 如果指定了 --github，先克隆和分析
+
         # Load agent
         loader = AgentLoader()
         try:
@@ -734,6 +1976,55 @@ def run_agent(agent_name: str, task: str = None, interactive: bool = False):
         except ValueError as e:
             click.echo(f"Error: {e}", err=True)
             return
+
+        # 如果指定了 --github，先克隆和分析
+        if github_url:
+            click.echo(f"[Import] Cloning {github_url}...")
+            try:
+                from src.package_manager.enhanced_importer import EnhancedGitHubImporter
+
+                importer = EnhancedGitHubImporter()
+
+                # 解析 URL 并克隆（启用验证）
+                result = importer.import_from_url(github_url, agent_name or "default", validate=True)
+
+                # 检查导入是否有结果
+                if result.get("agent") or result.get("config"):
+                    # 显示验证结果
+                    validation = result.get("validation", {})
+                    if validation:
+                        click.echo(f"[Import] Validation score: {validation.get('score', 0):.2f}")
+                        if validation.get("warnings"):
+                            for warn in validation["warnings"]:
+                                click.echo(f"  Warning: {warn}")
+                        if not validation.get("passed"):
+                            click.echo(f"[Import] ⚠️ Quality below threshold!", err=True)
+                            for err in validation.get("errors", []):
+                                click.echo(f"  Error: {err}", err=True)
+
+                    # 分析项目结构
+                    analysis = result.get("analysis", {})
+                    click.echo(f"[Import] Language: {analysis.get('language', 'unknown')}")
+
+                    # 自动安装依赖
+                    clone_path = result.get("local_path")
+                    if clone_path and clone_path.exists():
+                        click.echo("[Import] Installing dependencies...")
+                        from src.tools.executor import ToolExecutor
+                        executor = ToolExecutor()
+                        deps_result = await executor.install_dependencies(clone_path)
+                        click.echo(f"[Import] {deps_result}")
+
+                    # 将任务改为分析项目
+                    if user_task:
+                        user_task = f"分析并{user_task}"
+                    else:
+                        user_task = "分析这个项目的结构和功能"
+                else:
+                    click.echo(f"[Import] Warning: continuing without full import...")
+            except Exception as e:
+                click.echo(f"[Import] Error: {e}", err=True)
+                return
 
         # Create agent
         agent = YoungAgent(config)
@@ -755,11 +2046,11 @@ def run_agent(agent_name: str, task: str = None, interactive: bool = False):
                 result = await agent.run(user_input)
                 click.echo(f"\n{result}")
         else:
-            if not task:
+            if not user_task:
                 click.echo("Error: Task required (or use -i for interactive mode)", err=True)
                 return
 
-            result = await agent.run(task)
+            result = await agent.run(user_task)
             click.echo(result)
 
             # Show stats
@@ -769,7 +2060,7 @@ def run_agent(agent_name: str, task: str = None, interactive: bool = False):
             click.echo(f"Evaluations: {stats.get('evaluation_results_count', 0)}")
             click.echo(f"Capsules: {stats.get('evolver_capsules_count', 0)}")
 
-    asyncio.run(_run())
+    asyncio.run(_run(task))
 
 
 def main():
