@@ -1,0 +1,20 @@
+name: gitnexus-impact-analysis
+description: "Use when the user wants to know what will break if they change something, or needs safety analysis before editing code. Examples: 'Is it safe to change X?', 'What depends on this?', 'What will break?', '影响分析', '依赖'. IMPORTANT: Always check index health before using GitNexus tools."
+trigger_patterns:
+  - "影响分析"
+  - "依赖关系"
+  - "impact"
+  - "blast radius"
+  - "what depends"
+  - "会影响到"
+  - "安全吗"
+tags:
+  - impact-analysis
+  - dependencies
+  - risk-assessment
+requires:
+  bins:
+    - node
+    - npm
+    - npx
+    - gitnexus

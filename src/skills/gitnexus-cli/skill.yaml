@@ -1,0 +1,19 @@
+name: gitnexus-cli
+description: "Use when the user needs to run GitNexus CLI commands like analyze/index a repo, check status, clean the index, generate a wiki, or list indexed repos. Examples: 'Index this repo', 'Reanalyze the codebase', 'Generate a wiki', '索引'. IMPORTANT: This skill handles CLI operations, but always verify index health first."
+trigger_patterns:
+  - "索引"
+  - "index"
+  - "analyze"
+  - "wiki"
+  - "generate"
+  - "re-index"
+tags:
+  - cli
+  - gitnexus-commands
+  - indexing
+requires:
+  bins:
+    - node
+    - npm
+    - npx
+    - gitnexus

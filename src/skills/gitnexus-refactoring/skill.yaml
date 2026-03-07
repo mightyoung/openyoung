@@ -1,0 +1,20 @@
+name: gitnexus-refactoring
+description: "Use when the user wants to rename, extract, split, move, or restructure code safely. Examples: 'Rename this function', 'Extract this into a module', 'Refactor this class', '重构', '重命名'. IMPORTANT: Always check index health before using GitNexus tools."
+trigger_patterns:
+  - "重构"
+  - "refactor"
+  - "重命名"
+  - "rename"
+  - "提取"
+  - "move"
+  - "extract"
+tags:
+  - refactoring
+  - code-restructure
+  - safe-rename
+requires:
+  bins:
+    - node
+    - npm
+    - npx
+    - gitnexus

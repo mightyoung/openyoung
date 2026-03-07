@@ -1,0 +1,21 @@
+name: gitnexus-debugging
+description: "Use when the user is debugging a bug, tracing an error, or asking why something fails. Examples: 'Why is X failing?', 'Where does this error come from?', 'Trace this bug', '调试', '找bug'. IMPORTANT: Always check index health before using GitNexus tools."
+trigger_patterns:
+  - "调试"
+  - "debug"
+  - "bug"
+  - "trace"
+  - "错误"
+  - "failing"
+  - "why is"
+  - "哪里出问题"
+tags:
+  - debugging
+  - knowledge-graph
+  - error-tracing
+requires:
+  bins:
+    - node
+    - npm
+    - npx
+    - gitnexus

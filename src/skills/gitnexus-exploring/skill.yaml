@@ -1,0 +1,21 @@
+name: gitnexus-exploring
+description: "Use when the user asks how code works, wants to understand architecture, trace execution flows, or explore unfamiliar parts of the codebase. Examples: 'How does X work?', 'What calls this function?', 'Show me the auth flow', '代码结构', '架构分析', '理解代码'. IMPORTANT: Always check index health before using GitNexus tools."
+trigger_patterns:
+  - "代码结构"
+  - "架构分析"
+  - "理解代码"
+  - "代码是怎么"
+  - "explore"
+  - "understand code"
+  - "how does"
+  - "show me the"
+tags:
+  - code-analysis
+  - knowledge-graph
+  - exploration
+requires:
+  bins:
+    - node
+    - npm
+    - npx
+    - gitnexus
