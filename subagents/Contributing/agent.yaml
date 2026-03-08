@@ -1,0 +1,10 @@
+description: 'When adding new agent features:'
+evaluations: []
+hidden: false
+instructions: ''
+mcps: []
+model: deepseek-chat
+name: Contributing
+skills: []
+temperature: 0.7
+type: general
