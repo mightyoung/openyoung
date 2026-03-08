@@ -230,18 +230,20 @@ def agent_list(badges: bool, stats: bool, show_all: bool):
     loader = AgentLoader()
     agents = loader.list_agents()
 
-    # 如果显示所有，也从 packages 目录获取
+    # 如果显示所有，也从 packages 目录获取（只获取有 agent.yaml 的目录）
     if show_all:
-        try:
-            from src.package_manager.registry import AgentRegistry
-
-            registry = AgentRegistry("packages")
-            pkg_agents = registry.discover_items()
-            for pa in pkg_agents:
-                if pa not in agents:
-                    agents.append(pa)
-        except Exception:
-            pass
+        packages_dir = Path("packages")
+        if packages_dir.exists():
+            for item in packages_dir.iterdir():
+                if item.is_dir():
+                    yaml_file = item / "agent.yaml"
+                    if yaml_file.exists():
+                        # 提取 agent 名称
+                        name = item.name
+                        if name.startswith("agent-"):
+                            name = name[6:]  # 去掉 "agent-" 前缀
+                        if name not in agents:
+                            agents.append(name)
 
     # 导入徽章系统
     from src.package_manager.badge_system import BadgeSystem
