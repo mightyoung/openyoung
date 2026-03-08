@@ -226,14 +226,14 @@ def cli():
 def run(agent_name, task, config, model):
     """Run an agent"""
     runner = AgentRunner()
-    
+
     # 加载 Agent 配置
     agent_config = runner.load_agent(agent_name, config)
-    
+
     # 覆盖模型
     if model:
         agent_config.model = model
-    
+
     # 运行
     result = runner.run(task or "")
     print(result)
@@ -262,33 +262,206 @@ def package_list():
 # 更多命令...
 ```
 
-### 5.2 完整命令列表
+### 5.2 完整命令列表 (当前实现)
+
+#### 核心命令
 
 ```bash
-# Agent 命令
-openyoung run <agent> [task]              # 运行 Agent
-openyoung agent list                       # 列出可用 Agent
-openyoung agent info <agent>              # 查看 Agent 信息
-openyoung agent create <name>             # 创建新 Agent
-openyoung agent validate <agent>          # 验证配置
+# 运行 Agent
+openyoung run <agent> [task]           # 运行指定 Agent
+openyoung run default "任务描述"         # 使用默认 Agent
+openyoung run code "写一个排序算法"       # 运行 code 能力
 
-# Package 命令
-openyoung install <package>               # 安装 Package
-openyoung package list                    # 列出已安装
-openyoung package search <query>          # 搜索 Package
-openyoung package info <package>          # 查看 Package 信息
-openyoung package uninstall <package>      # 卸载
-openyoung package update [package]        # 更新
+# Agent 管理
+openyoung agent list                     # 列出可用 Agent
+openyoung agent info <agent>            # 查看 Agent 信息
+openyoung agent search <query>          # 语义搜索 Agent
+openyoung agent compare <a> <b>         # 对比两个 Agent
+openyoung agent evaluate <agent>         # 评估 Agent 质量
+openyoung agent intent <query>          # 意图分析
+openyoung agent stats                   # 使用统计
+openyoung agent versions <agent>        # 版本历史
+openyoung agent version-add <agent> <v>  # 添加版本
+
+# Package 管理
+openyoung install <package>             # 安装 Package
+openyoung package list                  # 列出已安装
+openyoung package search <query>         # 搜索 Package
+openyoung package info <package>         # 查看 Package 信息
+openyoung package uninstall <package>    # 卸载
+openyoung package update [package]       # 更新
+
+# 导入命令
+openyoung import github <repo>          # 从 GitHub 导入
+openyoung import <source> [args]        # 从其他源导入
+
+# 评估命令
+openyoung eval run <task>               # 运行评估
+openyoung eval compare                   # 对比评估结果
+openyoung eval dashboard                # 评估仪表板
 
 # 配置命令
-openyoung config get <key>                # 获取配置
-openyoung config set <key> <value>       # 设置配置
-openyoung config list                     # 列出配置
+openyoung config get <key>              # 获取配置
+openyoung config set <key> <value>      # 设置配置
+openyoung config list                   # 列出配置
 
-# 开发命令
-openyoung dev start                       # 启动开发模式
-openyoung dev test                        # 运行测试
-openyoung dev build                       # 构建
+# 数据命令
+openyoung data list                     # 列出数据
+openyoung data export                   # 导出数据
+openyoung data import                   # 导入数据
+
+# LLM 命令
+openyoung llm list                      # 列出可用 LLM
+openyoung llm providers                  # 列出 LLM 提供商
+openyoung llm test                       # 测试 LLM 连接
+
+# MCP 命令
+openyoung mcp list                      # 列出 MCP 服务器
+openyoung mcp add <server>              # 添加 MCP 服务器
+openyoung mcp remove <server>           # 移除 MCP 服务器
+
+# Memory 命令
+openyoung memory list                   # 列出记忆
+openyoung memory search <query>         # 搜索记忆
+openyoung memory clear                   # 清除记忆
+
+# Skills 命令
+openyoung skills list                   # 列出可用 Skills
+openyoung skills info <skill>           # 查看 Skill 信息
+
+# Channel 命令
+openyoung channel list                  # 列出 Channel
+openyoung channel add <name>            # 添加 Channel
+
+# Source 命令
+openyoung source list                    # 列出数据源
+openyoung source add <name>             # 添加数据源
+
+# Subagent 命令
+openyoung subagent list                  # 列出 Subagent
+openyoung subagent create <name>        # 创建 Subagent
+
+# Templates 命令
+openyoung templates list                # 列出模板
+openyoung templates create <name>       # 创建模板
+
+# Test 命令
+openyoung test run                      # 运行测试
+openyoung test coverage                 # 测试覆盖率
+
+# 初始化命令
+openyoung init                          # 初始化项目
+```
+
+#### 命令行选项
+
+```bash
+# 全局选项
+openyoung --help                        # 显示帮助
+openyoung --version                    # 显示版本
+openyoung --verbose                     # 详细输出
+openyoung --config <path>              # 指定配置文件
+
+# Run 命令选项
+openyoung run <agent> <task>           # 运行任务
+  --model, -m <model>                  # 指定模型
+  --temperature, -t <temp>             # 设置温度
+  --max-tokens <tokens>                # 最大 Token 数
+  --sandbox                            # 启用沙箱
+  --sandbox-pool                       # 启用沙箱池
+
+# Agent 命令选项
+openyoung agent list
+  --all                                # 显示所有
+  --badges                             # 显示徽章
+  --stats                              # 显示统计
+
+# Eval 命令选项
+openyoung eval run <task>
+  --metrics <m1,m2>                   # 指定评估指标
+  --output <file>                      # 输出文件
+  --format <json|html>                 # 输出格式
+```
+
+### 5.3 命令分组结构
+
+```
+openyoung
+├── run                 # 运行 Agent
+├── agent               # Agent 管理
+├── package             # Package 管理
+├── install             # 安装 Package
+├── import              # 导入
+├── eval                # 评估
+├── config              # 配置
+├── data                # 数据
+├── llm                 # LLM
+├── mcp                 # MCP 服务器
+├── memory              # 记忆
+├── skills              # 技能
+├── channel             # 通道
+├── source              # 数据源
+├── subagent            # 子代理
+├── templates           # 模板
+├── test                # 测试
+└── init                # 初始化
+```
+
+### 5.4 AI Docker 沙箱集成
+
+OpenYoung 内置 AI Docker 沙箱执行环境，为 AI Agent 提供安全可控的代码执行能力。
+
+#### 沙箱配置选项
+
+```bash
+# 启用沙箱执行
+openyoung run <agent> <task> --sandbox
+
+# 配置沙箱参数
+openyoung run <agent> <task>
+  --sandbox                        # 启用沙箱
+  --max-memory <MB>               # 最大内存 (默认 512MB)
+  --max-time <seconds>            # 最大执行时间 (默认 300s)
+  --allow-network                  # 允许网络访问
+
+# 启用沙箱池 (自动扩缩容)
+openyoung run <agent> <task> --sandbox-pool
+  --min-instances <num>           # 最小实例数 (默认 2)
+  --max-instances <num>          # 最大实例数 (默认 10)
+  --idle-timeout <seconds>       # 空闲超时 (默认 300s)
+```
+
+#### 沙箱池状态
+
+```bash
+# 查看沙箱池状态
+openyoung runtime status
+
+# 列出活跃实例
+openyoung runtime instances
+
+# 查看实例统计
+openyoung runtime stats
+```
+
+#### 编程式使用
+
+```python
+from src.agents import YoungAgent
+
+# 启用沙箱
+agent = YoungAgent(config)
+agent.enable_sandbox(
+    max_memory_mb=512,
+    max_execution_time_seconds=300,
+    allow_network=False,
+)
+
+# 启用沙箱池
+agent.enable_sandbox_pool(
+    min_size=2,
+    max_size=10,
+)
 ```
 
 ## 6. 文件结构
