@@ -2,13 +2,13 @@
 OpenYoung CLI - 命令行入口
 """
 
-import click
 import asyncio
-import sys
-import os
 import json
+import os
+import sys
 from pathlib import Path
-from typing import Optional, List
+
+import click
 
 # 添加 src 路径
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -18,277 +18,35 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ========================
-# 配置持久化
-# ========================
-_CONFIG_DIR = Path.home() / ".openyoung"
-_CONFIG_FILE = _CONFIG_DIR / "config.json"
-
-
-def _load_config() -> dict:
-    """加载配置"""
-    if _CONFIG_FILE.exists():
-        try:
-            return json.loads(_CONFIG_FILE.read_text())
-        except Exception:
-            pass
-    return {}
-
-
-def _save_config(config: dict) -> bool:
-    """保存配置"""
-    try:
-        _CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-        _CONFIG_FILE.write_text(json.dumps(config, indent=2))
-        return True
-    except Exception as e:
-        print(f"Config save error: {e}")
-        return False
-
-
-def _get_config(key: str, default=None):
-    """获取配置值"""
-    config = _load_config()
-    return config.get(key, default)
-
-
-def _set_config(key: str, value: str) -> bool:
-    """设置配置值"""
-    config = _load_config()
-    config[key] = value
-    return _save_config(config)
+# 导入配置管理和加载器
+from src.cli.config_manager import (
+    load_config as _load_config,
+    save_config as _save_config,
+    get_config as _get_config,
+    set_config as _set_config,
+    _CONFIG_FILE,
+)
+from src.cli.loader import AgentLoader
 
 from src.agents.young_agent import YoungAgent
 from src.core.types import (
     AgentConfig,
     AgentMode,
+    PermissionAction,
     PermissionConfig,
     PermissionRule,
-    PermissionAction,
     SubAgentConfig,
     SubAgentType,
 )
+from src.evaluation import EvaluationHub
 from src.package_manager.manager import PackageManager
 from src.package_manager.registry import AgentRegistry
-from src.evaluation import EvaluationHub
-
 
 # ========================
 # Agent Loader
 # ========================
 
-
-class AgentLoader:
-    """Agent 配置加载器"""
-
-    def __init__(self, agent_dir: Optional[str] = None):
-        self.agent_dir = (
-            Path(agent_dir) if agent_dir else Path(__file__).parent.parent / "agents"
-        )
-        self.agent_dir.mkdir(parents=True, exist_ok=True)
-
-    def load_agent(self, name: str) -> AgentConfig:
-        """加载 Agent 配置 - 支持多个目录"""
-        # 1. 直接文件路径
-        if Path(name).exists() and Path(name).is_file():
-            return self._load_from_file(Path(name))
-
-        # 2. src/agents/ 目录
-        agent_file = self.agent_dir / f"{name}.yaml"
-        if agent_file.exists():
-            return self._load_from_file(agent_file)
-
-        # 3. packages/ 目录 (agent-xxx/agent.yaml)
-        packages_dir = Path("packages")
-        if packages_dir.exists():
-            for item in packages_dir.iterdir():
-                if item.is_dir():
-                    # 支持 agent-xxx 或 xxx 两种命名
-                    expected = f"agent-{name}"
-                    if item.name == expected or item.name == name:
-                        yaml_file = item / "agent.yaml"
-                        if yaml_file.exists():
-                            return self._load_from_file(yaml_file)
-
-        if name == "default":
-            return self._get_default_config()
-
-        raise ValueError(f"Agent not found: {name}")
-
-    def _load_from_file(self, path: Path) -> AgentConfig:
-        try:
-            import yaml
-
-            with open(path) as f:
-                config = yaml.safe_load(f)
-            return self._parse_config(config)
-        except ImportError:
-            return self._get_default_config()
-
-    def _get_default_config(self) -> AgentConfig:
-        return AgentConfig(
-            name="default",
-            mode=AgentMode.PRIMARY,
-            model="deepseek-chat",
-            temperature=0.7,
-        )
-
-    def _parse_config(self, config: dict) -> AgentConfig:
-        """解析完整配置 - 参考 OpenCode 架构"""
-        model_config = config.get("model", {})
-        permission_config = config.get("permission", {})
-        execution_config = config.get("execution", {})
-
-        # 解析 permission
-        permission = self._parse_permission(permission_config)
-
-        # 解析 sub_agents
-        sub_agents = self._parse_sub_agents(config.get("sub_agents", []))
-
-        # 解析 system_prompt (支持多行字符串)
-        system_prompt = config.get("system_prompt")
-        if not system_prompt:
-            system_prompt = "你是一个有帮助的AI助手。"
-
-        return AgentConfig(
-            name=config.get("name", "unknown"),
-            mode=AgentMode.PRIMARY,
-            model=model_config.get("name", model_config.get("model", "deepseek-chat")),
-            temperature=model_config.get("temperature", 0.7),
-            max_tokens=model_config.get("max_tokens"),
-            tools=config.get("tools", []),
-            permission=permission,
-            skills=config.get("skills", []),
-            always_skills=config.get("always_skills", []),
-            sub_agents=sub_agents,
-            system_prompt=system_prompt,
-            execution=execution_config,
-        )
-
-    def _parse_permission(self, config: dict) -> PermissionConfig:
-        """解析权限配置 - 参考 OpenCode PermissionNext"""
-        # 解析全局默认
-        global_action = config.get("_global", "ask")
-        if isinstance(global_action, str):
-            global_action = PermissionAction(global_action)
-
-        # 解析规则
-        rules = []
-        for rule in config.get("rules", []):
-            tool_pattern = rule.get("tool", "*")
-            action_str = rule.get("action", "ask")
-            action = PermissionAction(action_str) if isinstance(action_str, str) else action_str
-            rules.append(PermissionRule(
-                tool_pattern=tool_pattern,
-                action=action
-            ))
-
-        return PermissionConfig(
-            _global=global_action,
-            rules=rules,
-            confirm_message=config.get("confirm_message", "确认执行此操作?")
-        )
-
-    def _parse_sub_agents(self, config: list) -> List[SubAgentConfig]:
-        """解析 SubAgent 配置 - 参考 Claude Code Task 协议"""
-        sub_agents = []
-        for item in config:
-            try:
-                sub_type = SubAgentType(item.get("type", "general"))
-            except ValueError:
-                sub_type = SubAgentType.GENERAL
-
-            sub_agents.append(SubAgentConfig(
-                name=item.get("name", sub_type.value),
-                type=sub_type,
-                description=item.get("description", ""),
-                model=item.get("model", "deepseek-chat"),
-                temperature=item.get("temperature", 0.7),
-                instructions=item.get("instructions"),
-                hidden=item.get("hidden", False),
-            ))
-
-        return sub_agents
-
-    def list_agents(self) -> List[str]:
-        agents = []
-        if self.agent_dir.exists():
-            for f in self.agent_dir.glob("*.yaml"):
-                agents.append(f.stem)
-        if "default" not in agents:
-            agents.insert(0, "default")
-        return agents
-
-    def validate_config(self, config: AgentConfig) -> tuple[bool, str]:
-        """Validate Agent configuration
-
-        Returns:
-            (is_valid, error_message)
-        """
-        # Check model is specified
-        if not config.model:
-            return False, "Model is required"
-
-        # Check temperature is in valid range
-        if config.temperature is not None:
-            if not 0 <= config.temperature <= 2:
-                return False, "Temperature must be between 0 and 2"
-
-        # Check max_tokens is reasonable
-        if config.max_tokens is not None:
-            if config.max_tokens <= 0:
-                return False, "max_tokens must be positive"
-            if config.max_tokens > 100000:
-                return False, "max_tokens exceeds maximum (100000)"
-
-        # Check mode is valid
-        if config.mode not in [AgentMode.PRIMARY, AgentMode.SUBAGENT, AgentMode.ALL]:
-            return False, f"Invalid agent mode: {config.mode}"
-
-        return True, ""
-
-    def validate_agent_file(self, path: Path) -> tuple[bool, str]:
-        """Validate an agent YAML file before loading
-
-        Returns:
-            (is_valid, error_message)
-        """
-        try:
-            import yaml
-
-            with open(path) as f:
-                config = yaml.safe_load(f)
-
-            if not config:
-                return False, "Empty configuration file"
-
-            # Check required fields
-            if "name" not in config:
-                return False, "Missing required field: name"
-
-            # Validate model section
-            model_config = config.get("model", {})
-            if model_config:
-                if "model" in model_config:
-                    model = model_config["model"]
-                    if not isinstance(model, str) or not model.strip():
-                        return False, "Invalid model name"
-
-                if "temperature" in model_config:
-                    temp = model_config["temperature"]
-                    if not isinstance(temp, (int, float)) or not 0 <= temp <= 2:
-                        return False, "Temperature must be between 0 and 2"
-
-            return True, ""
-
-        except ImportError:
-            return True, ""  # YAML not available, skip validation
-        except Exception as e:
-            return False, f"Validation error: {str(e)}"
-
-    def load_default(self) -> AgentConfig:
-        """Load default agent configuration"""
-        return self._get_default_config()
+from src.cli.loader import AgentLoader
 
 
 # ========================
@@ -301,7 +59,7 @@ class AgentRunner:
         self.loader = AgentLoader()
         self.package_manager = PackageManager()
         self.evaluation_hub = EvaluationHub()
-        self.agent: Optional[YoungAgent] = None
+        self.agent: YoungAgent | None = None
         self._last_task = None
         self._last_result = None
 
@@ -354,6 +112,52 @@ def cli():
     pass
 
 
+@cli.group()
+def skills():
+    """Skill management commands"""
+    pass
+
+
+@skills.command("list")
+@click.option("--category", "-c", help="Filter by category")
+def skills_list(category: str):
+    """List available skill templates"""
+    try:
+        from src.skills.creator import list_templates
+
+        templates = list_templates()
+        if not templates:
+            click.echo("No templates available")
+            return
+
+        click.echo("Available templates:")
+        for template in templates:
+            click.echo(f"  - {template}")
+    except Exception as e:
+        click.echo(f"Error: {e}", err=True)
+
+
+@skills.command("create")
+@click.argument("name")
+@click.option("--template", "-t", default="code", help="Template to use")
+@click.option("--output", "-o", default="skills", help="Output directory")
+def skills_create(name: str, template: str, output: str):
+    """Create a new skill from template"""
+    try:
+        from pathlib import Path
+        from src.skills.creator import create_skill
+
+        click.echo(f"Creating skill '{name}' from template '{template}'...")
+        skill = create_skill(name, template, Path(output))
+
+        click.echo(f"Skill created at: {skill.path}")
+        click.echo("Files:")
+        for filename in skill.files:
+            click.echo(f"  - {filename}")
+    except Exception as e:
+        click.echo(f"Error: {e}", err=True)
+
+
 @cli.command()
 @click.argument("agent_name", default="default")
 @click.argument("task", required=False)
@@ -362,14 +166,15 @@ def cli():
 @click.option("--interactive", "-i", is_flag=True, help="Force interactive mode")
 def run(
     agent_name: str,
-    task: Optional[str],
-    model: Optional[str],
+    task: str | None,
+    model: str | None,
     eval: bool,
     interactive: bool,
 ):
     """Run an agent with a task"""
     # 自动设置非交互式模式的环境变量
     import os
+
     if not task or interactive:
         # 交互式模式：清除自动允许设置
         os.environ.pop("OPENYOUNG_AUTO_ALLOW", None)
@@ -429,6 +234,7 @@ def agent_list(badges: bool, stats: bool, show_all: bool):
     if show_all:
         try:
             from src.package_manager.registry import AgentRegistry
+
             registry = AgentRegistry("packages")
             pkg_agents = registry.discover_items()
             for pa in pkg_agents:
@@ -438,11 +244,12 @@ def agent_list(badges: bool, stats: bool, show_all: bool):
             pass
 
     # 导入徽章系统
-    from src.package_manager.badge_system import BadgeSystem, BADGE_DEFINITIONS
+    from src.package_manager.badge_system import BadgeSystem
 
     # 导入版本管理（如果存在）
     try:
         from src.package_manager.version_manager import VersionManager
+
         has_version_manager = True
     except ImportError:
         has_version_manager = False
@@ -454,6 +261,7 @@ def agent_list(badges: bool, stats: bool, show_all: bool):
     if stats:
         try:
             from src.package_manager.registry import AgentRegistry
+
             registry = AgentRegistry("packages")
             usage_list = registry.get_usage_stats(100)
         except Exception:
@@ -467,6 +275,7 @@ def agent_list(badges: bool, stats: bool, show_all: bool):
             try:
                 # 从注册表获取使用统计
                 from src.package_manager.registry import AgentRegistry
+
                 registry = AgentRegistry("packages")
                 usage_list = registry.get_usage_stats(100)
                 use_count = 0
@@ -481,6 +290,7 @@ def agent_list(badges: bool, stats: bool, show_all: bool):
                 quality_score = 0
                 try:
                     from src.package_manager.agent_evaluator import AgentEvaluator
+
                     evaluator = AgentEvaluator()
                     report = asyncio.run(evaluator.evaluate(f"packages/{a}"))
                     if report:
@@ -494,14 +304,14 @@ def agent_list(badges: bool, stats: bool, show_all: bool):
                     "dimensions": {"documentation": 0.5},  # 默认值
                     "quality_score": quality_score,
                     "recent_downloads": use_count // 2 if use_count else 0,
-                    "created_at": ""
+                    "created_at": "",
                 }
                 badge_system = BadgeSystem()
                 agent_badges = asyncio.run(badge_system.evaluate_badges(a, agent_data))
                 if agent_badges:
                     badge_str = badge_system.format_badges(agent_badges)
                     line += f" {badge_str}"
-            except Exception as e:
+            except Exception:
                 pass
 
         # 显示统计
@@ -552,18 +362,20 @@ def agent_search(query: str, limit: int, intent: bool):
         # 先分析意图
         if intent:
             from src.package_manager.intent_analyzer import IntentAnalyzer
+
             analyzer = IntentAnalyzer()
             intent_result = await analyzer.analyze(query)
 
-            click.echo(f"=== Intent Analysis ===\n")
+            click.echo("=== Intent Analysis ===\n")
             click.echo(f"Query: {query}")
             click.echo(f"Intent: {intent_result.type.value} ({intent_result.confidence:.0%})")
             click.echo(f"Description: {intent_result.description}")
             click.echo(f"\nSuggested Agents: {', '.join(intent_result.suggested_agents)}")
-            click.echo("\n" + "="*40 + "\n")
+            click.echo("\n" + "=" * 40 + "\n")
 
         # 然后搜索
         from src.package_manager.import_manager import ImportManager
+
         manager = ImportManager()
         results = await manager.search(query, limit=limit)
 
@@ -573,7 +385,7 @@ def agent_search(query: str, limit: int, intent: bool):
 
         click.echo(f"Search results for '{query}':\n")
         for r in results:
-            score = r.get('quality_score', 'N/A')
+            score = r.get("quality_score", "N/A")
             if score is not None and isinstance(score, float):
                 score = round(score, 2)
             click.echo(f"  • {r['name']}")
@@ -593,19 +405,20 @@ def agent_intent(user_input: str):
 
     async def _analyze():
         from src.package_manager.intent_analyzer import IntentAnalyzer
+
         analyzer = IntentAnalyzer()
         intent = await analyzer.analyze(user_input)
 
-        click.echo(f"=== Intent Analysis ===\n")
+        click.echo("=== Intent Analysis ===\n")
         click.echo(f"Input: {user_input}\n")
         click.echo(f"Intent Type: {intent.type.value}")
         click.echo(f"Confidence: {intent.confidence:.0%}")
         click.echo(f"Description: {intent.description}")
-        click.echo(f"\nSuggested Agents:")
+        click.echo("\nSuggested Agents:")
         for agent in intent.suggested_agents:
             click.echo(f"  • {agent}")
         if intent.required_capabilities:
-            click.echo(f"\nRequired Capabilities:")
+            click.echo("\nRequired Capabilities:")
             for cap in intent.required_capabilities:
                 click.echo(f"  • {cap}")
 
@@ -620,6 +433,7 @@ def agent_evaluate(agent_name: str):
 
     async def _evaluate():
         from src.package_manager.import_manager import ImportManager
+
         manager = ImportManager()
         report = await manager.evaluate_agent(agent_name)
 
@@ -676,15 +490,16 @@ def agent_compare(agent_a: str, agent_b: str):
 
     async def _compare():
         from src.package_manager.agent_compare import AgentComparer
+
         comparer = AgentComparer()
         result = await comparer.compare(agent_a, agent_b)
 
         if not result.dimensions:
-            click.echo(f"Error: One or both agents not found")
+            click.echo("Error: One or both agents not found")
             return
 
         click.echo("=" * 50)
-        click.echo(f"         Agent Comparison")
+        click.echo("         Agent Comparison")
         click.echo("=" * 50)
         click.echo()
 
@@ -738,7 +553,7 @@ def agent_versions(agent_name: str, limit: int):
         click.echo(f"\n  v{v.version}{is_current}")
         click.echo(f"    Released: {v.released_at[:10]}")
         if v.changelog:
-            click.echo(f"    Changelog:")
+            click.echo("    Changelog:")
             for line in v.changelog.split("\n"):
                 if line.strip():
                     click.echo(f"      {line}")
@@ -753,16 +568,13 @@ def agent_versions(agent_name: str, limit: int):
 @click.option("--compatible", default="*", help="Compatible version (e.g., 1.x)")
 def agent_version_add(agent_name: str, version: str, changelog: str, compatible: str):
     """Add a new version for an agent"""
-    from src.package_manager.version_manager import VersionManager, VersionError
+    from src.package_manager.version_manager import VersionError, VersionManager
 
     manager = VersionManager()
 
     try:
         v = manager.register_version(
-            agent_name,
-            version,
-            changelog=changelog,
-            compatible_with=compatible
+            agent_name, version, changelog=changelog, compatible_with=compatible
         )
         click.echo(f"✓ Registered {agent_name} v{version}")
     except VersionError as e:
@@ -783,6 +595,37 @@ def agent_version_check(agent_name: str, current: str):
         click.echo(f"Update available: v{current} → v{latest}")
     else:
         click.echo(f"Already on latest version: v{current}")
+
+
+@cli.group()
+def subagent():
+    """SubAgent management"""
+    pass
+
+
+@subagent.command("list")
+def subagent_list():
+    """List available subagents"""
+    loader = AgentLoader()
+    subagents = loader.list_subagents()
+
+    click.echo("Available subagents:")
+    for s in subagents:
+        click.echo(f"  • {s}")
+
+
+@subagent.command("info")
+@click.argument("subagent_name")
+def subagent_info(subagent_name: str):
+    """Show subagent details"""
+    loader = AgentLoader()
+    try:
+        config = loader.load_subagent(subagent_name)
+        click.echo(f"SubAgent: {config.name}")
+        click.echo(f"Model: {config.model}")
+        click.echo(f"Temperature: {config.temperature}")
+    except Exception as e:
+        click.echo(f"Error: {e}", err=True)
 
 
 @cli.command()
@@ -866,13 +709,9 @@ def llm_list(enabled: bool):
 
     click.echo("Available LLM providers:")
     for p in providers:
-        marker = (
-            " (default)" if default_provider and p.name == default_provider.name else ""
-        )
+        marker = " (default)" if default_provider and p.name == default_provider.name else ""
         click.echo(f"  • {p.name} ({p.provider_type}){marker}")
-        click.echo(
-            f"    Models: {', '.join(p.models[:3])}{'...' if len(p.models) > 3 else ''}"
-        )
+        click.echo(f"    Models: {', '.join(p.models[:3])}{'...' if len(p.models) > 3 else ''}")
 
 
 @llm.command("add")
@@ -884,8 +723,8 @@ def llm_list(enabled: bool):
 def llm_add(
     provider_name: str,
     api_key: str,
-    base_url: Optional[str],
-    models: Optional[str],
+    base_url: str | None,
+    models: str | None,
     default: bool,
 ):
     """Add an LLM provider"""
@@ -965,7 +804,7 @@ def llm_use(provider_name: str):
 
 @llm.command("info")
 @click.argument("provider_name", required=False)
-def llm_info(provider_name: Optional[str]):
+def llm_info(provider_name: str | None):
     """Show provider details"""
     manager = PackageManager()
 
@@ -979,9 +818,7 @@ def llm_info(provider_name: Optional[str]):
         click.echo(f"Provider: {provider.name}")
         click.echo(f"Type: {provider.provider_type}")
         click.echo(f"Base URL: {provider.base_url}")
-        click.echo(
-            f"API Key: {'*' * 8}{provider.api_key[-4:] if provider.api_key else 'N/A'}"
-        )
+        click.echo(f"API Key: {'*' * 8}{provider.api_key[-4:] if provider.api_key else 'N/A'}")
         click.echo(f"Enabled: {provider.enabled}")
         click.echo(f"Models: {', '.join(provider.models)}")
     else:
@@ -1022,6 +859,7 @@ def config_list():
 
     # 然后显示默认配置
     from src.config.loader import ConfigLoader
+
     loader = ConfigLoader()
     default_config = loader.load_all()
 
@@ -1046,6 +884,7 @@ def config_get(key: str):
 
     # 如果没有，则检查 ConfigLoader
     from src.config.loader import ConfigLoader
+
     loader = ConfigLoader()
     config = loader.load_all()
 
@@ -1138,6 +977,23 @@ def eval_trend(agent_name: str, metric: str):
     click.echo(f"Latest score: {trend['latest']:.2f}")
 
 
+@eval.command("server")
+@click.option("--host", default="0.0.0.0", help="Server host")
+@click.option("--port", default=8000, help="Server port")
+def eval_server(host: str, port: int):
+    """Start EvalHub REST API server"""
+    import asyncio
+    from src.evaluation.api import run_server
+
+    click.echo(f"Starting EvalHub server on {host}:{port}")
+    click.echo("Press Ctrl+C to stop")
+
+    try:
+        asyncio.run(run_server(host, port))
+    except KeyboardInterrupt:
+        click.echo("\nServer stopped")
+
+
 # ========================
 # Source Commands
 # ========================
@@ -1187,7 +1043,6 @@ def init(force: bool):
         openyoung init
         openyoung init --force
     """
-    import os
 
     click.echo("=== OpenYoung Initialization Wizard ===\n")
 
@@ -1217,7 +1072,9 @@ def init(force: bool):
         "6": "glm",
     }
 
-    provider_choice = click.prompt("Select provider (1-6)", default="1", type=click.Choice(["1", "2", "3", "4", "5", "6"]))
+    provider_choice = click.prompt(
+        "Select provider (1-6)", default="1", type=click.Choice(["1", "2", "3", "4", "5", "6"])
+    )
     provider = provider_map[provider_choice]
 
     # Step 2: API Key
@@ -1233,7 +1090,9 @@ def init(force: bool):
     click.echo("  5) 钉钉")
     click.echo("  6) 飞书")
 
-    channel_choice = click.prompt("Select channel (1-6)", default="1", type=click.Choice(["1", "2", "3", "4", "5", "6"]))
+    channel_choice = click.prompt(
+        "Select channel (1-6)", default="1", type=click.Choice(["1", "2", "3", "4", "5", "6"])
+    )
 
     channel_map = {
         "1": "cli",
@@ -1258,7 +1117,9 @@ def init(force: bool):
     elif channel == "dingtalk":
         click.echo("\nStep 4: DingTalk Configuration")
         webhook_url = click.prompt("Webhook URL", type=str)
-        secret = click.prompt("Secret (optional, press Enter to skip)", default="", type=str, hide_input=True)
+        secret = click.prompt(
+            "Secret (optional, press Enter to skip)", default="", type=str, hide_input=True
+        )
         channel_config["webhook_url"] = webhook_url
         if secret:
             channel_config["secret"] = secret
@@ -1301,7 +1162,7 @@ def init(force: bool):
     # 保存到配置文件
     if _save_config(config):
         click.echo(f"\n✓ Configuration saved to {_CONFIG_FILE}")
-        click.echo(f"✓ API key saved to .env")
+        click.echo("✓ API key saved to .env")
     else:
         click.echo("\n✗ Failed to save configuration", err=True)
         return
@@ -1313,22 +1174,21 @@ def init(force: bool):
         ],
         "agent": {
             "default_model": f"{provider}-chat" if provider == "deepseek" else "gpt-4o-mini",
-        }
+        },
     }
 
     # 添加选中的 channel
     if channel != "cli":
-        channels_config["channels"].append({
-            "platform": channel,
-            "enabled": True,
-            "config": channel_config
-        })
+        channels_config["channels"].append(
+            {"platform": channel, "enabled": True, "config": channel_config}
+        )
 
     # 保存 channels.yaml
     channels_file = Path("config/channels.yaml")
     channels_file.parent.mkdir(parents=True, exist_ok=True)
 
     import yaml
+
     with open(channels_file, "w") as f:
         yaml.dump(channels_config, f, default_flow_style=False, allow_unicode=True)
 
@@ -1354,10 +1214,6 @@ def channel():
 @channel.command("list")
 def channel_list():
     """List available channels"""
-    from src.channels import (
-        CLIChannel, REPLChannel, TelegramChannel, DiscordChannel,
-        QQChannel, DingTalkChannel, FeishuChannel
-    )
 
     click.echo("Available channels:")
     click.echo("  • cli       - Command line interface")
@@ -1374,6 +1230,7 @@ def channel_list():
         click.echo(f"\nConfigured channels (in {channels_file}):")
         try:
             import yaml
+
             config = yaml.safe_load(channels_file.read_text())
             for ch in config.get("channels", []):
                 status = "✓ enabled" if ch.get("enabled") else "○ disabled"
@@ -1389,7 +1246,14 @@ def channel_list():
 @click.option("--app-id", help="App ID for Feishu")
 @click.option("--app-secret", help="App Secret for Feishu")
 @click.option("--bot-token", help="Bot token for Telegram/Discord")
-def channel_config_cmd(action: str, platform: str = None, webhook_url: str = None, app_id: str = None, app_secret: str = None, bot_token: str = None):
+def channel_config_cmd(
+    action: str,
+    platform: str = None,
+    webhook_url: str = None,
+    app_id: str = None,
+    app_secret: str = None,
+    bot_token: str = None,
+):
     """Configure channels
 
     Actions:
@@ -1412,6 +1276,7 @@ def channel_config_cmd(action: str, platform: str = None, webhook_url: str = Non
     if channels_file.exists():
         try:
             import yaml
+
             config = yaml.safe_load(channels_file.read_text()) or {"channels": []}
         except Exception as e:
             click.echo(f"Error loading config: {e}")
@@ -1443,7 +1308,9 @@ def channel_config_cmd(action: str, platform: str = None, webhook_url: str = Non
 
         valid_platforms = ["cli", "telegram", "discord", "qq", "dingtalk", "feishu"]
         if platform not in valid_platforms:
-            click.echo(f"Error: Invalid platform. Choose from: {', '.join(valid_platforms)}", err=True)
+            click.echo(
+                f"Error: Invalid platform. Choose from: {', '.join(valid_platforms)}", err=True
+            )
             return
 
         # 检查是否已存在
@@ -1512,7 +1379,7 @@ def channel_config_cmd(action: str, platform: str = None, webhook_url: str = Non
         found = False
         for ch in config["channels"]:
             if ch["platform"] == platform:
-                ch["enabled"] = (action == "enable")
+                ch["enabled"] = action == "enable"
                 found = True
                 break
 
@@ -1553,6 +1420,7 @@ def channel_start(platform: str = None, port: int = 8080):
 
         try:
             import yaml
+
             config = yaml.safe_load(channels_file.read_text())
         except Exception as e:
             click.echo(f"Error loading config: {e}")
@@ -1573,26 +1441,32 @@ def channel_start(platform: str = None, port: int = 8080):
 
             if ch["platform"] == "cli":
                 from src.channels import CLIChannel
+
                 manager.register("cli", CLIChannel(ch.get("config", {})))
 
             elif ch["platform"] == "telegram":
                 from src.channels import TelegramChannel
+
                 manager.register("telegram", TelegramChannel(ch.get("config", {})))
 
             elif ch["platform"] == "discord":
                 from src.channels import DiscordChannel
+
                 manager.register("discord", DiscordChannel(ch.get("config", {})))
 
             elif ch["platform"] == "qq":
                 from src.channels import QQChannel
+
                 manager.register("qq", QQChannel(ch.get("config", {})))
 
             elif ch["platform"] == "dingtalk":
                 from src.channels import DingTalkChannel
+
                 manager.register("dingtalk", DingTalkChannel(ch.get("config", {})))
 
             elif ch["platform"] == "feishu":
                 from src.channels import FeishuChannel
+
                 manager.register("feishu", FeishuChannel(ch.get("config", {})))
 
         click.echo("Channels started. Press Ctrl+C to stop.")
@@ -1622,10 +1496,18 @@ def import_cmd():
 @import_cmd.command("github")
 @click.argument("github_url")
 @click.argument("agent_name", required=False)
-@click.option("--enhanced/--basic", default=True, help="Use enhanced import with git clone + agent analysis")
+@click.option(
+    "--enhanced/--basic", default=True, help="Use enhanced import with git clone + agent analysis"
+)
 @click.option("--lazy/--no-lazy", default=False, help="Lazy clone (faster but incomplete)")
 @click.option("--validate/--no-validate", default=True, help="Validate after import")
-def import_github(github_url: str, agent_name: str = None, enhanced: bool = True, lazy: bool = False, validate: bool = True):
+def import_github(
+    github_url: str,
+    agent_name: str = None,
+    enhanced: bool = True,
+    lazy: bool = False,
+    validate: bool = True,
+):
     """Import agent from GitHub URL
 
     Example:
@@ -1637,15 +1519,17 @@ def import_github(github_url: str, agent_name: str = None, enhanced: bool = True
 
         click.echo(f"[Enhanced] Importing from: {github_url}")
         if lazy:
-            click.echo(f"[Mode] Lazy clone (fast, partial)")
+            click.echo("[Mode] Lazy clone (fast, partial)")
 
         importer = EnhancedGitHubImporter()
-        result = importer.import_from_url(github_url, agent_name, lazy_clone=lazy, validate=validate)
+        result = importer.import_from_url(
+            github_url, agent_name, lazy_clone=lazy, validate=validate
+        )
 
         if "error" in result:
             click.echo(f"Error: {result['error']}", err=True)
         else:
-            click.echo(f"Successfully imported!")
+            click.echo("Successfully imported!")
             if result.get("agent"):
                 click.echo(f"  Agent: {result['agent']}")
             if result.get("flowskill"):
@@ -1667,7 +1551,7 @@ def import_github(github_url: str, agent_name: str = None, enhanced: bool = True
         if "error" in result:
             click.echo(f"Error: {result['error']}", err=True)
         else:
-            click.echo(f"Successfully imported!")
+            click.echo("Successfully imported!")
             if result.get("agent"):
                 click.echo(f"  Agent: {result['agent']}")
             if result.get("skills"):
@@ -1785,6 +1669,7 @@ def mcp_stop(server_name: str):
 
 # ========== Template Commands ==========
 
+
 @cli.group()
 def templates():
     """Template marketplace commands"""
@@ -1793,7 +1678,13 @@ def templates():
 
 @templates.command("list")
 @click.option("--tag", "-t", multiple=True, help="Filter by tags")
-@click.option("--sort", "-s", default="rating", type=click.Choice(["rating", "installs", "name"]), help="Sort by")
+@click.option(
+    "--sort",
+    "-s",
+    default="rating",
+    type=click.Choice(["rating", "installs", "name"]),
+    help="Sort by",
+)
 def templates_list(tag, sort):
     """List available templates"""
     from src.package_manager.template_registry import get_registry
@@ -1897,6 +1788,7 @@ def templates_info(name):
 
 # ========== Memory Commands ==========
 
+
 @cli.group()
 def memory():
     """Memory and vector search commands"""
@@ -1937,7 +1829,7 @@ def memory_stats():
     click.echo("=== Vector Store Stats ===")
     click.echo(f"Status: {stats.get('status')}")
     click.echo(f"Namespaces: {stats.get('namespaces', 0)}")
-    if stats.get('namespace_list'):
+    if stats.get("namespace_list"):
         click.echo(f"Namespace list: {', '.join(stats['namespace_list'])}")
 
 
@@ -1950,7 +1842,9 @@ def memory_stats():
 @click.argument("agent_name", default="default")
 @click.argument("task", required=False)
 @click.option("--interactive", "-i", is_flag=True, help="Interactive mode")
-@click.option("--github", "-g", "github_url", default=None, help="GitHub URL to clone and analyze first")
+@click.option(
+    "--github", "-g", "github_url", default=None, help="GitHub URL to clone and analyze first"
+)
 def run_agent(agent_name: str, task: str = None, interactive: bool = False, github_url: str = None):
     """Run an agent
 
@@ -1960,8 +1854,6 @@ def run_agent(agent_name: str, task: str = None, interactive: bool = False, gith
         openyoung run default --github https://github.com/user/repo "analyze this"
     """
     import asyncio
-    import os
-    import tempfile
 
     async def _run(initial_task):
         # 保存原始任务
@@ -1986,7 +1878,9 @@ def run_agent(agent_name: str, task: str = None, interactive: bool = False, gith
                 importer = EnhancedGitHubImporter()
 
                 # 解析 URL 并克隆（启用验证）
-                result = importer.import_from_url(github_url, agent_name or "default", validate=True)
+                result = importer.import_from_url(
+                    github_url, agent_name or "default", validate=True
+                )
 
                 # 检查导入是否有结果
                 if result.get("agent") or result.get("config"):
@@ -1998,7 +1892,7 @@ def run_agent(agent_name: str, task: str = None, interactive: bool = False, gith
                             for warn in validation["warnings"]:
                                 click.echo(f"  Warning: {warn}")
                         if not validation.get("passed"):
-                            click.echo(f"[Import] ⚠️ Quality below threshold!", err=True)
+                            click.echo("[Import] ⚠️ Quality below threshold!", err=True)
                             for err in validation.get("errors", []):
                                 click.echo(f"  Error: {err}", err=True)
 
@@ -2011,6 +1905,7 @@ def run_agent(agent_name: str, task: str = None, interactive: bool = False, gith
                     if clone_path and clone_path.exists():
                         click.echo("[Import] Installing dependencies...")
                         from src.tools.executor import ToolExecutor
+
                         executor = ToolExecutor()
                         deps_result = await executor.install_dependencies(clone_path)
                         click.echo(f"[Import] {deps_result}")
@@ -2021,7 +1916,7 @@ def run_agent(agent_name: str, task: str = None, interactive: bool = False, gith
                     else:
                         user_task = "分析这个项目的结构和功能"
                 else:
-                    click.echo(f"[Import] Warning: continuing without full import...")
+                    click.echo("[Import] Warning: continuing without full import...")
             except Exception as e:
                 click.echo(f"[Import] Error: {e}", err=True)
                 return
@@ -2055,7 +1950,7 @@ def run_agent(agent_name: str, task: str = None, interactive: bool = False, gith
 
             # Show stats
             stats = agent.get_all_stats()
-            click.echo(f"\n--- Stats ---")
+            click.echo("\n--- Stats ---")
             click.echo(f"Traces: {stats.get('datacenter_traces_count', 0)}")
             click.echo(f"Evaluations: {stats.get('evaluation_results_count', 0)}")
             click.echo(f"Capsules: {stats.get('evolver_capsules_count', 0)}")
@@ -2063,7 +1958,246 @@ def run_agent(agent_name: str, task: str = None, interactive: bool = False, gith
     asyncio.run(_run(task))
 
 
+# ========================
+# Data Commands - 数据管理
+# ========================
+
+
+@cli.group()
+def data():
+    """Data management commands"""
+    pass
+
+
+@data.command("stats")
+@click.option("--agent", "-a", default=None, help="Filter by agent ID")
+@click.option("--days", "-d", default=7, type=int, help="Days to look back")
+def data_stats(agent: str, days: int):
+    """Show run statistics"""
+    from src.datacenter import DataAnalytics
+
+    analytics = DataAnalytics()
+    if agent:
+        stats = analytics.get_agent_stats(agent, days)
+        click.echo(f"Agent: {agent}")
+        click.echo(f"Period: {days} days")
+        click.echo(f"Total runs: {stats['total_runs']}")
+        click.echo(f"Success: {stats['success']}")
+        click.echo(f"Failed: {stats['failed']}")
+        click.echo(f"Success rate: {stats['success_rate']:.1%}")
+        click.echo(f"Avg duration: {stats['avg_duration']}s")
+    else:
+        dashboard = analytics.get_dashboard()
+        summary = dashboard["summary"]
+        click.echo("=== Dashboard ===")
+        click.echo(f"Total agents: {summary['total_agents']}")
+        click.echo(f"Total runs: {summary['total_runs']}")
+        click.echo(f"Success rate: {summary['success_rate']:.1%}")
+        click.echo(f"Avg duration: {summary['avg_duration']}s")
+
+
+@data.command("runs")
+@click.option("--agent", "-a", default=None, help="Filter by agent")
+@click.option("--status", "-s", default=None, help="Filter by status")
+@click.option("--limit", "-l", default=10, type=int, help="Limit results")
+def data_runs(agent: str, status: str, limit: int):
+    """List recent runs"""
+    from src.datacenter import RunTracker
+
+    tracker = RunTracker()
+    runs = tracker.list_runs(agent_id=agent, status=status, limit=limit)
+
+    if not runs:
+        click.echo("No runs found")
+        return
+
+    click.echo(f"Found {len(runs)} runs:")
+    for run in runs:
+        status_emoji = "✅" if run["status"] == "success" else "❌"
+        click.echo(
+            f"  {status_emoji} {run['run_id'][:16]}... | {run['status']:8} | {run.get('task', 'N/A')[:40]}"
+        )
+
+
+@data.command("export")
+@click.argument("output_dir")
+@click.option("--format", "-f", default="json", type=click.Choice(["json", "csv"]))
+def data_export(output_dir: str, format: str):
+    """Export data to directory"""
+    from src.datacenter import DataExporter
+
+    exporter = DataExporter()
+    files = exporter.export_full(output_dir)
+
+    click.echo("Exported files:")
+    for name, path in files.items():
+        click.echo(f"  {name}: {path}")
+
+
+@data.command("dashboard")
+def data_dashboard():
+    """Show dashboard data"""
+    import json
+
+    from src.datacenter import DataAnalytics
+
+    analytics = DataAnalytics()
+    dashboard = analytics.get_dashboard()
+
+    click.echo(json.dumps(dashboard, indent=2, default=str))
+
+
+@data.command("steps")
+@click.option("--run", "-r", required=True, help="Run ID")
+@click.option("--limit", "-l", default=50, type=int, help="Limit results")
+def data_steps(run: str, limit: int):
+    """List steps for a run"""
+    from src.datacenter import StepRecorder
+
+    try:
+        recorder = StepRecorder()
+        steps = recorder.list_steps(run)
+
+        if not steps:
+            click.echo("No steps found")
+            return
+
+        click.echo(f"Found {len(steps)} steps:")
+        for step in steps:
+            status_emoji = (
+                "✅"
+                if step["status"] == "success"
+                else "❌"
+                if step["status"] == "failed"
+                else "🔄"
+            )
+            click.echo(
+                f"  {status_emoji} {step['step_name']:20} | {step['status']:8} | {step.get('latency_ms', 0)}ms"
+            )
+    except Exception as e:
+        click.echo(f"Error: {e}", err=True)
+        raise SystemExit(1)
+
+
+@data.command("license")
+@click.option("--list", "list_licenses", is_flag=True, help="List all licenses")
+@click.option("--create", is_flag=True, help="Create a new license")
+@click.option("--owner", "-o", default=None, help="Owner ID")
+@click.option(
+    "--type",
+    "-t",
+    "license_type",
+    default="private",
+    type=click.Choice(["public", "private", "team"]),
+    help="License type",
+)
+def data_license(list_licenses: bool, create: bool, owner: str, license_type: str):
+    """Manage data licenses"""
+    from src.datacenter import DataLicenseManager
+
+    try:
+        mgr = DataLicenseManager()
+
+        if list_licenses:
+            licenses = mgr.list_licenses(
+                owner_id=owner, license_type=license_type if license_type != "private" else None
+            )
+            if not licenses:
+                click.echo("No licenses found")
+                return
+            click.echo(f"Found {len(licenses)} licenses:")
+            for lic in licenses:
+                click.echo(
+                    f"  {lic['license_id'][:16]}... | {lic['license_type']:8} | {lic['owner_id']}"
+                )
+
+        elif create:
+            if not owner:
+                click.echo("Error: --owner is required when creating a license", err=True)
+                raise SystemExit(1)
+            license_id = mgr.create_license(owner, license_type)
+            click.echo(f"Created license: {license_id}")
+    except Exception as e:
+        click.echo(f"Error: {e}", err=True)
+        raise SystemExit(1)
+
+
+@data.command("team")
+@click.option("--list", "list_teams", is_flag=True, help="List teams")
+@click.option("--members", is_flag=True, help="List team members")
+@click.option("--team-id", "-t", default=None, help="Team ID")
+@click.option("--create", is_flag=True, help="Create a team")
+@click.option("--name", "-n", default=None, help="Team name")
+@click.option("--owner", "-o", default=None, help="Team owner")
+def data_team(list_teams: bool, members: bool, team_id: str, create: bool, name: str, owner: str):
+    """Manage teams"""
+    from src.datacenter import TeamShareManager
+
+    try:
+        mgr = TeamShareManager()
+
+        if list_teams:
+            teams = mgr.list_teams(user_id=owner)
+            if not teams:
+                click.echo("No teams found")
+                return
+            click.echo(f"Found {len(teams)} teams:")
+            for team in teams:
+                click.echo(f"  {team['team_id']:20} | {team['name']:20} | {team['owner_id']}")
+
+        elif members:
+            if not team_id:
+                click.echo("Error: --team-id is required", err=True)
+                raise SystemExit(1)
+            members_list = mgr.list_members(team_id)
+            if not members_list:
+                click.echo("No members found")
+                return
+            click.echo(f"Found {len(members_list)} members:")
+            for member in members_list:
+                click.echo(f"  {member['user_id']:20} | {member['role']}")
+
+        elif create:
+            if not team_id or not name or not owner:
+                click.echo("Error: --team-id, --name, and --owner are required", err=True)
+                raise SystemExit(1)
+            mgr.create_team(team_id, name, owner)
+            click.echo(f"Created team: {team_id}")
+    except Exception as e:
+        click.echo(f"Error: {e}", err=True)
+        raise SystemExit(1)
+
+
+@data.command("access")
+@click.option("--data-id", "-d", required=True, help="Data ID")
+@click.option("--user", "-u", required=True, help="User ID")
+@click.option("--type", "-t", default="read", help="Access type")
+@click.option("--purpose", "-p", default="", help="Purpose")
+def data_access(data_id: str, user: str, type: str, purpose: str):
+    """Log data access"""
+    from src.datacenter import AccessLog
+
+    try:
+        log = AccessLog()
+        log_id = log.log_access(data_id, user, type, purpose)
+        click.echo(f"Logged access: {log_id}")
+    except Exception as e:
+        click.echo(f"Error: {e}", err=True)
+        raise SystemExit(1)
+
+
 def main():
+    # 注册 skill 命令组 (from this file)
+    cli.add_command(skills, name="skills")
+
+    # 注册 eval 命令组
+    from src.cli.eval import eval_group
+    cli.add_command(eval_group, name="eval")
+
+    # 注册 test 命令组
+    from src.cli.test import test_group
+    cli.add_command(test_group, name="test")
+
     cli()
 
 

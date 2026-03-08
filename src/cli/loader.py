@@ -47,17 +47,18 @@ class AgentLoader:
                         if item.name == f"agent-{name}" or item.name == name:
                             return self._load_from_file(yaml_file)
 
-        # 4. subagents/ 目录
-        subagents_dir = Path("subagents")
-        if subagents_dir.exists():
-            agent_file = subagents_dir / name / "agent.yaml"
-            if agent_file.exists():
-                return self._load_from_file(agent_file)
-
         if name == "default":
             return self._get_default_config()
 
         raise ValueError(f"Agent not found: {name}")
+
+    def load_subagent(self, name: str) -> AgentConfig:
+        """加载 SubAgent 配置"""
+        subagents_dir = Path("subagents")
+        agent_file = subagents_dir / name / "agent.yaml"
+        if agent_file.exists():
+            return self._load_from_file(agent_file)
+        raise ValueError(f"SubAgent not found: {name}")
 
     def _load_from_file(self, path: Path) -> AgentConfig:
         try:
@@ -186,19 +187,22 @@ class AgentLoader:
                         if name not in agents:
                             agents.append(name)
 
-        # 3. 从 subagents/ 目录扫描
-        subagents_dir = Path("subagents")
-        if subagents_dir.exists():
-            for f in subagents_dir.glob("*/agent.yaml"):
-                name = f.parent.name
-                if name not in agents:
-                    agents.append(name)
-
         # 确保 default 在列表中
         if "default" not in agents:
             agents.insert(0, "default")
 
         return agents
+
+    def list_subagents(self) -> list[str]:
+        """列出所有 subagents"""
+        subagents = []
+        subagents_dir = Path("subagents")
+        if subagents_dir.exists():
+            for f in subagents_dir.glob("*/agent.yaml"):
+                name = f.parent.name
+                if name not in subagents:
+                    subagents.append(name)
+        return sorted(subagents)
 
     def validate_config(self, config: AgentConfig) -> tuple[bool, str]:
         """Validate Agent configuration
