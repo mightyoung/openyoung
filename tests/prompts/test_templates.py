@@ -3,9 +3,10 @@ Prompt Template Tests - Phase 4
 """
 
 import pytest
+
 from src.prompts.templates import (
-    PromptTemplate,
     PromptRegistry,
+    PromptTemplate,
     TemplateType,
     get_registry,
     render_template,

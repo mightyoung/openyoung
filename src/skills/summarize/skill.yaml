@@ -1,0 +1,9 @@
+name: summarize
+description: "Summarize URLs or files with the summarize CLI (web, PDFs, images, audio, YouTube)."
+entry: SKILL.md
+version: 1.0.0
+tags:
+  - summarize
+  - web
+  - content
+always: true

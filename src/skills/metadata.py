@@ -4,14 +4,14 @@ Skill Metadata - 元数据数据结构
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional, List, Dict, Any
 
 
 @dataclass
 class SkillRequires:
     """Skill 依赖要求"""
-    bins: List[str] = field(default_factory=list)  # 需要的 CLI 工具
-    env: List[str] = field(default_factory=list)    # 需要的环境变量
+
+    bins: list[str] = field(default_factory=list)  # 需要的 CLI 工具
+    env: list[str] = field(default_factory=list)  # 需要的环境变量
 
 
 @dataclass
@@ -22,16 +22,16 @@ class SkillMetadata:
     description: str
     file_path: Path
     source: str = "local"  # package | evolved | local
-    version: Optional[str] = None
-    tags: List[str] = field(default_factory=list)
-    embedding: Optional[List[float]] = None
+    version: str | None = None
+    tags: list[str] = field(default_factory=list)
+    embedding: list[float] | None = None
     disable_model_invocation: bool = False
-    trigger_patterns: List[str] = field(default_factory=list)
+    trigger_patterns: list[str] = field(default_factory=list)
 
     # 新增: nanobot 风格字段
     always: bool = False  # 是否总是加载
     requires: SkillRequires = field(default_factory=SkillRequires)
-    tools: List[str] = field(default_factory=list)  # 提供的工具列表
+    tools: list[str] = field(default_factory=list)  # 提供的工具列表
 
 
 @dataclass

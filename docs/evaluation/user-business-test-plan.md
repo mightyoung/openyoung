@@ -38,9 +38,9 @@ def test_evolver_evolve_single_generation():
     config = EvolverConfig(population_size=5, generations=3)
     evolver = Evolver(config)
     initial_population = evolver.population.copy()
-    
+
     result = evolver.evolve()
-    
+
     assert result.generation == 1
     assert len(evolvers.population) == 5
     assert result.best_fitness >= initial_population[0].fitness
@@ -153,9 +153,9 @@ def test_distiller_extract_from_agent():
     """测试从 Agent 提取知识"""
     distiller = KnowledgeDistiller()
     agent = YoungAgent(...)
-    
+
     knowledge = distiller.extract(agent)
-    
+
     assert knowledge.experience_count > 0
     assert knowledge.patterns is not None
     assert len(knowledge.key_insights) > 0
@@ -164,9 +164,9 @@ def test_distiller_extract_from_execution():
     """测试从执行历史提取知识"""
     distiller = KnowledgeDistiller()
     execution_history = [...]
-    
+
     knowledge = distiller.extract_from_history(execution_history)
-    
+
     assert knowledge.action_patterns is not None
     assert knowledge.success_patterns is not None
 ```
@@ -199,7 +199,7 @@ def test_skill_manager_register():
     """测试 Skill 注册"""
     manager = SkillManager()
     skill = Skill(name="test_skill", handler=...)
-    
+
     manager.register(skill)
     assert "test_skill" in manager.list_skills()
 
@@ -207,14 +207,14 @@ def test_skill_manager_discover():
     """测试 Skill 自动发现"""
     manager = SkillManager()
     skills = manager.discover_skills("src/skills/")
-    
+
     assert len(skills) > 0
 
 def test_skill_manager_load():
     """测试 Skill 加载"""
     manager = SkillManager()
     skill = manager.load("writing-plans")
-    
+
     assert skill is not None
     assert skill.is_loaded()
 ```
@@ -248,7 +248,7 @@ def test_mcp_server_connection():
     """测试 MCP Server 连接"""
     server = MCPServer("http://localhost:8080")
     client = MCPClient(server)
-    
+
     assert client.connect()
     assert client.is_connected()
 
@@ -256,14 +256,14 @@ def test_mcp_list_tools():
     """测试列出可用工具"""
     client = MCPClient(...)
     tools = client.list_tools()
-    
+
     assert len(tools) > 0
 
 def test_mcp_call_tool():
     """测试调用工具"""
     client = MCPClient(...)
     result = client.call_tool("web_search", {"query": "test"})
-    
+
     assert result is not None
 ```
 
@@ -301,7 +301,7 @@ def test_agent_execute_task():
     """测试 Agent 执行任务"""
     agent = YoungAgent(name="test_agent")
     result = agent.execute("写一个Hello World程序")
-    
+
     assert result.success
     assert result.output is not None
 
@@ -309,7 +309,7 @@ def test_agent_stream_execution():
     """测试流式执行"""
     agent = YoungAgent(name="test_agent")
     chunks = list(agent.execute_stream("计算1+1"))
-    
+
     assert len(chunks) > 0
     assert "2" in "".join(chunks)
 ```
@@ -345,7 +345,7 @@ def test_dispatcher_create_subagent():
         parent_id="agent_1",
         task_type="research"
     )
-    
+
     assert subagent.parent_id == "agent_1"
     assert subagent.task_type == "research"
 
@@ -353,7 +353,7 @@ def test_dispatcher_route_task():
     """测试任务路由"""
     dispatcher = AgentDispatcher()
     result = dispatcher.route_task("分析代码质量")
-    
+
     assert result.subagent_id is not None
     assert result.routing_reason is not None
 ```
@@ -394,7 +394,7 @@ def test_evaluate_agent_response():
         response="这是一个测试响应",
         criteria=EvaluationCriteria.ACCURACY
     )
-    
+
     assert result.score is not None
     assert 0 <= result.score <= 1
 
@@ -409,7 +409,7 @@ def test_evaluate_multiple_criteria():
             EvaluationCriteria.SAFETY
         ]
     )
-    
+
     assert len(results) == 3
 ```
 
@@ -442,7 +442,7 @@ def test_install_from_pypi():
     """测试从 PyPI 安装"""
     manager = PackageManager()
     result = manager.install("requests")
-    
+
     assert result.success
     assert manager.is_installed("requests")
 
@@ -450,7 +450,7 @@ def test_install_from_source():
     """测试从源码安装"""
     manager = PackageManager()
     result = manager.install_from_source("https://github.com/user/repo.git")
-    
+
     assert result.success
 ```
 
@@ -466,9 +466,9 @@ def test_uninstall_package():
     """测试卸载包"""
     manager = PackageManager()
     manager.install("numpy")
-    
+
     result = manager.uninstall("numpy")
-    
+
     assert result.success
     assert not manager.is_installed("numpy")
 
@@ -476,7 +476,7 @@ def test_load_package_source():
     """测试加载包源码"""
     manager = PackageManager()
     source = manager.load_source("openyoung")
-    
+
     assert source is not None
     assert "setup.py" in source.files
 ```
@@ -497,7 +497,7 @@ def test_load_yaml_config():
     """测试 YAML 配置加载"""
     loader = ConfigLoader()
     config = loader.load("config/agent.yaml")
-    
+
     assert config.agent_name is not None
     assert config.model is not None
 
@@ -505,7 +505,7 @@ def test_load_json_config():
     """测试 JSON 配置加载"""
     loader = ConfigLoader()
     config = loader.load("config/agent.json")
-    
+
     assert config is not None
 ```
 
@@ -536,17 +536,17 @@ def test_full_agent_workflow():
     """完整业务流程测试"""
     # 1. 初始化 Agent
     agent = YoungAgent(name="workflow_agent")
-    
+
     # 2. 加载配置
     config = loader.load("config/default.yaml")
     agent.configure(config)
-    
+
     # 3. 执行任务
     result = agent.execute("分析项目代码质量")
-    
+
     # 4. 评估结果
     evaluation = hub.evaluate(result.output)
-    
+
     # 5. 验证
     assert result.success
     assert evaluation.score > 0.5

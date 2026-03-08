@@ -3,7 +3,20 @@ Skills Module Tests
 """
 
 import pytest
-from src.skills import SkillManager, Skill
+
+from src.skills import (
+    HeartbeatConfig,
+    HeartbeatPhase,
+    HeartbeatResult,
+    HeartbeatScheduler,
+    LearningsManager,
+    LearningType,
+    Priority,
+    ReleaseType,
+    Skill,
+    SkillManager,
+    SkillVersion,
+)
 
 
 class TestSkillManager:
@@ -194,3 +207,131 @@ class TestSkill:
         assert skill.handler() == "result"
         assert skill.description == "Custom skill"
         assert skill.is_loaded is True
+
+
+# ============ 新增模块测试 ============
+
+
+class TestHeartbeatConfig:
+    """Test HeartbeatConfig"""
+
+    def test_default_config(self):
+        """Test default heartbeat config"""
+        config = HeartbeatConfig()
+        assert config.interval_seconds == 14400
+        assert config.enabled is True
+        assert len(config.phases_enabled) > 0
+
+    def test_custom_config(self):
+        """Test custom heartbeat config"""
+        config = HeartbeatConfig(interval_seconds=60, enabled=False)
+        assert config.interval_seconds == 60
+        assert config.enabled is False
+
+
+class TestHeartbeatScheduler:
+    """Test HeartbeatScheduler"""
+
+    @pytest.mark.asyncio
+    async def test_scheduler_initialization(self):
+        """Test scheduler initialization"""
+        scheduler = HeartbeatScheduler()
+        assert scheduler.is_running() is False
+        assert scheduler.config.interval_seconds == 14400
+
+    @pytest.mark.asyncio
+    async def test_register_callback(self):
+        """Test callback registration"""
+        scheduler = HeartbeatScheduler()
+
+        async def my_callback():
+            return HeartbeatResult(
+                phase=HeartbeatPhase.INFO_INTAKE,
+                success=True,
+                message="test",
+            )
+
+        scheduler.register_callback(HeartbeatPhase.INFO_INTAKE, my_callback)
+        assert len(scheduler._callbacks[HeartbeatPhase.INFO_INTAKE]) == 1
+
+
+class TestSkillVersion:
+    """Test SkillVersion"""
+
+    def test_version_parsing(self):
+        """Test version parsing"""
+        v = SkillVersion.parse("v1.2.3")
+        assert v is not None
+        assert v.major == 1
+        assert v.minor == 2
+        assert v.patch == 3
+
+    def test_version_to_string(self):
+        """Test version to string"""
+        v = SkillVersion(2, 0, 1)
+        assert str(v) == "v2.0.1"
+
+    def test_version_comparison(self):
+        """Test version comparison"""
+        v1 = SkillVersion(1, 0, 0)
+        v2 = SkillVersion(1, 1, 0)
+        v3 = SkillVersion(2, 0, 0)
+
+        assert v1 < v2
+        assert v2 < v3
+        assert v1 == SkillVersion(1, 0, 0)
+
+    def test_version_bump(self):
+        """Test version bump"""
+        v = SkillVersion(1, 2, 3)
+
+        assert v.bump(ReleaseType.PATCH) == SkillVersion(1, 2, 4)
+        assert v.bump(ReleaseType.MINOR) == SkillVersion(1, 3, 0)
+        assert v.bump(ReleaseType.MAJOR) == SkillVersion(2, 0, 0)
+
+
+class TestLearningsManager:
+    """Test LearningsManager"""
+
+    @pytest.mark.asyncio
+    async def test_log_learning(self, tmp_path):
+        """Test logging a learning"""
+        manager = LearningsManager(workspace=tmp_path)
+
+        entry = await manager.log_learning(
+            title="Test learning",
+            description="This is a test",
+            tags=["test", "example"],
+        )
+
+        assert entry.type == LearningType.LEARNING
+        assert entry.title == "Test learning"
+        assert "test" in entry.tags
+
+    @pytest.mark.asyncio
+    async def test_log_error(self, tmp_path):
+        """Test logging an error"""
+        manager = LearningsManager(workspace=tmp_path)
+
+        try:
+            raise ValueError("Test error")
+        except ValueError as e:
+            entry = await manager.log_error(
+                error=e,
+                context={"operation": "test"},
+                solution="Fixed by doing X",
+            )
+
+        assert entry.type == LearningType.ERROR
+        assert entry.solution == "Fixed by doing X"
+
+
+class TestPriority:
+    """Test Priority enum"""
+
+    def test_priority_order(self):
+        """Test priority ordering"""
+        assert Priority.CRITICAL.value == "critical"
+        assert Priority.HIGH.value == "high"
+        assert Priority.MEDIUM.value == "medium"
+        assert Priority.LOW.value == "low"

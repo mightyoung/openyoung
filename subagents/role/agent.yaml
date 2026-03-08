@@ -1,0 +1,10 @@
+description: Role from role.py
+evaluations: []
+hidden: false
+instructions: ''
+mcps: []
+model: deepseek-chat
+name: role
+skills: []
+temperature: 0.7
+type: general

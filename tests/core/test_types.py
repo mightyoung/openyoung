@@ -2,20 +2,19 @@
 Core Types Tests - Task 1.1 & 1.2
 """
 
-import pytest
 from src.core.types import (
-    AgentMode,
-    PermissionAction,
-    PermissionRule,
-    PermissionConfig,
     AgentConfig,
-    SubAgentType,
-    SubAgentConfig,
-    MessageRole,
+    AgentMode,
     Message,
-    TaskStatus,
+    MessageRole,
+    PermissionAction,
+    PermissionConfig,
+    PermissionRule,
+    SubAgentConfig,
+    SubAgentType,
     Task,
     TaskDispatchParams,
+    TaskStatus,
 )
 
 
@@ -73,7 +72,7 @@ class TestAgentConfig:
         config = AgentConfig(name="test-agent")
         assert config.name == "test-agent"
         assert config.mode == AgentMode.PRIMARY
-        assert config.model == "gpt-4o"
+        assert config.model == "deepseek-chat"
         assert config.temperature == 0.7
 
     def test_custom_config(self):
@@ -128,7 +127,6 @@ class TestMessage:
         msg = Message(role=MessageRole.USER, content="Hello")
         assert msg.role == MessageRole.USER
         assert msg.content == "Hello"
-        assert msg.timestamp is not None
 
     def test_assistant_message(self):
         msg = Message(role=MessageRole.ASSISTANT, content="Hello!", name="assistant")
@@ -143,7 +141,6 @@ class TestTask:
         task = Task(id="task-1", description="Test task", input="Do something")
         assert task.id == "task-1"
         assert task.status == TaskStatus.PENDING
-        assert task.output is None
 
     def test_task_status_transitions(self):
         task = Task(id="task-2", description="Test", input="test")

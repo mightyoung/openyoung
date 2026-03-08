@@ -4,20 +4,19 @@ TaskDispatcher - 任务调度器
 """
 
 import uuid
-from typing import Dict, Optional
 
+from src.agents.sub_agent import SubAgent
 from src.core.types import (
-    TaskDispatchParams,
-    Task,
     SubAgentType,
+    Task,
+    TaskDispatchParams,
 )
-from src.agents.young_agent import SubAgent
 
 
 class Session:
     """SubAgent 会话"""
 
-    def __init__(self, session_id: str, parent_id: Optional[str], title: str):
+    def __init__(self, session_id: str, parent_id: str | None, title: str):
         self.session_id = session_id
         self.parent_id = parent_id
         self.title = title
@@ -37,15 +36,15 @@ class TaskDispatcher:
     4. 聚合结果返回
     """
 
-    def __init__(self, sub_agents: Dict[str, SubAgent]):
+    def __init__(self, sub_agents: dict[str, SubAgent]):
         self.sub_agents = sub_agents
-        self._sessions: Dict[str, Session] = {}
+        self._sessions: dict[str, Session] = {}
 
     async def dispatch(
         self,
         params: TaskDispatchParams,
         parent_context: dict,
-        existing_task_id: Optional[str] = None,
+        existing_task_id: str | None = None,
     ) -> dict:
         """调度任务到 SubAgent
 
@@ -91,7 +90,7 @@ class TaskDispatcher:
         }
 
     async def _get_or_create_session(
-        self, task_id: Optional[str], parent_session_id: Optional[str], description: str
+        self, task_id: str | None, parent_session_id: str | None, description: str
     ) -> str:
         """获取或创建会话"""
         if task_id and task_id in self._sessions:
@@ -106,9 +105,7 @@ class TaskDispatcher:
         )
         return new_session_id
 
-    def _build_isolated_context(
-        self, params: TaskDispatchParams, parent_context: dict
-    ) -> dict:
+    def _build_isolated_context(self, params: TaskDispatchParams, parent_context: dict) -> dict:
         """构建隔离的上下文 - 对标 Claude Code
 
         SubAgent 运行在独立上下文中，不继承主 Agent 的完整历史
@@ -122,7 +119,7 @@ class TaskDispatcher:
             "custom_context": params.context,
         }
 
-    async def _get_subagent(self, subagent_type: SubAgentType) -> Optional[SubAgent]:
+    async def _get_subagent(self, subagent_type: SubAgentType) -> SubAgent | None:
         """获取 SubAgent - 按类型查找"""
         # 先按类型查找
         for agent in self.sub_agents.values():
@@ -137,7 +134,7 @@ class TaskDispatcher:
             return result[:500] + "... [truncated]"
         return result
 
-    def get_session(self, session_id: str) -> Optional[Session]:
+    def get_session(self, session_id: str) -> Session | None:
         """获取会话"""
         return self._sessions.get(session_id)
 

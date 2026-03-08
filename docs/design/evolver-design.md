@@ -499,11 +499,11 @@ class EvolutionDecisionEngine:
         critical_signals = ["security_vuln", "fatal_error", "data_loss"]
         if signal.type in critical_signals:
             return True
-        
+
         # 错误频率阈值
         if signal.frequency > self.threshold:
             return True
-        
+
         return False
 
     def schedule_offline_evolution(self) -> None:

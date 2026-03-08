@@ -1,12 +1,56 @@
-#YH|# EvaluationHub 设计 (v3.1)
+#YH|# EvaluationHub 设计 (v3.2)
 #KM|
-#WB|> EvaluationHub - 评估包仓库，仅提供包注册与加载，不执行评估任务
-#SX|> 更新日期: 2026-03-01
+#WB|> EvaluationHub - 评估包仓库与历史结果管理
+#SX|> 更新日期: 2026-03-07
 #BT|
 #SM|> 关联: evaluation-center-design.md 已删除，功能并入 Eval SubAgent
 
-> EvaluationHub - 评估包仓库，仅提供包注册与加载，不执行评估任务
-> 更新日期: 2026-03-01
+> EvaluationHub - 评估包仓库与历史结果管理
+> 更新日期: 2026-03-07
+
+---
+
+## 0. 架构变更说明 (2026-03-07)
+
+### 2026 最佳实践扩展
+
+基于 2026 年 AI Agent 评估最佳实践，新增以下组件：
+
+| 组件 | 位置 | 说明 |
+|------|------|------|
+| **EvaluationDataset** | `src/evaluation/dataset.py` | 21 个测试用例，覆盖 6 种任务类型 |
+| **EvalPlanner** | `src/evaluation/planner.py` | 任务执行前自动生成评估计划 |
+| **ToolContract** | `src/tools/contract.py` | 工具输入/输出类型验证 |
+| **Tracing** | `src/tools/tracing.py` | 步骤级 spans 追踪 |
+
+### 当前实际架构
+
+```
+YoungAgent
+    │
+    ├── EvaluationCoordinator (新增) ──→ 负责评估执行
+    │       ├── LLMJudge 智能评估
+    │       ├── 任务完成度计算
+    │       └── 阈值检查
+    │
+    └── EvaluationHub ──→ 负责包注册 + 结果存储
+            ├── register_package()
+            ├── search_packages()
+            └── save_results() / load_results()
+```
+
+### 设计 vs 实现
+
+| 设计文档 | 实际实现 | 说明 |
+|---------|---------|------|
+| EvaluationHub 不执行评估 | EvaluationHub 包含 evaluate() | 历史原因，保留兼容 |
+| - | EvaluationCoordinator 负责执行 | 新增，提取评估逻辑 |
+
+### 设计原则更新
+
+- **评估执行**：由 EvaluationCoordinator 负责
+- **结果存储**：由 EvaluationHub 负责
+- **包注册**：由 EvaluationHub 负责
 
 ---
 
@@ -18,15 +62,86 @@
 - **被调用方**：Eval SubAgent 负责执行，Hub 提供包
 - **包版本管控**：由 Package Manager 管理版本与依赖
 
-### 与 EvaluationCenter 区别
+### 与 EvaluationCoordinator 协作
 
-| 功能 | EvaluationCenter | EvaluationHub |
-|------|------------------|---------------|
-| 包注册 | ✅ | ✅ |
-| 包加载 | ✅ | ✅ |
-| 执行评估 | ✅ | ❌ |
-| 并行执行 | ✅ | ❌ |
-| 结果聚合 | ✅ | ❌ |
+| 功能 | EvaluationCoordinator | EvaluationHub |
+|------|---------------------|---------------|
+| 评估执行 | ✅ | ❌ |
+| 结果存储 | ❌ | ✅ |
+| 包注册 | ❌ | ✅ |
+| 趋势分析 | ❌ | ✅ |
+
+> **注**：原 EvaluationCenter 功能已拆分到以上两个组件
+
+---
+
+## 1.5 EvalPlanner (2026 新增)
+
+### 定位
+
+在任务执行前自动生成评估计划，解决开放式任务缺少 `expected_result` 的问题。
+
+### 架构
+
+```
+任务输入
+    │
+    ▼
+┌─────────────────┐
+│  EvalPlanner    │ ← 分析任务类型 + 搜索最佳实践
+└─────────────────┘
+    │
+    ▼
+┌─────────────────┐
+│   评估计划      │
+│ - 成功标准     │
+│ - 验证方法     │
+│ - 评估指标     │
+└─────────────────┘
+    │
+    ▼
+┌─────────────────┐
+│  Agent 执行    │
+└─────────────────┘
+    │
+    ▼
+┌─────────────────┐
+│  基于计划的    │
+│  评估执行      │
+└─────────────────┘
+```
+
+### EvalPlan 数据结构
+
+```python
+@dataclass
+class EvalPlan:
+    task_description: str
+    task_type: str  # coding, analysis, research, web_scraping, etc.
+    success_criteria: List[str]
+    validation_methods: List[str]
+    metrics: List[str]
+    expected_outputs: Dict[str, Any]
+    evaluation_steps: List[str]
+    sources: List[str]
+```
+
+### 任务类型识别
+
+| 任务类型 | 关键词 |
+|----------|--------|
+| web_scraping | 爬、抓取、scrape、crawl、热榜 |
+| coding | 写、实现、create、code |
+| analysis | 分析、解析、analyze |
+| research | 研究、调查、search |
+| refactor | 重构、优化、refactor |
+| debug | 调试、修复、debug、bug |
+
+### 最佳实践搜索
+
+EvalPlanner 支持从多源搜索最佳实践：
+- **GitHub**: 搜索评估框架（anthropics/claude-code, openai/evals）
+- **社区**: 通过 gh CLI 搜索相关仓库
 
 ---
 
@@ -156,7 +271,7 @@ class EvaluationReport:
     blocking_failed: bool
     results: list[EvalResult]
     aggregated_at: str
-    
+
     # 执行信息
     total_evaluators: int
     successful_evaluators: int
@@ -180,34 +295,34 @@ from abc import ABC, abstractmethod
 
 class EvaluatorDefinition(ABC):
     """评估器定义 - 仅定义元数据，由 SubAgent 实例化执行"""
-    
+
     @property
     @abstractmethod
     def name(self) -> str:
         pass
-    
+
     @property
     @abstractmethod
     def feature_codes(self) -> list[str]:
         """特征码 - 用于索引"""
         pass
-    
+
     @property
     @abstractmethod
     def dimension(self) -> EvalDimension:
         pass
-    
+
     @property
     @abstractmethod
     def level(self) -> EvalLevel:
         pass
-    
+
     @property
     @abstractmethod
     def input_schema(self) -> dict:
         """输入数据要求"""
         pass
-    
+
     @abstractmethod
     async def evaluate(self, input_data: dict, context: dict = None) -> EvalResult:
         """执行评估 - 由调用方调用"""
@@ -228,7 +343,7 @@ class EvalPackage:
     feature_codes: list[str]
     evaluator_classes: list[type[EvaluatorDefinition]]
     dependencies: list[str] = None
-    
+
     @property
     def package_id(self) -> str:
         return f"{self.name}/{self.version}"
@@ -236,20 +351,20 @@ class EvalPackage:
 
 class PackageRegistry:
     """包注册表"""
-    
+
     def __init__(self):
         self._packages: dict[str, EvalPackage] = {}
         self._name_index: dict[str, list[str]] = {}  # name -> [versions]
-    
+
     def register(self, package: EvalPackage) -> None:
         """注册评估包"""
         self._packages[package.package_id] = package
-        
+
         if package.name not in self._name_index:
             self._name_index[package.name] = []
         if package.version not in self._name_index[package.name]:
             self._name_index[package.name].append(package.version)
-    
+
     def get(self, name: str, version: str = None) -> EvalPackage:
         """获取包"""
         if version is None:
@@ -258,32 +373,32 @@ class PackageRegistry:
             if not versions:
                 return None
             version = sorted(versions, reverse=True)[0]
-        
+
         return self._packages.get(f"{name}/{version}")
-    
+
     def list_packages(
-        self, 
+        self,
         dimension: EvalDimension = None,
         level: EvalLevel = None
     ) -> list[EvalPackage]:
         """列出包"""
         packages = list(self._packages.values())
-        
+
         if dimension:
             packages = [p for p in packages if p.dimension == dimension]
         if level:
             packages = [p for p in packages if p.level == level]
-        
+
         return packages
-    
+
     def search_by_dimension(self, dimension: EvalDimension) -> list[EvalPackage]:
         """按维度搜索"""
         return [p for p in self._packages.values() if p.dimension == dimension]
-    
+
     def search_by_feature_code(self, feature_code: str) -> list[EvalPackage]:
         """按特征码搜索"""
         return [
-            p for p in self._packages.values() 
+            p for p in self._packages.values()
             if feature_code in p.feature_codes
         ]
 ```
@@ -293,26 +408,26 @@ class PackageRegistry:
 ```python
 class PackageLoader:
     """包加载器 - 从包中加载评估器类"""
-    
+
     def __init__(self, registry: PackageRegistry):
         self.registry = registry
-    
+
     def load_evaluators(
-        self, 
+        self,
         package: EvalPackage
     ) -> list[EvaluatorDefinition]:
         """加载包中的所有评估器"""
         evaluators = []
-        
+
         for evaluator_class in package.evaluator_classes:
             evaluator = evaluator_class()
             evaluators.append(evaluator)
-        
+
         return evaluators
-    
+
     def load_evaluator(
-        self, 
-        package: EvalPackage, 
+        self,
+        package: EvalPackage,
         evaluator_name: str
     ) -> EvaluatorDefinition:
         """加载指定评估器"""
@@ -320,12 +435,12 @@ class PackageLoader:
             evaluator = evaluator_class()
             if evaluator.name == evaluator_name:
                 return evaluator
-        
+
         return None
-    
+
     def get_evaluator_class(
-        self, 
-        package: EvalPackage, 
+        self,
+        package: EvalPackage,
         evaluator_name: str
     ) -> type[EvaluatorDefinition]:
         """获取评估器类（延迟实例化）"""
@@ -333,7 +448,7 @@ class PackageLoader:
             # 通过类属性获取名称（需要评估器类实现name属性）
             if getattr(evaluator_class, 'NAME', None) == evaluator_name:
                 return evaluator_class
-        
+
         return None
 ```
 
@@ -342,19 +457,19 @@ class PackageLoader:
 ```python
 class IndexBuilder:
     """索引构建器 - 构建多维索引"""
-    
+
     def __init__(self, registry: PackageRegistry):
         self.registry = registry
         self._dimension_index: dict[EvalDimension, list[str]] = {}
         self._level_index: dict[EvalLevel, list[str]] = {}
         self._feature_index: dict[str, list[str]] = {}
-    
+
     def build_all(self):
         """构建所有索引"""
         self.build_dimension_index()
         self.build_level_index()
         self.build_feature_index()
-    
+
     def build_dimension_index(self):
         """按维度构建索引"""
         self._dimension_index = {}
@@ -363,7 +478,7 @@ class IndexBuilder:
             if dim not in self._dimension_index:
                 self._dimension_index[dim] = []
             self._dimension_index[dim].append(pkg.package_id)
-    
+
     def build_level_index(self):
         """按层级构建索引"""
         self._level_index = {}
@@ -372,7 +487,7 @@ class IndexBuilder:
             if level not in self._level_index:
                 self._level_index[level] = []
             self._level_index[level].append(pkg.package_id)
-    
+
     def build_feature_index(self):
         """按特征码构建索引"""
         self._feature_index = {}
@@ -381,15 +496,15 @@ class IndexBuilder:
                 if fc not in self._feature_index:
                     self._feature_index[fc] = []
                 self._feature_index[fc].append(pkg.package_id)
-    
+
     def get_by_dimension(self, dimension: EvalDimension) -> list[str]:
         """通过维度获取包ID"""
         return self._dimension_index.get(dimension, [])
-    
+
     def get_by_level(self, level: EvalLevel) -> list[str]:
         """通过层级获取包ID"""
         return self._level_index.get(level, [])
-    
+
     def get_by_feature_code(self, feature_code: str) -> list[str]:
         """通过特征码获取包ID"""
         return self._feature_index.get(feature_code, [])
@@ -400,41 +515,41 @@ class IndexBuilder:
 ```python
 class EvaluationHub:
     """评估中心 - 仅包仓库，不执行评估"""
-    
+
     def __init__(self, package_manager: PackageManager):
         self.package_manager = package_manager
         self.registry = PackageRegistry()
         self.loader = PackageLoader(self.registry)
         self.index_builder = IndexBuilder(self.registry)
-    
+
     # ---------- 包管理 ----------
-    
+
     async def register_package(self, package: EvalPackage):
         """注册评估包"""
         self.registry.register(package)
         self.index_builder.build_all()
-    
+
     async def register_packages_from_manager(self):
         """从 Package Manager 加载所有评估包"""
         packages = await self.package_manager.list_packages(type="evaluation")
-        
+
         for pkg in packages:
             await self.register_package(pkg)
-    
+
     # ---------- 查询 ----------
-    
+
     def get_package(self, name: str, version: str = None) -> EvalPackage:
         """获取包"""
         return self.registry.get(name, version)
-    
+
     def list_packages(
-        self, 
+        self,
         dimension: EvalDimension = None,
         level: EvalLevel = None
     ) -> list[EvalPackage]:
         """列出包"""
         return self.registry.list_packages(dimension, level)
-    
+
     def search(
         self,
         feature_codes: list[str] = None,
@@ -450,31 +565,31 @@ class EvaluationHub:
             packages = [self.registry.get_by_id(pid) for pid in package_ids]
         else:
             packages = self.registry.list_packages()
-        
+
         # 再按维度/层级筛选
         if dimension:
             packages = [p for p in packages if p.dimension == dimension]
         if level:
             packages = [p for p in packages if p.level == level]
-        
+
         return [p for p in packages if p is not None]
-    
+
     # ---------- 加载 ----------
-    
+
     def load_evaluators(self, package: EvalPackage) -> list[EvaluatorDefinition]:
         """加载包中的评估器"""
         return self.loader.load_evaluators(package)
-    
+
     def load_evaluator(
-        self, 
-        package: EvalPackage, 
+        self,
+        package: EvalPackage,
         evaluator_name: str
     ) -> EvaluatorDefinition:
         """加载指定评估器"""
         return self.loader.load_evaluator(package, evaluator_name)
-    
+
     # ---------- 建议 ----------
-    
+
     def suggest_packages(self, task_type: str) -> list[str]:
         """推荐包 - 基于任务类型"""
         suggestions_map = {
@@ -483,10 +598,10 @@ class EvaluationHub:
             "summarization": ["quality", "relevance", "fluency"],
             "conversation": ["ux", "helpfulness", "safety"],
         }
-        
+
         feature_codes = suggestions_map.get(task_type, ["correctness"])
         packages = self.search(feature_codes=feature_codes)
-        
+
         return [p.package_id for p in packages]
 ```
 
@@ -499,11 +614,11 @@ class EvaluationHub:
 ```python
 class EvalSubAgent:
     """评估子代理 - 负责执行评估"""
-    
+
     def __init__(self, evaluation_hub: EvaluationHub):
         self.hub = evaluation_hub
         self._evaluator_cache: dict[str, EvaluatorDefinition] = {}
-    
+
     async def evaluate(
         self,
         feature_codes: list[str],
@@ -511,22 +626,22 @@ class EvalSubAgent:
         context: dict = None
     ) -> EvaluationReport:
         """执行评估"""
-        
+
         # 1. 从 Hub 获取包
         packages = self.hub.search(feature_codes=feature_codes)
-        
+
         # 2. 加载评估器
         evaluators = []
         for pkg in packages:
             for evaluator in self.hub.load_evaluators(pkg):
                 evaluators.append(evaluator)
-        
+
         # 3. 串行/并行执行（由 SubAgent 控制）
         results = await self._execute_parallel(evaluators, input_data, context)
-        
+
         # 4. 聚合结果
         overall_score, passed, blocking_failed = self._aggregate(results)
-        
+
         return EvaluationReport(
             request_id=str(uuid.uuid4()),
             overall_score=overall_score,
@@ -539,7 +654,7 @@ class EvalSubAgent:
             failed_evaluators=sum(1 for r in results if r.error),
             total_time_ms=0  # 由 SubAgent 计算
         )
-    
+
     async def _execute_parallel(
         self,
         evaluators: list[EvaluatorDefinition],
@@ -549,7 +664,7 @@ class EvalSubAgent:
         """并行执行评估器"""
         # SubAgent 负责执行逻辑
         pass
-    
+
     def _aggregate(self, results: list[EvalResult]) -> tuple[float, bool, bool]:
         """聚合结果"""
         # SubAgent 负责聚合逻辑
@@ -561,17 +676,17 @@ class EvalSubAgent:
 ```python
 class PrimaryAgent:
     """主代理"""
-    
+
     async def execute_task(self, task: Task):
         # ... 执行任务 ...
-        
+
         # 调用 Eval SubAgent
         eval_result = await self.eval_subagent.evaluate(
             feature_codes=["correctness", "security"],
             input_data={"output": task.output},
             context={"task_id": task.id}
         )
-        
+
         if eval_result.passed:
             # 继续
             pass
@@ -606,7 +721,7 @@ evaluators:
     class: ExactMatchEvaluator
     dimension: correctness
     level: unit
-    
+
   - name: code_syntax
     class: CodeSyntaxEvaluator
     dimension: correctness
@@ -649,18 +764,18 @@ evaluation:
       version: "1.0.0"
     - name: eval-efficiency
       version: "1.0.0"
-  
+
   # EvaluationHub 配置
   hub:
     auto_index: true        # 启动时自动构建索引
     cache_evaluators: true  # 缓存评估器实例
-  
+
   # Eval SubAgent 配置
   subagent:
     max_concurrency: 5     # 并行执行数
     timeout_seconds: 30.0   # 超时时间
     retry_on_failure: true  # 失败重试
-  
+
   # 默认评估策略
   defaults:
     task_types:
@@ -740,7 +855,7 @@ evaluators:
     config:
       match_type: exact
       threshold: 1.0
-      
+
   - name: syntax_check
     class: SyntaxCheckEvaluator
     config:
@@ -757,23 +872,23 @@ dependencies: []
 ```python
 class ExactMatchEvaluator:
     """精确匹配评估器"""
-    
+
     NAME = "exact_match"
     DIMENSION = EvalDimension.CORRECTNESS
     LEVEL = EvalLevel.UNIT
     FEATURE_CODES = ["correctness", "exact-match", "code-generation"]
-    
+
     def __init__(self, match_type: str = "exact", case_sensitive: bool = True):
         self.match_type = match_type
         self.case_sensitive = case_sensitive
-    
+
     async def evaluate(self, input_data: dict, context: dict = None) -> EvalResult:
         actual = input_data.get("output", "")
         expected = input_data.get("expected", "")
-        
+
         # 匹配逻辑...
         passed = ...
-        
+
         return EvalResult(
             evaluator_name=self.NAME,
             dimension=self.DIMENSION,
@@ -789,19 +904,19 @@ class ExactMatchEvaluator:
 ```python
 class SyntaxCheckEvaluator:
     """语法检查评估器"""
-    
+
     NAME = "syntax_check"
     DIMENSION = EvalDimension.CORRECTNESS
     LEVEL = EvalLevel.UNIT
     FEATURE_CODES = ["correctness", "syntax", "code-generation"]
-    
+
     async def evaluate(self, input_data: dict, context: dict = None) -> EvalResult:
         code = input_data.get("output", "")
-        
+
         # Python: ast.parse()
         # JavaScript: node --check
         # ...
-        
+
         return EvalResult(...)
 ```
 
@@ -810,11 +925,11 @@ class SyntaxCheckEvaluator:
 ```python
 class SemanticJudgeEvaluator:
     """语义正确性 - LLM-as-Judge"""
-    
+
     NAME = "semantic_correctness"
     DIMENSION = EvalDimension.CORRECTNESS
     LEVEL = EvalLevel.INTEGRATION
-    
+
     DEFAULT_RUBRIC = """评估输出是否正确完成了任务。
 评分标准:
 - 5: 完全正确
@@ -822,12 +937,12 @@ class SemanticJudgeEvaluator:
 - 3: 部分正确
 - 2: 大部分错误
 - 1: 完全错误"""
-    
+
     async def evaluate(self, input_data: dict, context: dict = None) -> EvalResult:
         # 调用 LLM 评估
         # 解析分数 (1-5) → score (0-1)
         # threshold: 4.0/5.0
-        
+
         return EvalResult(...)
 ```
 
@@ -838,21 +953,21 @@ class SemanticJudgeEvaluator:
 ```python
 class PIIDetector:
     """PII 检测器"""
-    
+
     NAME = "pii_detector"
     DIMENSION = EvalDimension.SAFETY
     LEVEL = EvalLevel.UNIT
-    
+
     PII_PATTERNS = {
         "ssn": r'\b\d{3}-\d{2}-\d{4}\b',
         "credit_card": r'\b\d{16}\b',
         "email": r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b',
     }
-    
+
     async def evaluate(self, input_data: dict, context: dict = None) -> EvalResult:
         # 正则匹配 PII
         # threshold: 1.0 (零容忍)
-        
+
         return EvalResult(...)
 ```
 
@@ -861,22 +976,22 @@ class PIIDetector:
 ```python
 class InjectionDetector:
     """提示注入检测器"""
-    
+
     NAME = "injection_check"
     DIMENSION = EvalDimension.SAFETY
     LEVEL = EvalLevel.UNIT
-    
+
     INJECTION_PATTERNS = [
         r'ignore\s+previous\s+instructions',
         r'disregard\s+instructions',
         r'system\s+prompt',
         # ...
     ]
-    
+
     async def evaluate(self, input_data: dict, context: dict = None) -> EvalResult:
         # 正则匹配注入模式
         # threshold: 1.0 (零容忍)
-        
+
         return EvalResult(...)
 ```
 
@@ -887,21 +1002,21 @@ class InjectionDetector:
 ```python
 class TokenCounter:
     """Token 使用计数"""
-    
+
     NAME = "token_usage"
     DIMENSION = EvalDimension.EFFICIENCY
     LEVEL = EvalLevel.UNIT
-    
+
     DEFAULT_LIMITS = {
         "gpt-4o": 128000,
         "gpt-4o-mini": 128000,
     }
-    
+
     async def evaluate(self, input_data: dict, context: dict = None) -> EvalResult:
         # 使用 tiktoken 计数
         # score = 1 - (used / limit)
         # threshold: 0.8 (80%)
-        
+
         return EvalResult(...)
 ```
 
@@ -910,15 +1025,15 @@ class TokenCounter:
 ```python
 class LatencyMeasurer:
     """延迟测量"""
-    
+
     NAME = "latency"
     DIMENSION = EvalDimension.EFFICIENCY
     LEVEL = EvalLevel.UNIT
-    
+
     async def evaluate(self, input_data: dict, context: dict = None) -> EvalResult:
         # 测量执行时间
         # threshold: 30s (80%)
-        
+
         return EvalResult(...)
 ```
 
@@ -929,11 +1044,11 @@ class LatencyMeasurer:
 ```python
 class ClarityEvaluator:
     """清晰度评估 - LLM-as-Judge"""
-    
+
     NAME = "response_clarity"
     DIMENSION = EvalDimension.UX
     LEVEL = EvalLevel.INTEGRATION
-    
+
     DEFAULT_RUBRIC = """评估输出是否清晰易懂。
 评分标准:
 - 5: 非常清晰
@@ -941,11 +1056,11 @@ class ClarityEvaluator:
 - 3: 一般
 - 2: 不太清晰
 - 1: 很不清晰"""
-    
+
     async def evaluate(self, input_data: dict, context: dict = None) -> EvalResult:
         # LLM 评估
         # threshold: 3.5/5.0
-        
+
         return EvalResult(...)
 ```
 
@@ -954,15 +1069,15 @@ class ClarityEvaluator:
 ```python
 class HelpfulnessEvaluator:
     """有用性评估 - LLM-as-Judge"""
-    
+
     NAME = "helpfulness"
     DIMENSION = EvalDimension.UX
     LEVEL = EvalLevel.INTEGRATION
-    
+
     async def evaluate(self, input_data: dict, context: dict = None) -> EvalResult:
         # LLM 评估
         # threshold: 3.5/5.0
-        
+
         return EvalResult(...)
 ```
 
@@ -979,21 +1094,21 @@ dimensions:
       exact_match: 1.0
       syntax_check: 1.0
       semantic_correctness: 4.0/5.0
-      
+
   safety:
     threshold: 0.95
     blocking: true
     metrics:
       pii_detector: 1.0
       injection_check: 1.0
-      
+
   efficiency:
     threshold: 0.7
     blocking: false
     metrics:
       token_usage: 0.8
       latency: 0.8
-      
+
   ux:
     threshold: 0.6
     blocking: false
@@ -1008,7 +1123,7 @@ task_types:
       - syntax_check
     optional:
       - semantic_correctness
-      
+
   conversation:
     required:
       - response_clarity

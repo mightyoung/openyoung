@@ -3,8 +3,8 @@ Prompt Template System - 提示词模板系统
 """
 
 import re
-from typing import Optional, Dict, Any
 from enum import Enum
+from typing import Any
 
 
 class TemplateType(str, Enum):
@@ -28,7 +28,7 @@ class PromptTemplate:
         template_type: TemplateType,
         content: str,
         description: str = "",
-        variables: Optional[Dict[str, Any]] = None,
+        variables: dict[str, Any] | None = None,
     ):
         self.name = name
         self.template_type = template_type
@@ -52,7 +52,7 @@ class PromptRegistry:
     """提示词模板注册表"""
 
     def __init__(self):
-        self._templates: Dict[str, PromptTemplate] = {}
+        self._templates: dict[str, PromptTemplate] = {}
         self._register_defaults()
 
     def _register_defaults(self):
@@ -190,11 +190,11 @@ class PromptRegistry:
         """注册模板"""
         self._templates[template.name] = template
 
-    def get(self, name: str) -> Optional[PromptTemplate]:
+    def get(self, name: str) -> PromptTemplate | None:
         """获取模板"""
         return self._templates.get(name)
 
-    def get_by_type(self, template_type: TemplateType) -> Optional[PromptTemplate]:
+    def get_by_type(self, template_type: TemplateType) -> PromptTemplate | None:
         """根据类型获取模板"""
         for template in self._templates.values():
             if template.template_type == template_type:
@@ -214,7 +214,7 @@ class PromptRegistry:
 
 
 # 全局注册表
-_global_registry: Optional[PromptRegistry] = None
+_global_registry: PromptRegistry | None = None
 
 
 def get_registry() -> PromptRegistry:

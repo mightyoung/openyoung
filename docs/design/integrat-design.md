@@ -206,13 +206,13 @@ KS|| 机制 | Agent | DataCenter | EvaluationCenter | Package |
 # Session Summary Schema
 session_summary:
   version: "1.0"
-  
+
   # 会话意图 - 必须保留
   intent:
     goal: str              # 用户目标
     constraints: list[str]  # 约束条件
     success_criteria: str  # 成功标准
-  
+
   # 修改的文件 - 关键信息
   artifacts:
     modified:              # 已修改
@@ -225,19 +225,19 @@ session_summary:
     read_only:            # 仅读取
       - path: str
         reason: str
-  
+
   # 决策记录 - 不可丢失
   decisions:
     - decision: str
       rationale: str
       context: str
-  
+
   # 当前状态
   state:
     progress: str          # 完成/进行中/阻塞
     blockers: list[str]
     pending_tasks: list[str]
-  
+
   # 下一步 - 恢复工作用
   next_steps:
     - step: str
@@ -264,12 +264,12 @@ class CompressionQualityScore:
     artifact: float       # 文件追踪能力
     continuity: float     # 继续工作能力
     decision: float       # 决策保留率
-    
+
     @property
     def overall(self) -> float:
-        return (self.recall * 0.25 + 
+        return (self.recall * 0.25 +
                 self.artifact * 0.30 +  # 最高权重
-                self.continuity * 0.20 + 
+                self.continuity * 0.20 +
                 self.decision * 0.25)
 ```
 
@@ -344,13 +344,13 @@ class CompressionQualityScore:
 @dataclass
 class KnowledgeDistillate:
     """知识蒸馏产物"""
-    
+
     # 语义记忆 - 事实和偏好
     semantic: list[SemanticMemory]
-    
+
     # 情景记忆 - 执行经验
     episodic: list[EpisodicMemory]
-    
+
     # 程序记忆 - 行为模式
     procedural: list[ProceduralMemory]
 
@@ -361,7 +361,7 @@ class SemanticMemory:
     source: str         # 来源消息ID
     confidence: float
 
-@dataclass  
+@dataclass
 class EpisodicMemory:
     """情景记忆"""
     event: str         # "技术方案评分要点分析"
@@ -385,22 +385,22 @@ class ProceduralMemory:
 @dataclass
 class Gene:
     """基因 - 可移植能力单元"""
-    
+
     gene_id: str
     gene_type: GeneType  # skill, prompt, workflow, tool
-    
+
     # 内容
     content: str         # 优化内容
     variation: str        # 变异类型: rephrase, expand, compress, reorder
-    
+
     # 来源
     source_summary: str  # 来源摘要
     source_session: str  # 来源会话
-    
+
     # 评估
     confidence: float    # 置信度 0-1
     evaluation: GeneEvaluation | None = None
-    
+
     # 元数据
     created_at: datetime
     version: str
@@ -412,26 +412,26 @@ class Gene:
 @dataclass
 class Capsule:
     """胶囊 - 可导出包"""
-    
+
     capsule_id: str
     version: str
-    
+
     # 核心内容
     genes: list[Gene]
     signature: CapsuleSignature  # 输入输出定义
-    
+
     # 元数据
     name: str
     description: str
     tags: list[str]
-    
+
     # 验证
     validation_rules: list[ValidationRule]
     examples: list[Example]
-    
+
     # 依赖
     dependencies: list[str]
-    
+
     # 生命周期
     created_at: datetime
     updated_at: datetime
@@ -648,17 +648,17 @@ class BaseMetric(ABC):
     @abstractmethod
     def name(self) -> str:
         pass
-    
+
     @property
     @abstractmethod
     def evaluation_type(self) -> EvaluationType:
         pass
-    
+
     @property
     @abstractmethod
     def evaluation_level(self) -> EvaluationLevel:
         pass
-    
+
     @abstractmethod
     async def evaluate(self, context: EvaluationContext) -> EvaluationResult:
         pass

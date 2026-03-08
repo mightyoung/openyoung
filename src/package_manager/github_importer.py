@@ -4,17 +4,18 @@ GitHub Repository Importer
 """
 
 import os
-import json
-import yaml
-import httpx
-from pathlib import Path
-from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+import httpx
+import yaml
 
 
 @dataclass
 class GitHubFile:
     """GitHub 文件"""
+
     path: str
     content: str
     is_yaml: bool
@@ -28,11 +29,12 @@ class GitHubImporter:
         self.packages_dir = Path(packages_dir)
         self.packages_dir.mkdir(parents=True, exist_ok=True)
 
-    def import_from_url(self, github_url: str) -> Dict[str, Any]:
+    def import_from_url(self, github_url: str, agent_name: str = None) -> dict[str, Any]:
         """从 GitHub URL 导入
 
         Args:
             github_url: GitHub 仓库 URL (如 https://github.com/affaan-m/everything-claude-code)
+            agent_name: 可选的 Agent 名称
 
         Returns:
             导入结果
@@ -42,7 +44,11 @@ class GitHubImporter:
         if not owner or not repo:
             return {"error": f"Invalid GitHub URL: {github_url}"}
 
-        print(f"[GitHub] Importing {owner}/{repo}...")
+        # 使用用户指定的名称或从 repo 推断
+        if not agent_name:
+            agent_name = repo
+
+        print(f"[GitHub] Importing {owner}/{repo} as '{agent_name}'...")
 
         # 获取仓库内容
         files = self._fetch_repo_files(owner, repo)
@@ -50,7 +56,7 @@ class GitHubImporter:
             return {"error": "Failed to fetch repository files"}
 
         # 分析并导入
-        return self._import_files(owner, repo, files)
+        return self._import_files(owner, repo, files, agent_name)
 
     def _parse_github_url(self, url: str) -> tuple:
         """解析 GitHub URL"""
@@ -66,7 +72,7 @@ class GitHubImporter:
             return parts[0], parts[1]
         return None, None
 
-    def _fetch_repo_files(self, owner: str, repo: str) -> List[GitHubFile]:
+    def _fetch_repo_files(self, owner: str, repo: str) -> list[GitHubFile]:
         """获取仓库文件列表"""
         files = []
 
@@ -89,7 +95,9 @@ class GitHubImporter:
             return []
 
         # 获取目录结构
-        tree_url = f"https://api.github.com/repos/{owner}/{repo}/git/trees/{default_branch}?recursive=1"
+        tree_url = (
+            f"https://api.github.com/repos/{owner}/{repo}/git/trees/{default_branch}?recursive=1"
+        )
 
         try:
             response = httpx.get(tree_url, headers=headers, timeout=30)
@@ -102,9 +110,14 @@ class GitHubImporter:
 
         # 筛选关键文件
         target_patterns = [
-            "CLAUDE.md", "AGENTS.md", ".claude",
-            "skill", "mcp", "hooks",
-            "agent.yaml", "agent.json",
+            "CLAUDE.md",
+            "AGENTS.md",
+            ".claude",
+            "skill",
+            "mcp",
+            "hooks",
+            "agent.yaml",
+            "agent.json",
         ]
 
         for item in tree_items:
@@ -131,6 +144,7 @@ class GitHubImporter:
                 if content:
                     # Base64 解码
                     import base64
+
                     try:
                         content = base64.b64decode(content).decode("utf-8")
                     except:
@@ -150,7 +164,9 @@ class GitHubImporter:
         print(f"[GitHub] Found {len(files)} relevant files")
         return files
 
-    def _import_files(self, owner: str, repo: str, files: List[GitHubFile]) -> Dict[str, Any]:
+    def _import_files(
+        self, owner: str, repo: str, files: list[GitHubFile], agent_name: str = None
+    ) -> dict[str, Any]:
         """导入文件"""
         results = {
             "agent": None,
@@ -160,7 +176,8 @@ class GitHubImporter:
             "config": {},
         }
 
-        agent_name = f"agent-{repo}"
+        if not agent_name:
+            agent_name = f"agent-{repo}"
 
         # 1. 查找 Agent 配置
         claude_md = None
@@ -175,9 +192,7 @@ class GitHubImporter:
                 pass
 
         # 2. 创建 Agent 配置
-        agent_config = self._create_agent_config(
-            agent_name, repo, claude_md, agents_md, files
-        )
+        agent_config = self._create_agent_config(agent_name, repo, claude_md, agents_md, files)
 
         # 3. 保存 Agent 配置
         agent_dir = self.packages_dir / agent_name
@@ -226,7 +241,7 @@ class GitHubImporter:
             if hook_name not in results["hooks"]:
                 results["hooks"].append(hook_name)
 
-        print(f"[OK] Import complete!")
+        print("[OK] Import complete!")
         print(f"  - Agent: {agent_name}")
         print(f"  - Skills: {len(results['skills'])}")
         print(f"  - MCPs: {len(results['mcps'])}")
@@ -240,8 +255,8 @@ class GitHubImporter:
         repo: str,
         claude_md: str,
         agents_md: str,
-        files: List[GitHubFile],
-    ) -> Dict[str, Any]:
+        files: list[GitHubFile],
+    ) -> dict[str, Any]:
         """创建 Agent 配置"""
 
         # 从 CLAUDE.md 提取 prompt
@@ -293,7 +308,7 @@ class GitHubImporter:
         return config
 
 
-def import_github(github_url: str, packages_dir: str = "packages") -> Dict[str, Any]:
+def import_github(github_url: str, packages_dir: str = "packages") -> dict[str, Any]:
     """从 GitHub 导入 (CLI 入口)"""
     importer = GitHubImporter(packages_dir)
     return importer.import_from_url(github_url)

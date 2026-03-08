@@ -2,9 +2,6 @@
 ParallelFlow - 并行执行工作流
 """
 
-import asyncio
-from typing import Optional
-
 from .base import FlowSkill
 
 
@@ -55,12 +52,12 @@ class ParallelFlow(FlowSkill):
         # 按关键词分割
         separators = ["and", "同时", "并且", "and also", "parallel"]
         tasks = [user_input]
-        
+
         for sep in separators:
             if sep in user_input:
                 tasks = user_input.split(sep)
                 break
-        
+
         return [t.strip() for t in tasks if t.strip()]
         """识别可并行的子任务"""
         # 按关键词分割
@@ -78,7 +75,7 @@ class ParallelFlow(FlowSkill):
         """多个任务时委托"""
         return len(context.get("_parallel_tasks", [])) > 1
 
-    async def get_subagent_type(self, task: str) -> Optional[str]:
+    async def get_subagent_type(self, task: str) -> str | None:
         if "search" in task or "find" in task:
             return "search"
         return "general"

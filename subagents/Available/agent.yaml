@@ -1,0 +1,10 @@
+description: Agents
+evaluations: []
+hidden: false
+instructions: ''
+mcps: []
+model: deepseek-chat
+name: Available
+skills: []
+temperature: 0.7
+type: general

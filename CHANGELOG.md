@@ -11,6 +11,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### [1.0.1] - 2026-03-07
+
+#### Added
+- Hub module architecture (10 submodules migrated)
+- EvaluationPlanner for dynamic evaluation plan generation
+- IsolationManager for multi-level data isolation
+
+#### Improved
+- Test coverage: 330 tests passing (was 303)
+- Code quality: Ruff checks passing
+- CI/CD: GitHub Actions workflow configured
+
+#### Fixed
+- Updated import paths for migrated modules
+- Fixed test API mismatches
+- Restored isolation functionality in enterprise module
+
 ### [1.0.0] - 2026-03-03
 
 #### Added
@@ -39,6 +56,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 本项目遵循 [语义化版本控制](https://semver.org/lang/zh-CN/)。
+
+### [1.0.1] - 2026-03-07
+
+#### 新增
+- Hub 模块架构（迁移 10 个子模块）
+- EvaluationPlanner 动态评估计划生成
+- IsolationManager 多级别数据隔离
+
+#### 改进
+- 测试覆盖率：330 个测试通过（之前 303）
+- 代码质量：Ruff 检查通过
+- CI/CD：GitHub Actions 工作流已配置
+
+#### 修复
+- 更新迁移模块的导入路径
+- 修复测试 API 不匹配问题
+- 恢复 enterprise 模块中的隔离功能
 
 ### [1.0.0] - 2026-03-03
 

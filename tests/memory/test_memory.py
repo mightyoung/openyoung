@@ -2,11 +2,12 @@
 Memory Tests - Phase 5
 """
 
-import pytest
-import tempfile
 import os
-from pathlib import Path
-from src.memory import CheckpointManager, AutoMemory, Memory
+import tempfile
+
+import pytest
+
+from src.memory import AutoMemory, CheckpointManager
 
 
 class TestAutoMemory:

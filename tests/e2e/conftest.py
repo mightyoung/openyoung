@@ -7,10 +7,10 @@ of the OpenYoung CLI application.
 
 import os
 import sys
-import re
-import pytest
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
+
+import pytest
 
 # Add src to path
 PROJECT_ROOT = Path(__file__).parent.parent.parent

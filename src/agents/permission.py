@@ -4,11 +4,10 @@ PermissionEvaluator - 权限评估器
 """
 
 import fnmatch
-from typing import Optional
 
 from src.core.types import (
-    PermissionConfig,
     PermissionAction,
+    PermissionConfig,
     PermissionRule,
 )
 
@@ -50,7 +49,7 @@ class PermissionEvaluator:
 
     async def check_with_confirm(
         self, tool_name: str, params: dict
-    ) -> tuple[PermissionAction, Optional[str]]:
+    ) -> tuple[PermissionAction, str | None]:
         """检查权限并返回确认消息
 
         Returns:
@@ -111,9 +110,7 @@ class PermissionEvaluator:
 
     def remove_rule(self, tool_pattern: str):
         """移除指定工具的规则"""
-        self.permission.rules = [
-            r for r in self.permission.rules if r.tool_pattern != tool_pattern
-        ]
+        self.permission.rules = [r for r in self.permission.rules if r.tool_pattern != tool_pattern]
 
     def set_global(self, action: PermissionAction):
         """设置全局默认权限"""
@@ -159,9 +156,9 @@ class PermissionDeniedError(Exception):
 
 async def request_user_confirmation(tool_name: str, params: dict, message: str) -> bool:
     """请求用户确认 - 交互式确认
-    
+
     在实际实现中，这应该连接到 CLI 或 UI 的确认流程
-    
+
     Returns:
         True if user confirms, False otherwise
     """
@@ -171,11 +168,11 @@ async def request_user_confirmation(tool_name: str, params: dict, message: str) 
     confirm_msg += f"Params: {params}\n"
     confirm_msg += f"\n{message}\n"
     confirm_msg += "\nAllow this operation? [y/N]: "
-    
+
     # 在交互式环境中请求确认
     try:
         response = input(confirm_msg).strip().lower()
-        return response in ('y', 'yes')
+        return response in ("y", "yes")
     except (EOFError, KeyboardInterrupt):
         # 非交互式环境默认拒绝
         return False

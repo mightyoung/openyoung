@@ -1,0 +1,80 @@
+templates:
+- added_at: '2026-03-05T15:35:19.398845'
+  author: anthropics
+  description: Coding specialist agent
+  installs: 0
+  name: agent-coder
+  rating: 0.0
+  source: https://github.com/anthropics/claude-code
+  source_host: github.com
+  tags:
+  - coding
+  - development
+  updated_at: '2026-03-05T15:35:19.398845'
+  version: 1.0.0
+- added_at: '2026-03-05T15:35:19.400113'
+  author: anthropics
+  description: Code review agent
+  installs: 0
+  name: agent-reviewer
+  rating: 0.0
+  source: https://github.com/anthropics/claude-code
+  source_host: github.com
+  tags:
+  - review
+  - quality
+  updated_at: '2026-03-05T15:35:19.400113'
+  version: 1.0.0
+- added_at: '2026-03-05T15:35:19.401603'
+  author: anthropics
+  description: Research and exploration agent
+  installs: 0
+  name: agent-researcher
+  rating: 0.0
+  source: https://github.com/anthropics/claude-code
+  source_host: github.com
+  tags:
+  - research
+  - exploration
+  updated_at: '2026-03-05T15:35:19.401603'
+  version: 1.0.0
+- added_at: '2026-03-05T15:35:19.403599'
+  author: openyoung
+  description: GitHub repository import skill
+  installs: 0
+  name: skill-github-import
+  rating: 0.0
+  source: local:skill-github-import
+  source_host: local
+  tags:
+  - import
+  - github
+  updated_at: '2026-03-05T15:35:19.403599'
+  version: 1.0.0
+- added_at: '2026-03-05T15:35:19.406245'
+  author: openyoung
+  description: Evaluation planning skill
+  installs: 0
+  name: skill-eval-planner
+  rating: 0.0
+  source: local:skill-eval-planner
+  source_host: local
+  tags:
+  - evaluation
+  - planning
+  updated_at: '2026-03-05T15:35:19.406245'
+  version: 1.0.0
+- added_at: '2026-03-05T15:35:19.409573'
+  author: openyoung
+  description: TDD workflow skill
+  installs: 0
+  name: skill-tdd-workflow
+  rating: 0.0
+  source: local:skill-tdd-workflow
+  source_host: local
+  tags:
+  - tdd
+  - testing
+  updated_at: '2026-03-05T15:35:19.409573'
+  version: 1.0.0
+updated_at: '2026-03-05T15:35:19.411791'

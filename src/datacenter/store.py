@@ -5,33 +5,33 @@ DataStore - 统一数据访问入口
 
 import json
 import sqlite3
-from pathlib import Path
-from typing import Dict, List, Any, Optional
 from datetime import datetime
-from dataclasses import dataclass, field
 from enum import Enum
-
-# SQLAlchemy
-from sqlalchemy import create_engine, Column, String, Integer, DateTime, Text, Index, Enum as SQLEnum
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
+from pathlib import Path
+from typing import Any
 
 # Blinker for events
 from blinker import signal
 
+# SQLAlchemy
+from sqlalchemy import Column, DateTime, Index, Integer, String, Text, create_engine
+from sqlalchemy.orm import Session, declarative_base, sessionmaker
+
 # 事件信号
-checkpoint_saved = signal('checkpoint.saved')
-run_started = signal('run.started')
-run_completed = signal('run.completed')
-workspace_created = signal('workspace.created')
+checkpoint_saved = signal("checkpoint.saved")
+run_started = signal("run.started")
+run_completed = signal("run.completed")
+workspace_created = signal("workspace.created")
 
 Base = declarative_base()
 
 
 # ========== SQLAlchemy Models ==========
 
+
 class EntityType(str, Enum):
     """实体类型"""
+
     AGENT = "agent"
     RUN = "run"
     CHECKPOINT = "checkpoint"
@@ -41,7 +41,8 @@ class EntityType(str, Enum):
 
 class Entity(Base):
     """统一实体表"""
-    __tablename__ = 'entities'
+
+    __tablename__ = "entities"
 
     id = Column(String, primary_key=True)
     entity_type = Column(String, nullable=False, index=True)
@@ -53,18 +54,19 @@ class Entity(Base):
     # 元数据 (重命名为 extra_data 避免 SQLAlchemy 冲突)
     created_at = Column(DateTime, default=datetime.now)
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
-    extra_data = Column(Text, default='{}')
+    extra_data = Column(Text, default="{}")
 
     # 索引
     __table_args__ = (
-        Index('idx_entity_type', 'entity_type'),
-        Index('idx_entity_updated', 'updated_at'),
+        Index("idx_entity_type", "entity_type"),
+        Index("idx_entity_updated", "updated_at"),
     )
 
 
 class Version(Base):
     """版本历史表"""
-    __tablename__ = 'versions'
+
+    __tablename__ = "versions"
 
     id = Column(String, primary_key=True)
     entity_type = Column(String, nullable=False)
@@ -74,16 +76,15 @@ class Version(Base):
 
     # 数据
     data = Column(Text, nullable=False)
-    message = Column(Text, default='')
+    message = Column(Text, default="")
 
     created_at = Column(DateTime, default=datetime.now)
 
-    __table_args__ = (
-        Index('idx_version_entity', 'entity_type', 'entity_id'),
-    )
+    __table_args__ = (Index("idx_version_entity", "entity_type", "entity_id"),)
 
 
 # ========== DataStore ==========
+
 
 class DataStore:
     """统一数据访问入口"""
@@ -93,7 +94,7 @@ class DataStore:
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
         self.db_path = self.data_dir / "datastore.db"
-        self.engine = create_engine(f'sqlite:///{self.db_path}')
+        self.engine = create_engine(f"sqlite:///{self.db_path}")
         self.SessionLocal = sessionmaker(bind=self.engine)
 
         # 初始化表
@@ -118,13 +119,13 @@ class DataStore:
 
     # ===== Agent 操作 =====
 
-    def save_agent(self, agent_id: str, data: Dict) -> str:
+    def save_agent(self, agent_id: str, data: dict) -> str:
         """保存 Agent"""
         entity = Entity(
             id=agent_id,
             entity_type=EntityType.AGENT.value,
             data=self._serialize(data),
-            created_at=datetime.now()
+            created_at=datetime.now(),
         )
 
         with self._get_session() as session:
@@ -138,30 +139,36 @@ class DataStore:
 
         return agent_id
 
-    def get_agent(self, agent_id: str) -> Optional[Dict]:
+    def get_agent(self, agent_id: str) -> dict | None:
         """获取 Agent"""
         with self._get_session() as session:
-            entity = session.query(Entity).filter_by(
-                id=agent_id,
-                entity_type=EntityType.AGENT.value
-            ).first()
+            entity = (
+                session.query(Entity)
+                .filter_by(id=agent_id, entity_type=EntityType.AGENT.value)
+                .first()
+            )
             return self._deserialize(entity.data) if entity else None
 
-    def list_agents(self, limit: int = 100) -> List[Dict]:
+    def list_agents(self, limit: int = 100) -> list[dict]:
         """列出所有 Agents"""
         with self._get_session() as session:
-            entities = session.query(Entity).filter_by(
-                entity_type=EntityType.AGENT.value
-            ).order_by(Entity.updated_at.desc()).limit(limit).all()
+            entities = (
+                session.query(Entity)
+                .filter_by(entity_type=EntityType.AGENT.value)
+                .order_by(Entity.updated_at.desc())
+                .limit(limit)
+                .all()
+            )
             return [{"id": e.id, **self._deserialize(e.data)} for e in entities]
 
     def delete_agent(self, agent_id: str) -> bool:
         """删除 Agent"""
         with self._get_session() as session:
-            entity = session.query(Entity).filter_by(
-                id=agent_id,
-                entity_type=EntityType.AGENT.value
-            ).first()
+            entity = (
+                session.query(Entity)
+                .filter_by(id=agent_id, entity_type=EntityType.AGENT.value)
+                .first()
+            )
             if entity:
                 session.delete(entity)
                 session.commit()
@@ -170,13 +177,13 @@ class DataStore:
 
     # ===== Run 操作 =====
 
-    def save_run(self, run_id: str, data: Dict) -> str:
+    def save_run(self, run_id: str, data: dict) -> str:
         """保存运行记录"""
         entity = Entity(
             id=run_id,
             entity_type=EntityType.RUN.value,
             data=self._serialize(data),
-            created_at=datetime.now()
+            created_at=datetime.now(),
         )
 
         with self._get_session() as session:
@@ -193,21 +200,18 @@ class DataStore:
 
         return run_id
 
-    def get_run(self, run_id: str) -> Optional[Dict]:
+    def get_run(self, run_id: str) -> dict | None:
         """获取运行记录"""
         with self._get_session() as session:
-            entity = session.query(Entity).filter_by(
-                id=run_id,
-                entity_type=EntityType.RUN.value
-            ).first()
+            entity = (
+                session.query(Entity).filter_by(id=run_id, entity_type=EntityType.RUN.value).first()
+            )
             return self._deserialize(entity.data) if entity else None
 
-    def list_runs(self, agent_id: str = None, limit: int = 100) -> List[Dict]:
+    def list_runs(self, agent_id: str = None, limit: int = 100) -> list[dict]:
         """列出运行记录"""
         with self._get_session() as session:
-            query = session.query(Entity).filter_by(
-                entity_type=EntityType.RUN.value
-            )
+            query = session.query(Entity).filter_by(entity_type=EntityType.RUN.value)
             if agent_id:
                 # 通过 metadata 过滤
                 entities = query.all()
@@ -223,13 +227,13 @@ class DataStore:
 
     # ===== Checkpoint 操作 =====
 
-    def save_checkpoint(self, checkpoint_id: str, data: Dict) -> str:
+    def save_checkpoint(self, checkpoint_id: str, data: dict) -> str:
         """保存 Checkpoint"""
         entity = Entity(
             id=checkpoint_id,
             entity_type=EntityType.CHECKPOINT.value,
             data=self._serialize(data),
-            created_at=datetime.now()
+            created_at=datetime.now(),
         )
 
         with self._get_session() as session:
@@ -241,21 +245,20 @@ class DataStore:
 
         return checkpoint_id
 
-    def get_checkpoint(self, checkpoint_id: str) -> Optional[Dict]:
+    def get_checkpoint(self, checkpoint_id: str) -> dict | None:
         """获取 Checkpoint"""
         with self._get_session() as session:
-            entity = session.query(Entity).filter_by(
-                id=checkpoint_id,
-                entity_type=EntityType.CHECKPOINT.value
-            ).first()
+            entity = (
+                session.query(Entity)
+                .filter_by(id=checkpoint_id, entity_type=EntityType.CHECKPOINT.value)
+                .first()
+            )
             return self._deserialize(entity.data) if entity else None
 
-    def list_checkpoints(self, session_id: str = None, limit: int = 10) -> List[Dict]:
+    def list_checkpoints(self, session_id: str = None, limit: int = 10) -> list[dict]:
         """列出 Checkpoints"""
         with self._get_session() as session:
-            query = session.query(Entity).filter_by(
-                entity_type=EntityType.CHECKPOINT.value
-            )
+            query = session.query(Entity).filter_by(entity_type=EntityType.CHECKPOINT.value)
 
             if session_id:
                 entities = query.all()
@@ -271,13 +274,13 @@ class DataStore:
 
     # ===== Workspace 操作 =====
 
-    def save_workspace(self, workspace_id: str, data: Dict) -> str:
+    def save_workspace(self, workspace_id: str, data: dict) -> str:
         """保存 Workspace"""
         entity = Entity(
             id=workspace_id,
             entity_type=EntityType.WORKSPACE.value,
             data=self._serialize(data),
-            created_at=datetime.now()
+            created_at=datetime.now(),
         )
 
         with self._get_session() as session:
@@ -294,18 +297,19 @@ class DataStore:
 
         return workspace_id
 
-    def get_workspace(self, workspace_id: str) -> Optional[Dict]:
+    def get_workspace(self, workspace_id: str) -> dict | None:
         """获取 Workspace"""
         with self._get_session() as session:
-            entity = session.query(Entity).filter_by(
-                id=workspace_id,
-                entity_type=EntityType.WORKSPACE.value
-            ).first()
+            entity = (
+                session.query(Entity)
+                .filter_by(id=workspace_id, entity_type=EntityType.WORKSPACE.value)
+                .first()
+            )
             return self._deserialize(entity.data) if entity else None
 
     # ===== 事务操作 =====
 
-    def save_with_transaction(self, operations: List[Dict]) -> bool:
+    def save_with_transaction(self, operations: list[dict]) -> bool:
         """原子性执行多个操作"""
         conn = sqlite3.connect(self.db_path)
         try:
@@ -317,10 +321,19 @@ class DataStore:
                 entity_id = op.get("id")
                 data = self._serialize(op.get("data"))
 
-                cursor.execute("""
+                cursor.execute(
+                    """
                     INSERT OR REPLACE INTO entities (id, entity_type, data, created_at, updated_at)
                     VALUES (?, ?, ?, ?, ?)
-                """, (entity_id, entity_type, data, datetime.now().isoformat(), datetime.now().isoformat()))
+                """,
+                    (
+                        entity_id,
+                        entity_type,
+                        data,
+                        datetime.now().isoformat(),
+                        datetime.now().isoformat(),
+                    ),
+                )
 
             conn.commit()
             return True
@@ -332,14 +345,16 @@ class DataStore:
 
     # ===== 版本控制 =====
 
-    def save_version(self, entity_type: str, entity_id: str, data: Dict, message: str = "") -> str:
+    def save_version(self, entity_type: str, entity_id: str, data: dict, message: str = "") -> str:
         """保存版本"""
         # 获取当前版本号
         with self._get_session() as session:
-            latest = session.query(Version).filter_by(
-                entity_type=entity_type,
-                entity_id=entity_id
-            ).order_by(Version.version.desc()).first()
+            latest = (
+                session.query(Version)
+                .filter_by(entity_type=entity_type, entity_id=entity_id)
+                .order_by(Version.version.desc())
+                .first()
+            )
 
             version = (latest.version + 1) if latest else 1
             version_id = f"{entity_id}_v{version}"
@@ -352,7 +367,7 @@ class DataStore:
                 parent_id=latest.id if latest else "",
                 data=self._serialize(data),
                 message=message,
-                created_at=datetime.now()
+                created_at=datetime.now(),
             )
 
             session.add(ver)
@@ -360,19 +375,21 @@ class DataStore:
 
             return version_id
 
-    def get_version(self, version_id: str) -> Optional[Dict]:
+    def get_version(self, version_id: str) -> dict | None:
         """获取版本"""
         with self._get_session() as session:
             ver = session.query(Version).filter_by(id=version_id).first()
             return self._deserialize(ver.data) if ver else None
 
-    def list_versions(self, entity_type: str, entity_id: str) -> List[Dict]:
+    def list_versions(self, entity_type: str, entity_id: str) -> list[dict]:
         """列出版本历史"""
         with self._get_session() as session:
-            versions = session.query(Version).filter_by(
-                entity_type=entity_type,
-                entity_id=entity_id
-            ).order_by(Version.version.desc()).all()
+            versions = (
+                session.query(Version)
+                .filter_by(entity_type=entity_type, entity_id=entity_id)
+                .order_by(Version.version.desc())
+                .all()
+            )
 
             return [
                 {
@@ -381,14 +398,14 @@ class DataStore:
                     "parent_id": v.parent_id,
                     "message": v.message,
                     "created_at": v.created_at.isoformat(),
-                    **self._deserialize(v.data)
+                    **self._deserialize(v.data),
                 }
                 for v in versions
             ]
 
     # ===== 统计 =====
 
-    def get_stats(self) -> Dict:
+    def get_stats(self) -> dict:
         """获取统计信息"""
         with self._get_session() as session:
             stats = {}
@@ -399,6 +416,7 @@ class DataStore:
 
 
 # ========== 便捷函数 ==========
+
 
 def get_data_store(data_dir: str = ".young") -> DataStore:
     """获取 DataStore 实例"""

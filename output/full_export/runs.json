@@ -1,0 +1,47 @@
+[
+  {
+    "id": 1,
+    "run_id": "run_df2acb326396",
+    "agent_id": "agent1",
+    "task": "test task 1",
+    "status": "success",
+    "started_at": "2026-03-06T17:52:52.534427",
+    "completed_at": "2026-03-06T17:52:52.535106",
+    "duration": 0.000673,
+    "input_tokens": 100,
+    "output_tokens": 200,
+    "error": null,
+    "metadata": "{}",
+    "created_at": "2026-03-06 09:52:52"
+  },
+  {
+    "id": 2,
+    "run_id": "run_45e49b92a070",
+    "agent_id": "agent1",
+    "task": "test task 2",
+    "status": "success",
+    "started_at": "2026-03-06T17:52:52.535741",
+    "completed_at": "2026-03-06T17:52:52.536616",
+    "duration": 0.000869,
+    "input_tokens": 150,
+    "output_tokens": 300,
+    "error": null,
+    "metadata": "{}",
+    "created_at": "2026-03-06 09:52:52"
+  },
+  {
+    "id": 3,
+    "run_id": "run_f55df9946b04",
+    "agent_id": "agent2",
+    "task": "test task 3",
+    "status": "failed",
+    "started_at": "2026-03-06T17:52:52.537107",
+    "completed_at": "2026-03-06T17:52:52.537722",
+    "duration": 0.000613,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "error": "test error",
+    "metadata": "{}",
+    "created_at": "2026-03-06 09:52:52"
+  }
+]

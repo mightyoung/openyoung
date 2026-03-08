@@ -3,11 +3,9 @@ Tenant DataStore - 租户物理隔离数据存储
 每个租户有独立的数据目录和数据库
 """
 
-import os
 import shutil
-from pathlib import Path
-from typing import Dict, List, Any, Optional
 from datetime import datetime
+from pathlib import Path
 
 from .store import DataStore
 
@@ -54,7 +52,7 @@ class TenantDataStore:
             "tenant_id": self.tenant_id,
             "exported_at": datetime.now().isoformat(),
             "agent_count": len(agents),
-            "run_count": len(runs)
+            "run_count": len(runs),
         }
         with open(export_dir / "metadata.json", "w") as f:
             json.dump(metadata, f, indent=2)
@@ -138,24 +136,21 @@ class TenantManager:
             "name": name or tenant_id,
             "created_at": datetime.now().isoformat(),
             "status": "active",
-            **kwargs
+            **kwargs,
         }
         self._save_tenants()
 
         return TenantDataStore(tenant_id, str(self.base_dir))
 
-    def get_tenant(self, tenant_id: str) -> Optional[TenantDataStore]:
+    def get_tenant(self, tenant_id: str) -> TenantDataStore | None:
         """获取租户"""
         if tenant_id not in self._tenants:
             return None
         return TenantDataStore(tenant_id, str(self.base_dir))
 
-    def list_tenants(self) -> List[Dict]:
+    def list_tenants(self) -> list[dict]:
         """列出租户"""
-        return [
-            {"tenant_id": tid, **info}
-            for tid, info in self._tenants.items()
-        ]
+        return [{"tenant_id": tid, **info} for tid, info in self._tenants.items()]
 
     def delete_tenant(self, tenant_id: str) -> bool:
         """删除租户"""
@@ -191,6 +186,7 @@ class TenantManager:
 
 
 # ========== 便捷函数 ==========
+
 
 def get_tenant_manager(base_dir: str = ".young") -> TenantManager:
     """获取租户管理器"""

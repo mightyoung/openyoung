@@ -1,13 +1,13 @@
 """隔离控制单元测试"""
-import pytest
-import sys
 import shutil
+import sys
 from pathlib import Path
+
+import pytest
 
 sys.path.insert(0, '.')
 
-from src.datacenter.isolation import IsolationManager
-from src.datacenter.models import IsolationLevel
+from src.datacenter.enterprise import IsolationLevel, IsolationManager
 
 TEST_ISOLATION = ".young/test_iso_unit"
 

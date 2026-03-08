@@ -3,9 +3,6 @@ PackageManager Provider - LLM Provider 管理
 """
 
 import os
-from pathlib import Path
-from typing import Dict, List, Optional
-from datetime import datetime
 
 
 class ProviderManager:
@@ -54,20 +51,20 @@ class ProviderManager:
         self.storage = storage
 
     @property
-    def available_providers(self) -> List[str]:
+    def available_providers(self) -> list[str]:
         """获取可用的 Provider 类型"""
         return list(self.PROVIDER_CONFIGS.keys())
 
-    def get_provider_info(self, provider_type: str) -> Optional[Dict]:
+    def get_provider_info(self, provider_type: str) -> dict | None:
         """获取 Provider 配置信息"""
         return self.PROVIDER_CONFIGS.get(provider_type)
 
-    def get_models_for_provider(self, provider_type: str) -> List[str]:
+    def get_models_for_provider(self, provider_type: str) -> list[str]:
         """获取 Provider 支持的模型列表"""
         info = self.get_provider_info(provider_type)
         return info["prefix"] if info else []
 
-    def detect_provider_type(self, model: str) -> Optional[str]:
+    def detect_provider_type(self, model: str) -> str | None:
         """根据模型名检测 Provider 类型"""
         for provider_type, config in self.PROVIDER_CONFIGS.items():
             for prefix in config["prefix"]:
@@ -75,7 +72,7 @@ class ProviderManager:
                     return provider_type
         return None
 
-    def get_api_key_from_env(self, provider_type: str) -> Optional[str]:
+    def get_api_key_from_env(self, provider_type: str) -> str | None:
         """从环境变量获取 API Key"""
         info = self.PROVIDER_CONFIGS.get(provider_type)
         if not info:
@@ -95,7 +92,7 @@ class ProviderManager:
         # 再尝试从独立的 API Key 环境变量获取
         return os.getenv(info.get("api_key_env"))
 
-    def get_base_url(self, provider_type: str) -> Optional[str]:
+    def get_base_url(self, provider_type: str) -> str | None:
         """获取 Provider 的 Base URL"""
         info = self.PROVIDER_CONFIGS.get(provider_type)
 
@@ -134,7 +131,7 @@ class ProviderManager:
 
         return True
 
-    def create_provider_from_env(self, provider_type: str) -> Optional[Dict]:
+    def create_provider_from_env(self, provider_type: str) -> dict | None:
         """从环境变量创建 Provider 配置"""
         info = self.PROVIDER_CONFIGS.get(provider_type)
         if not info:
@@ -172,7 +169,7 @@ class ProviderManager:
 
         return None
 
-    def load_all_from_env(self) -> List[Dict]:
+    def load_all_from_env(self) -> list[dict]:
         """从环境变量加载所有已配置的 Providers"""
         providers = []
 
@@ -183,7 +180,7 @@ class ProviderManager:
 
         return providers
 
-    def get_provider_for_model(self, model: str) -> Optional[Dict]:
+    def get_provider_for_model(self, model: str) -> dict | None:
         """根据模型获取 Provider 配置"""
         # 先尝试从存储中获取
         if self.storage:

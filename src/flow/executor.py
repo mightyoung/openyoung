@@ -4,38 +4,41 @@ Flow Executor - 流程编排执行器
 """
 
 import asyncio
-from typing import List, Dict, Any, Callable, Optional
-from enum import Enum
+from collections.abc import Callable
 from dataclasses import dataclass
+from enum import Enum
+from typing import Any
 
 
 class FlowType(Enum):
     """Flow 类型"""
+
     SEQUENTIAL = "sequential"  # 顺序执行
-    PARALLEL = "parallel"     # 并行执行
-    LOOP = "loop"             # 循环执行
+    PARALLEL = "parallel"  # 并行执行
+    LOOP = "loop"  # 循环执行
     CONDITIONAL = "conditional"  # 条件执行
 
 
 @dataclass
 class FlowStep:
     """Flow 步骤"""
+
     name: str
     task: str
-    handler: Optional[Callable] = None
+    handler: Callable | None = None
 
 
 class FlowExecutor:
     """Flow 执行器 - 简单的流程编排"""
 
     def __init__(self):
-        self.flows: Dict[str, List[FlowStep]] = {}
+        self.flows: dict[str, list[FlowStep]] = {}
 
-    def register_flow(self, name: str, steps: List[FlowStep]):
+    def register_flow(self, name: str, steps: list[FlowStep]):
         """注册一个 flow"""
         self.flows[name] = steps
 
-    async def execute_sequential(self, steps: List[FlowStep], context: Dict) -> List[Any]:
+    async def execute_sequential(self, steps: list[FlowStep], context: dict) -> list[Any]:
         """顺序执行"""
         results = []
         for step in steps:
@@ -46,7 +49,7 @@ class FlowExecutor:
             results.append(result)
         return results
 
-    async def execute_parallel(self, steps: List[FlowStep], context: Dict) -> List[Any]:
+    async def execute_parallel(self, steps: list[FlowStep], context: dict) -> list[Any]:
         """并行执行"""
         tasks = []
         for step in steps:
@@ -58,8 +61,8 @@ class FlowExecutor:
         return await asyncio.gather(*tasks)
 
     async def execute_loop(
-        self, steps: List[FlowStep], context: Dict, max_iterations: int = 3
-    ) -> List[Any]:
+        self, steps: list[FlowStep], context: dict, max_iterations: int = 3
+    ) -> list[Any]:
         """循环执行"""
         results = []
         for i in range(max_iterations):
@@ -69,7 +72,7 @@ class FlowExecutor:
         return results
 
     async def execute(
-        self, flow_name: str, flow_type: FlowType, context: Optional[Dict] = None
+        self, flow_name: str, flow_type: FlowType, context: dict | None = None
     ) -> Any:
         """执行 flow"""
         if flow_name not in self.flows:
@@ -89,7 +92,7 @@ class FlowExecutor:
 
 
 # 内置 Flows
-def get_builtin_flows() -> Dict[str, List[FlowStep]]:
+def get_builtin_flows() -> dict[str, list[FlowStep]]:
     """获取内置 Flows"""
     return {
         "code-review": [

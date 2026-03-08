@@ -2,24 +2,21 @@
 Skill Registry - Skill 注册表
 """
 
-from pathlib import Path
-from typing import Dict, List, Optional
 import json
+from pathlib import Path
 
-from .metadata import SkillMetadata
 from .loader import SkillLoader
+from .metadata import SkillMetadata
 
 
 class SkillRegistry:
     """Skill 注册表 - 管理 Skill 索引"""
 
-    def __init__(self, registry_path: Optional[Path] = None):
-        self.registry_path = (
-            registry_path or Path.home() / ".mightyoung" / "skill_registry.json"
-        )
-        self._index: Dict[str, SkillMetadata] = {}
+    def __init__(self, registry_path: Path | None = None):
+        self.registry_path = registry_path or Path.home() / ".mightyoung" / "skill_registry.json"
+        self._index: dict[str, SkillMetadata] = {}
 
-    def load(self) -> Dict[str, SkillMetadata]:
+    def load(self) -> dict[str, SkillMetadata]:
         """从文件加载注册表"""
         if not self.registry_path.exists():
             return {}
@@ -69,24 +66,20 @@ class SkillRegistry:
             return True
         return False
 
-    def get(self, name: str) -> Optional[SkillMetadata]:
+    def get(self, name: str) -> SkillMetadata | None:
         """获取 Skill 元数据"""
         return self._index.get(name)
 
-    def list_all(self) -> List[SkillMetadata]:
+    def list_all(self) -> list[SkillMetadata]:
         """列出所有 Skills"""
         return list(self._index.values())
 
-    def search_by_tag(self, tag: str) -> List[SkillMetadata]:
+    def search_by_tag(self, tag: str) -> list[SkillMetadata]:
         """按标签搜索"""
         tag_lower = tag.lower()
-        return [
-            m
-            for m in self._index.values()
-            if any(tag_lower in t.lower() for t in m.tags)
-        ]
+        return [m for m in self._index.values() if any(tag_lower in t.lower() for t in m.tags)]
 
-    def search_by_source(self, source: str) -> List[SkillMetadata]:
+    def search_by_source(self, source: str) -> list[SkillMetadata]:
         """按来源搜索"""
         return [m for m in self._index.values() if m.source == source]
 

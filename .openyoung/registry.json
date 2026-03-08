@@ -1,0 +1,123 @@
+{
+  "package_0": {
+    "name": "package_0",
+    "version": "1.0.0",
+    "package_type": "skill",
+    "description": "",
+    "entry": "",
+    "dependencies": [],
+    "checksum": "",
+    "source": "local",
+    "installed_at": "2026-03-09T00:26:01.886611"
+  },
+  "package_1": {
+    "name": "package_1",
+    "version": "1.0.0",
+    "package_type": "skill",
+    "description": "",
+    "entry": "",
+    "dependencies": [],
+    "checksum": "",
+    "source": "local",
+    "installed_at": "2026-03-09T00:26:01.888367"
+  },
+  "package_2": {
+    "name": "package_2",
+    "version": "1.0.0",
+    "package_type": "skill",
+    "description": "",
+    "entry": "",
+    "dependencies": [],
+    "checksum": "",
+    "source": "local",
+    "installed_at": "2026-03-09T00:26:01.889908"
+  },
+  "package_3": {
+    "name": "package_3",
+    "version": "1.0.0",
+    "package_type": "skill",
+    "description": "",
+    "entry": "",
+    "dependencies": [],
+    "checksum": "",
+    "source": "local",
+    "installed_at": "2026-03-09T00:26:01.891366"
+  },
+  "package_4": {
+    "name": "package_4",
+    "version": "1.0.0",
+    "package_type": "skill",
+    "description": "",
+    "entry": "",
+    "dependencies": [],
+    "checksum": "",
+    "source": "local",
+    "installed_at": "2026-03-09T00:26:01.892932"
+  },
+  "package_5": {
+    "name": "package_5",
+    "version": "1.0.0",
+    "package_type": "skill",
+    "description": "",
+    "entry": "",
+    "dependencies": [],
+    "checksum": "",
+    "source": "local",
+    "installed_at": "2026-03-09T00:26:01.894567"
+  },
+  "package_6": {
+    "name": "package_6",
+    "version": "1.0.0",
+    "package_type": "skill",
+    "description": "",
+    "entry": "",
+    "dependencies": [],
+    "checksum": "",
+    "source": "local",
+    "installed_at": "2026-03-09T00:26:01.896019"
+  },
+  "package_7": {
+    "name": "package_7",
+    "version": "1.0.0",
+    "package_type": "skill",
+    "description": "",
+    "entry": "",
+    "dependencies": [],
+    "checksum": "",
+    "source": "local",
+    "installed_at": "2026-03-09T00:26:01.897483"
+  },
+  "package_8": {
+    "name": "package_8",
+    "version": "1.0.0",
+    "package_type": "skill",
+    "description": "",
+    "entry": "",
+    "dependencies": [],
+    "checksum": "",
+    "source": "local",
+    "installed_at": "2026-03-09T00:26:01.898924"
+  },
+  "package_9": {
+    "name": "package_9",
+    "version": "1.0.0",
+    "package_type": "skill",
+    "description": "",
+    "entry": "",
+    "dependencies": [],
+    "checksum": "",
+    "source": "local",
+    "installed_at": "2026-03-09T00:26:01.900366"
+  },
+  "test_package": {
+    "name": "test_package",
+    "version": "1.0.0",
+    "package_type": "skill",
+    "description": "",
+    "entry": "",
+    "dependencies": [],
+    "checksum": "",
+    "source": "local",
+    "installed_at": "2026-03-09T00:25:59.189617"
+  }
+}

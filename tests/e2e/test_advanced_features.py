@@ -4,13 +4,10 @@ E2E Tests - Advanced Features
 Tests for OpenYoung advanced features: Evolver, FlowSkill, Harness
 """
 
-import pytest
-import asyncio
 import json
 import os
-from pathlib import Path
-from datetime import datetime
 
+import pytest
 
 # ========================
 # Evolver Tests
@@ -217,8 +214,9 @@ class TestFlowSkillBase:
 
     def test_flow_skill_abstract(self):
         """Test FlowSkill cannot be instantiated directly"""
-        from src.flow.base import FlowSkill
         from abc import ABC
+
+        from src.flow.base import FlowSkill
 
         # FlowSkill is ABC, cannot instantiate
         assert issubclass(FlowSkill, ABC)
@@ -466,9 +464,9 @@ class TestEvolverFlowIntegration:
     @pytest.mark.asyncio
     async def test_flow_with_evolution(self):
         """Test FlowSkill triggering evolution"""
-        from src.flow.sequential import SequentialFlow
         from src.evolver.engine import EvolutionEngine
         from src.evolver.models import Gene, GeneCategory
+        from src.flow.sequential import SequentialFlow
 
         # Create flow
         flow = SequentialFlow()
@@ -528,7 +526,7 @@ class TestFullEvolutionWorkflow:
     async def test_complete_evolution_cycle(self):
         """Test complete evolution: gene -> capsule -> personality"""
         from src.evolver.engine import EvolutionEngine, PersonalityManager
-        from src.evolver.models import Gene, GeneCategory, EvolutionEventType
+        from src.evolver.models import Gene, GeneCategory
 
         # Initialize engine and manager
         engine = EvolutionEngine()

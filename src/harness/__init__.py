@@ -2,9 +2,9 @@
 Harness - 运行时状态管理
 """
 
-from enum import Enum
 from dataclasses import dataclass
 from datetime import datetime
+from enum import Enum
 from typing import Any, Dict, Optional
 
 
@@ -24,8 +24,8 @@ class HarnessStats:
     total_steps: int = 0
     successful_steps: int = 0
     failed_steps: int = 0
-    start_time: Optional[datetime] = None
-    end_time: Optional[datetime] = None
+    start_time: datetime | None = None
+    end_time: datetime | None = None
 
 
 class Harness:
@@ -33,9 +33,9 @@ class Harness:
 
     def __init__(self):
         self.status = HarnessStatus.IDLE
-        self.start_time: Optional[datetime] = None
+        self.start_time: datetime | None = None
         self.stats = HarnessStats()
-        self._metadata: Dict[str, Any] = {}
+        self._metadata: dict[str, Any] = {}
 
     def start(self) -> None:
         """启动 Harness"""
@@ -67,7 +67,7 @@ class Harness:
         else:
             self.stats.failed_steps += 1
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """获取当前状态"""
         return {
             "status": self.status.value,
@@ -82,7 +82,7 @@ class Harness:
         """设置元数据"""
         self._metadata[key] = value
 
-    def get_metadata(self, key: str) -> Optional[Any]:
+    def get_metadata(self, key: str) -> Any | None:
         """获取元数据"""
         return self._metadata.get(key)
 
@@ -97,12 +97,8 @@ class Harness:
                 "total_steps": self.stats.total_steps,
                 "successful_steps": self.stats.successful_steps,
                 "failed_steps": self.stats.failed_steps,
-                "start_time": self.stats.start_time.isoformat()
-                if self.stats.start_time
-                else None,
-                "end_time": self.stats.end_time.isoformat()
-                if self.stats.end_time
-                else None,
+                "start_time": self.stats.start_time.isoformat() if self.stats.start_time else None,
+                "end_time": self.stats.end_time.isoformat() if self.stats.end_time else None,
             },
             "metadata": self._metadata,
         }
@@ -114,15 +110,13 @@ class Harness:
         """从文件加载 Harness 状态"""
         import json
 
-        with open(path, "r") as f:
+        with open(path) as f:
             data = json.load(f)
 
         harness = cls()
         harness.status = HarnessStatus(data.get("status", "idle"))
         harness.start_time = (
-            datetime.fromisoformat(data["start_time"])
-            if data.get("start_time")
-            else None
+            datetime.fromisoformat(data["start_time"]) if data.get("start_time") else None
         )
 
         stats_data = data.get("stats", {})
@@ -135,9 +129,7 @@ class Harness:
             else None
         )
         harness.stats.end_time = (
-            datetime.fromisoformat(stats_data["end_time"])
-            if stats_data.get("end_time")
-            else None
+            datetime.fromisoformat(stats_data["end_time"]) if stats_data.get("end_time") else None
         )
 
         harness._metadata = data.get("metadata", {})

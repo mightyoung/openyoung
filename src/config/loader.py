@@ -3,10 +3,11 @@ Config Loader - 配置文件加载器
 支持 YAML 和 .env
 """
 
-import os
 import json
+import os
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
+
 import yaml
 
 
@@ -15,9 +16,9 @@ class ConfigLoader:
 
     def __init__(self, project_root: str = "."):
         self.project_root = Path(project_root)
-        self._config: Dict[str, Any] = {}
+        self._config: dict[str, Any] = {}
 
-    def load_yaml(self, filename: str) -> Dict[str, Any]:
+    def load_yaml(self, filename: str) -> dict[str, Any]:
         """加载 YAML 配置"""
         path = self.project_root / filename
         if not path.exists():
@@ -26,7 +27,7 @@ class ConfigLoader:
         with open(path) as f:
             return yaml.safe_load(f) or {}
 
-    def load_json(self, filename: str) -> Dict[str, Any]:
+    def load_json(self, filename: str) -> dict[str, Any]:
         """加载 JSON 配置"""
         path = self.project_root / filename
         if not path.exists():
@@ -35,13 +36,11 @@ class ConfigLoader:
         with open(path) as f:
             return json.load(f)
 
-    def load_env(self, prefix: str = "YOUNG_") -> Dict[str, str]:
+    def load_env(self, prefix: str = "YOUNG_") -> dict[str, str]:
         """加载环境变量"""
-        return {
-            key: value for key, value in os.environ.items() if key.startswith(prefix)
-        }
+        return {key: value for key, value in os.environ.items() if key.startswith(prefix)}
 
-    def merge_configs(self, *configs: Dict[str, Any]) -> Dict[str, Any]:
+    def merge_configs(self, *configs: dict[str, Any]) -> dict[str, Any]:
         """合并多个配置"""
         result = {}
         for config in configs:
@@ -69,7 +68,7 @@ class ConfigLoader:
             config = config[k]
         config[keys[-1]] = value
 
-    def load_all(self, filenames: List[str] = None) -> Dict[str, Any]:
+    def load_all(self, filenames: List[str] = None) -> dict[str, Any]:
         """加载所有配置"""
         configs = []
 
@@ -93,6 +92,3 @@ class ConfigLoader:
         # 合并
         self._config = self.merge_configs(*configs)
         return self._config
-
-
-from typing import List

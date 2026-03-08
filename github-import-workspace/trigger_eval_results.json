@@ -1,0 +1,135 @@
+{
+  "total": 20,
+  "passed": 20,
+  "failed": 0,
+  "true_positives": 10,
+  "true_negatives": 10,
+  "false_positives": 0,
+  "false_negatives": 0,
+  "queries": [
+    {
+      "query": "从 GitHub 导入 anthropics/claude-code 作为本地 agent",
+      "expected": true,
+      "predicted": true,
+      "correct": true
+    },
+    {
+      "query": "帮我从 GitHub 上拉取 ruvnet/claude-flow 并配置成本地 agent",
+      "expected": true,
+      "predicted": true,
+      "correct": true
+    },
+    {
+      "query": "import github https://github.com/affaan-m/everything-claude-code as my-agent",
+      "expected": true,
+      "predicted": true,
+      "correct": true
+    },
+    {
+      "query": "克隆一个 GitHub 仓库作为我的开发助手",
+      "expected": true,
+      "predicted": true,
+      "correct": true
+    },
+    {
+      "query": "把 GitHub 上的 Claude Code 项目下到本地",
+      "expected": true,
+      "predicted": true,
+      "correct": true
+    },
+    {
+      "query": "从 github 拉取 agent 模板到本地项目",
+      "expected": true,
+      "predicted": true,
+      "correct": true
+    },
+    {
+      "query": "我想要一个类似 claude-code 的 agent 配置",
+      "expected": true,
+      "predicted": true,
+      "correct": true
+    },
+    {
+      "query": "将 GitHub 仓库配置成 OpenYoung 可用的 agent",
+      "expected": true,
+      "predicted": true,
+      "correct": true
+    },
+    {
+      "query": "下载并配置 GitHub 上的 AI agent 项目",
+      "expected": true,
+      "predicted": true,
+      "correct": true
+    },
+    {
+      "query": "从 GitHub 克隆 agent 配置到本地 packages 目录",
+      "expected": true,
+      "predicted": true,
+      "correct": true
+    },
+    {
+      "query": "帮我写一个 Python 排序函数",
+      "expected": false,
+      "predicted": false,
+      "correct": true
+    },
+    {
+      "query": "分析这段代码的质量",
+      "expected": false,
+      "predicted": false,
+      "correct": true
+    },
+    {
+      "query": "创建一个 React 组件",
+      "expected": false,
+      "predicted": false,
+      "correct": true
+    },
+    {
+      "query": "修复这个 bug",
+      "expected": false,
+      "predicted": false,
+      "correct": true
+    },
+    {
+      "query": "帮我写一篇博客文章",
+      "expected": false,
+      "predicted": false,
+      "correct": true
+    },
+    {
+      "query": "从网上爬取一些数据",
+      "expected": false,
+      "predicted": false,
+      "correct": true
+    },
+    {
+      "query": "优化一下这个函数的性能",
+      "expected": false,
+      "predicted": false,
+      "correct": true
+    },
+    {
+      "query": "给我讲讲什么是机器学习",
+      "expected": false,
+      "predicted": false,
+      "correct": true
+    },
+    {
+      "query": "翻译这段英文到中文",
+      "expected": false,
+      "predicted": false,
+      "correct": true
+    },
+    {
+      "query": "帮我整理一下这个项目的文件结构",
+      "expected": false,
+      "predicted": false,
+      "correct": true
+    }
+  ],
+  "precision": 1.0,
+  "recall": 1.0,
+  "f1": 1.0,
+  "accuracy": 1.0
+}

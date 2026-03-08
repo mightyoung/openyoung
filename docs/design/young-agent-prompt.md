@@ -262,66 +262,66 @@ ${flow_skills}
 ```python
 class PromptTemplate:
     """提示词模板"""
-    
+
     def __init__(self, name: str, sections: dict[str, str]):
         self.name = name
         self.sections = sections
-    
+
     def render(self, variables: dict = None) -> str:
         """渲染模板"""
         content = ""
-        
+
         for section_name, section_content in self.sections.items():
             content += f"# {section_name}\n{section_content}\n\n"
-        
+
         # 替换变量
         if variables:
             for key, value in variables.items():
                 content = content.replace(f"${{{key}}}", value)
-        
+
         return content
 
 
 class PromptLoader:
     """提示词加载器"""
-    
+
     TEMPLATES = {
         "devin": "templates/devin.md",
         "windsurf": "templates/windsurf.md",
         "manus": "templates/manus.md",
         "minimal": "templates/minimal.md",
     }
-    
+
     def __init__(self):
         self._cache: dict[str, PromptTemplate] = {}
-    
+
     async def load(self, name: str) -> PromptTemplate:
         """加载模板"""
         if name in self._cache:
             return self._cache[name]
-        
+
         template_path = self.TEMPLATES.get(name)
         if not template_path:
             raise ValueError(f"Unknown template: {name}")
-        
+
         content = await self._read_template(template_path)
         template = self._parse(name, content)
-        
+
         self._cache[name] = template
         return template
-    
+
     def _parse(self, name: str, content: str) -> PromptTemplate:
         """解析模板"""
         sections = {}
         current_section = "default"
-        
+
         for line in content.split("\n"):
             if line.startswith("# "):
                 current_section = line[2:]
                 sections[current_section] = ""
             else:
                 sections[current_section] += line + "\n"
-        
+
         return PromptTemplate(name, sections)
 ```
 

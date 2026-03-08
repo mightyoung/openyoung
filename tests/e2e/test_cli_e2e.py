@@ -4,12 +4,13 @@ E2E Tests - CLI Commands
 Tests for OpenYoung CLI commands using subprocess.
 """
 
-import subprocess
-import pytest
-import sys
 import json
 import os
+import subprocess
+import sys
 from pathlib import Path
+
+import pytest
 
 
 class TestCLICommands:
@@ -95,8 +96,7 @@ class TestLLMApiIntegration:
 
         client = LLMClient()
         assert client is not None
-        if len(client._configs) == 0:
-            pytest.skip("No LLM configs loaded - check .env file")
+        # Just verify client was created - configs are optional
 
     @pytest.mark.asyncio
     async def test_deepseek_api_call(self):

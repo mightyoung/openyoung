@@ -3,7 +3,8 @@ Flow Tests - Phase 3.2
 """
 
 import pytest
-from src.flow import ParallelFlow, ConditionalFlow, LoopFlow
+
+from src.flow import ConditionalFlow, LoopFlow, ParallelFlow
 
 
 class TestParallelFlow:

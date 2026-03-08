@@ -1,0 +1,65 @@
+{
+  "deepseek": {
+    "name": "deepseek",
+    "provider_type": "deepseek",
+    "base_url": "https://api.deepseek.com",
+    "api_key": "sk-72e4f93aae054f6f8d4e4a0e8484cff7",
+    "models": [
+      "deepseek-chat",
+      "deepseek-coder",
+      "deepseek-reasoner"
+    ],
+    "enabled": true
+  },
+  "moonshot": {
+    "name": "moonshot",
+    "provider_type": "moonshot",
+    "base_url": "https://api.moonshot.cn/v1",
+    "api_key": "sk-5PC8Hb9eEUoQyChgG4P4m7VZYS5fYmTCaE1t4KnNZlWRKsRW",
+    "models": [
+      "moonshot-v1-8k",
+      "moonshot-v1-32k",
+      "moonshot-v1-128k",
+      "kimi-k2.5"
+    ],
+    "enabled": true
+  },
+  "qwen": {
+    "name": "qwen",
+    "provider_type": "qwen",
+    "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "api_key": "sk-001574b0bf7a45bbaad14864b280e138",
+    "models": [
+      "qwen-plus",
+      "qwen-turbo",
+      "qwen-max",
+      "qwen-max-longcontext"
+    ],
+    "enabled": true
+  },
+  "glm": {
+    "name": "glm",
+    "provider_type": "glm",
+    "base_url": "https://open.bigmodel.cn/api/paas/v4",
+    "api_key": "9122ca1127b04cb8a39e9eab78b32709.Iyc5xlEuut2pHUb4",
+    "models": [
+      "glm-5",
+      "glm-4",
+      "glm-4-flash",
+      "glm-4.7"
+    ],
+    "enabled": true
+  },
+  "openai": {
+    "name": "openai",
+    "provider_type": "openai",
+    "base_url": "https://api.openai.com/v1",
+    "api_key": "sk-proj-XXXXXXXXXXXXXXXXXXXXXX",
+    "models": [
+      "gpt-4",
+      "gpt-4-turbo",
+      "gpt-3.5-turbo"
+    ],
+    "enabled": true
+  }
+}

@@ -4,7 +4,10 @@ FlowSkill - 工作流编排基类
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from src.flow.pipeline import Pipeline
 
 
 class FlowSkill(ABC):
@@ -15,6 +18,8 @@ class FlowSkill(ABC):
     - post_process: 后置处理（Agent 输出返回前）
     - should_delegate: 判断是否需要委托给 SubAgent
     - get_subagent_type: 获取合适的 SubAgent 类型
+    - get_pipeline: 返回执行管道（可选）
+    - get_subtasks: 分解为子任务（可选）
     """
 
     @property
@@ -32,6 +37,11 @@ class FlowSkill(ABC):
     @property
     def trigger_patterns(self) -> list[str]:
         """触发模式"""
+        return []
+
+    @property
+    def parallel_stages(self) -> list[str]:
+        """可并行执行的 Stage 名称列表"""
         return []
 
     @abstractmethod
@@ -67,12 +77,37 @@ class FlowSkill(ABC):
         """
         return False
 
-    async def get_subagent_type(self, task: str) -> Optional[str]:
+    async def get_subagent_type(self, task: str) -> str | None:
         """获取合适的 SubAgent 类型
 
         默认返回 None，子类可以重写
         """
         return None
+
+    async def get_pipeline(self, task: str) -> Optional["Pipeline"]:
+        """返回执行管道
+
+        如果返回 Pipeline，则使用管道方式执行
+        否则使用传统方式
+
+        Returns:
+            Pipeline 实例或 None
+        """
+        return None
+
+    async def get_subtasks(self, task: str) -> list[dict]:
+        """分解为子任务
+
+        返回格式：
+        [
+            {"name": "task1", "description": "...", "parallel": False},
+            {"name": "task2", "description": "...", "parallel": True},
+        ]
+
+        Returns:
+            子任务列表
+        """
+        return []
 
     def _decompose(self, user_input: str) -> list[str]:
         """分解任务为步骤（默认实现）"""

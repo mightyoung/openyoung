@@ -2,13 +2,12 @@
 Skill Loader - 渐进式披露 + 统一检索
 """
 
-import yaml
-from pathlib import Path
-from pathlib import Path
-from typing import Optional, List, Dict
 from datetime import datetime
+from pathlib import Path
 
-from .metadata import SkillMetadata, LoadedSkill, RetrievalConfig, SkillRequires
+import yaml
+
+from .metadata import LoadedSkill, RetrievalConfig, SkillMetadata, SkillRequires
 
 
 class SkillLoader:
@@ -16,13 +15,13 @@ class SkillLoader:
 
     def __init__(
         self,
-        skills_dir: Optional[Path] = None,
-        config: Optional[RetrievalConfig] = None,
+        skills_dir: Path | None = None,
+        config: RetrievalConfig | None = None,
     ):
         self.skills_dir = skills_dir or Path(__file__).parent.parent / "skills"
         self.config = config or RetrievalConfig()
-        self._metadata_index: Dict[str, SkillMetadata] = {}
-        self._loaded_skills: Dict[str, LoadedSkill] = {}
+        self._metadata_index: dict[str, SkillMetadata] = {}
+        self._loaded_skills: dict[str, LoadedSkill] = {}
 
         # 统一检索器
         self._retriever = None
@@ -48,7 +47,7 @@ class SkillLoader:
                 skill_yaml = skill_dir / "skill.yaml"
                 if not skill_yaml.exists():
                     continue
-                
+
                 metadata = self._parse_metadata(skill_yaml)
                 metadata.source = "local"
                 self._metadata_index[metadata.name] = metadata
@@ -108,7 +107,7 @@ class SkillLoader:
         self._retriever = UnifiedSkillRetriever(self.config)
         await self._retriever.initialize(skills)
 
-    async def find_skills_for_task(self, task_description: str) -> List[LoadedSkill]:
+    async def find_skills_for_task(self, task_description: str) -> list[LoadedSkill]:
         """根据任务描述找到相关 Skills - 统一检索入口"""
         # 优先尝试语义检索
         if self._retriever and self.config.semantic_enabled:
@@ -125,13 +124,14 @@ class SkillLoader:
         # 回退到简单搜索
         return await self._simple_search(task_description)
 
-    def _tokenize(self, text: str) -> List[str]:
+    def _tokenize(self, text: str) -> list[str]:
         """分词处理 - 支持中英文"""
         text_lower = text.lower()
 
         # 尝试使用 jieba 分词
         try:
             import jieba
+
             words = list(jieba.cut(text_lower))
             return [w for w in words if w.strip()]
         except ImportError:
@@ -139,17 +139,17 @@ class SkillLoader:
 
         # 回退: 英文按空格, 中文按字符 (2-4gram)
         words = text_lower.split()
-        if len(words) == 1 and any('\u4e00' <= c <= '\u9fff' for c in text):
+        if len(words) == 1 and any("\u4e00" <= c <= "\u9fff" for c in text):
             # 中文: 生成 2-4 字词组
-            chinese_text = ''.join(c for c in text_lower if '\u4e00' <= c <= '\u9fff')
+            chinese_text = "".join(c for c in text_lower if "\u4e00" <= c <= "\u9fff")
             ngrams = []
             for n in range(2, 5):
-                ngrams.extend([chinese_text[i:i+n] for i in range(len(chinese_text) - n + 1)])
+                ngrams.extend([chinese_text[i : i + n] for i in range(len(chinese_text) - n + 1)])
             words = ngrams
 
         return words
 
-    async def _simple_search(self, query: str) -> List[LoadedSkill]:
+    async def _simple_search(self, query: str) -> list[LoadedSkill]:
         """简单搜索 (无 Embedding 时回退)"""
         query_words = self._tokenize(query)
         results = []
@@ -176,9 +176,9 @@ class SkillLoader:
                     if skill:
                         results.append(skill)
 
-        return results[:self.config.final_top_k]
+        return results[: self.config.final_top_k]
 
-    async def load_skill(self, skill_name: str) -> Optional[LoadedSkill]:
+    async def load_skill(self, skill_name: str) -> LoadedSkill | None:
         """阶段 2: 按需加载完整指令"""
         # 如果已加载，直接返回
         if skill_name in self._loaded_skills:
@@ -203,11 +203,11 @@ class SkillLoader:
         if skill_name in self._loaded_skills:
             del self._loaded_skills[skill_name]
 
-    def get_metadata(self, skill_name: str) -> Optional[SkillMetadata]:
+    def get_metadata(self, skill_name: str) -> SkillMetadata | None:
         """获取 Skill 元数据（不加载内容）"""
         return self._metadata_index.get(skill_name)
 
-    def list_all_metadata(self) -> List[SkillMetadata]:
+    def list_all_metadata(self) -> list[SkillMetadata]:
         """列出所有 Skill 元数据"""
         return list(self._metadata_index.values())
 
@@ -304,14 +304,14 @@ class SkillLoader:
         except Exception:
             return None
 
-    def check_requirements(self, metadata: SkillMetadata) -> tuple[bool, List[str]]:
+    def check_requirements(self, metadata: SkillMetadata) -> tuple[bool, list[str]]:
         """检查 Skill 依赖是否满足
 
         Returns:
             (是否满足, 缺失的依赖列表)
         """
-        import shutil
         import os
+        import shutil
 
         missing = []
 
@@ -327,12 +327,9 @@ class SkillLoader:
 
         return len(missing) == 0, missing
 
-    def get_always_skills(self) -> List[SkillMetadata]:
+    def get_always_skills(self) -> list[SkillMetadata]:
         """获取总是加载的 Skills"""
-        return [
-            meta for meta in self._metadata_index.values()
-            if meta.always
-        ]
+        return [meta for meta in self._metadata_index.values() if meta.always]
 
     async def _load_skill_content(self, skill_dir: Path) -> str:
         """加载 Skill 完整内容"""
@@ -347,7 +344,7 @@ class SkillLoader:
 
         return ""
 
-    def get_loaded_skills(self) -> Dict[str, LoadedSkill]:
+    def get_loaded_skills(self) -> dict[str, LoadedSkill]:
         """获取所有已加载的 Skills"""
         return self._loaded_skills.copy()
 

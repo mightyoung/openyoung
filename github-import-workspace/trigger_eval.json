@@ -1,0 +1,22 @@
+[
+  {"query": "从 GitHub 导入 anthropics/claude-code 作为本地 agent", "should_trigger": true},
+  {"query": "帮我从 GitHub 上拉取 ruvnet/claude-flow 并配置成本地 agent", "should_trigger": true},
+  {"query": "import github https://github.com/affaan-m/everything-claude-code as my-agent", "should_trigger": true},
+  {"query": "克隆一个 GitHub 仓库作为我的开发助手", "should_trigger": true},
+  {"query": "把 GitHub 上的 Claude Code 项目下到本地", "should_trigger": true},
+  {"query": "从 github 拉取 agent 模板到本地项目", "should_trigger": true},
+  {"query": "我想要一个类似 claude-code 的 agent 配置", "should_trigger": true},
+  {"query": "将 GitHub 仓库配置成 OpenYoung 可用的 agent", "should_trigger": true},
+  {"query": "下载并配置 GitHub 上的 AI agent 项目", "should_trigger": true},
+  {"query": "从 GitHub 克隆 agent 配置到本地 packages 目录", "should_trigger": true},
+  {"query": "帮我写一个 Python 排序函数", "should_trigger": false},
+  {"query": "分析这段代码的质量", "should_trigger": false},
+  {"query": "创建一个 React 组件", "should_trigger": false},
+  {"query": "修复这个 bug", "should_trigger": false},
+  {"query": "帮我写一篇博客文章", "should_trigger": false},
+  {"query": "从网上爬取一些数据", "should_trigger": false},
+  {"query": "优化一下这个函数的性能", "should_trigger": false},
+  {"query": "给我讲讲什么是机器学习", "should_trigger": false},
+  {"query": "翻译这段英文到中文", "should_trigger": false},
+  {"query": "帮我整理一下这个项目的文件结构", "should_trigger": false}
+]

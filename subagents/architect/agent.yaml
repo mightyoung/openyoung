@@ -1,0 +1,10 @@
+description: Represents an Architect role in a software development process.
+evaluations: []
+hidden: false
+instructions: ''
+mcps: []
+model: deepseek-chat
+name: architect
+skills: []
+temperature: 0.7
+type: general

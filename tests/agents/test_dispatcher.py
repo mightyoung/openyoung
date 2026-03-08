@@ -3,13 +3,13 @@ TaskDispatcher Tests - Task 2.2
 """
 
 import pytest
-from src.agents.dispatcher import TaskDispatcher, Session
+
+from src.agents.dispatcher import Session, TaskDispatcher
 from src.agents.young_agent import SubAgent
 from src.core.types import (
     SubAgentConfig,
     SubAgentType,
     TaskDispatchParams,
-    PermissionConfig,
 )
 
 

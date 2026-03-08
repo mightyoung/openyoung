@@ -53,7 +53,7 @@ class YoungAgent:
         self.packages: Dict[str, Package] = {}
         self.skills: Dict[str, Skill] = {}
         self.tools: Dict[str, BaseTool] = {}
-    
+
     async def initialize(self):
         """初始化时加载配置的包"""
         # 1. 读取 Agent 配置中的依赖
@@ -61,23 +61,23 @@ class YoungAgent:
             # 2. 从 Package Manager 获取包
             package = await self.package_manager.get(pkg_name)
             self.packages[pkg_name] = package
-            
+
             # 3. 提取并注册 Skill
             if package.has_skill():
                 skill = package.get_skill()
                 self.skills[skill.name] = skill
-            
+
             # 4. 提取并注册 Tools
             if package.has_tools():
                 tools = package.get_tools()
                 for tool in tools:
                     self.tools[tool.name] = tool
-    
+
     async def load_skill(self, skill_name: str) -> Skill:
         """按需加载 Skill"""
         if skill_name in self.skills:
             return self.skills[skill_name]
-        
+
         # 动态加载
         package = await self.package_manager.get(f"@{skill_name}")
         skill = package.get_skill()
@@ -96,7 +96,7 @@ agent:
     - "@mcp/github"          # MCP 包
     - "@tools/linter"        # Tools 包
     - "@eval/correctness"   # Evaluation 包
-  
+
 packages:
     install_on_startup: true
     source_priority:
@@ -165,7 +165,7 @@ class DataCenterConfig:
     """DataCenter 配置"""
     # 存储类型
     storage: StorageType = StorageType.MEMORY
-    
+
     # PostgreSQL 配置
     postgres:
         host: str = "localhost"
@@ -173,20 +173,20 @@ class DataCenterConfig:
         database: str = "young"
         user: str = "postgres"
         password: str = ""
-    
+
     # Redis 配置 (可选)
     redis:
         host: str = "localhost"
         port: int = 6379
         password: str = ""
         db: int = 0
-    
+
     # 数据保留策略
     retention:
         trace_days: int = 30        # 轨迹保留天数
         memory_days: int = 90       # 记忆保留天数
         checkpoint_days: int = 7     # 检查点保留天数
-    
+
     # Harness 配置
     harness:
         enabled: bool = True
@@ -200,15 +200,15 @@ class YoungAgent:
         self.datacenter_config = config.datacenter
         self.datacenter: Optional[DataCenter] = None
         self.harness: Optional[Harness] = None
-    
+
     async def initialize(self):
         """初始化 DataCenter"""
         # 1. 创建 DataCenter 实例
         self.datacenter = DataCenter(self.datacenter_config)
-        
+
         # 2. 初始化存储
         await self.datacenter.initialize()
-        
+
         # 3. 初始化 Harness
         if self.datacenter_config.harness.enabled:
             self.harness = Harness(
@@ -216,7 +216,7 @@ class YoungAgent:
                 config=self.datacenter_config.harness
             )
             await self.harness.initialize()
-    
+
     async def _record_trace(self, tool_call: ToolCall, result: str):
         """记录执行轨迹到 DataCenter"""
         if self.harness:
@@ -248,9 +248,9 @@ DataCenter 为 YoungAgent 提供高质量数据的获取能力：
 ```python
 class DataAccessor:
     """高质量数据访问接口"""
-    
+
     async def get_similar_tasks(
-        self, 
+        self,
         task_description: str,
         limit: int = 5
     ) -> List[TraceRecord]:
@@ -260,7 +260,7 @@ class DataAccessor:
             query=task_description,
             limit=limit
         )
-    
+
     async def get_failure_patterns(
         self,
         tool_name: str = None
@@ -269,7 +269,7 @@ class DataAccessor:
         return await self.datacenter.patterns.get_failures(
             tool_name=tool_name
         )
-    
+
     async def get_success_strategies(
         self,
         task_type: str
@@ -278,7 +278,7 @@ class DataAccessor:
         return await self.datacenter.learn.from_success(
             task_type=task_type
         )
-    
+
     async def get_quality_metrics(
         self,
         session_id: str = None
@@ -290,18 +290,18 @@ class DataAccessor:
 
 class YoungAgent:
     """YoungAgent 集成 DataAccessor"""
-    
+
     async def _get_relevant_data(self, task: Task) -> dict:
         """获取任务相关的高质量数据"""
         data_accessor = DataAccessor(self.datacenter)
-        
+
         # 并行获取多种数据
         results = await asyncio.gather(
             data_accessor.get_similar_tasks(task.description),
             data_accessor.get_failure_patterns(),
             return_exceptions=True
         )
-        
+
         return {
             "similar_tasks": results[0] if not isinstance(results[0], Exception) else [],
             "failure_patterns": results[1] if not isinstance(results[1], Exception) else [],
@@ -314,20 +314,20 @@ class YoungAgent:
 # young.yaml
 datacenter:
   storage: postgres  # memory | postgres | redis
-  
+
   postgres:
     host: ${PG_HOST}
     port: 5432
     database: young
-    
+
   redis:
     host: ${REDIS_HOST}
     port: 6379
-  
+
   retention:
     trace_days: 30
     memory_days: 90
-    
+
   harness:
     enabled: true
     trace_tools: true
@@ -343,12 +343,12 @@ class YoungAgent:
         # Package Manager 加载 Skills
         self.skills: List[Skill] = []
         self.packages: Dict[str, Package] = {}
-    
+
     async def load_skill(self, skill_name: str) -> Skill:
         """从 Package Manager 加载 Skill"""
         package = await PackageManager.get_package(f"@{skill_name}")
         return package.get_skill()
-    
+
     async def load_tools(self) -> List[BaseTool]:
         """从 Package Manager 加载 Tools"""
         tools = []
@@ -367,7 +367,7 @@ class YoungAgent:
         # DataCenter 集成
         self.datacenter: Optional[DataCenter] = None
         self.harness: Optional[Harness] = None
-    
+
     async def _record_trace(self, tool_call: ToolCall, result: str):
         """记录执行轨迹到 DataCenter"""
         if self.harness:
@@ -428,18 +428,18 @@ class EvalPackage:
 
 class PackageRegistry:
     """包注册表"""
-    
+
     def __init__(self):
         self._packages: dict[str, EvalPackage] = {}
-    
+
     def register(self, package: EvalPackage) -> None:
         """注册评估包"""
         self._packages[package.package_id] = package
-    
+
     def get(self, name: str, version: str = None) -> EvalPackage:
         """获取包"""
         ...
-    
+
     def search(
         self,
         feature_codes: list[str] = None,
@@ -452,7 +452,7 @@ class PackageRegistry:
 
 class EvaluationHub:
     """评估中心 - 仅包仓库，不执行评估"""
-    
+
     def __init__(self, package_manager: PackageManager):
         self.package_manager = package_manager
         self.registry = PackageRegistry()
@@ -467,7 +467,7 @@ class EvaluationHub:
 ```python
 class EvalSubAgent:
     """评估子代理 - 负责执行评估"""
-    
+
     def __init__(
         self,
         evaluation_hub: EvaluationHub,
@@ -478,7 +478,7 @@ class EvalSubAgent:
         self.llm_client = llm_client
         self.harness = harness
         self._loaded_packages: dict[str, list] = {}
-    
+
     async def evaluate(
         self,
         feature_codes: list[str],
@@ -487,10 +487,10 @@ class EvalSubAgent:
         config: dict = None
     ) -> EvaluationReport:
         """执行评估 - 主流程"""
-        
+
         # 1. 从 Hub 搜索包
         packages = self.hub.search(feature_codes=feature_codes)
-        
+
         # 2. 加载评估器
         evaluators = []
         for pkg in packages:
@@ -498,18 +498,18 @@ class EvalSubAgent:
                 self._loaded_packages[pkg.package_id] = \
                     self.hub.load_evaluators(pkg)
             evaluators.extend(self._loaded_packages[pkg.package_id])
-        
+
         # 3. 按维度分批执行
         results = await self._execute_by_dimension(
             evaluators, input_data, context
         )
-        
+
         # 4. 聚合结果
         report = self._aggregate(results)
-        
+
         # 5. 记录到 Harness (→ DataCenter)
         await self._log_to_harness(report, context)
-        
+
         return report
 ```
 
@@ -523,27 +523,27 @@ async def _execute_by_dimension(
     context: dict
 ) -> list[EvalResult]:
     """按维度分批执行 - 安全 → 正确性 → 效率 → UX"""
-    
+
     # 分组
     groups = {}
     for e in evaluators:
         if e.dimension not in groups:
             groups[e.dimension] = []
         groups[e.dimension].append(e)
-    
+
     # 执行顺序
     order = [SAFETY, CORRECTNESS, EFFICIENCY, UX]
-    
+
     all_results = []
     for dim in order:
         if dim not in groups:
             continue
-        
+
         # 并行执行该批次
         batch = groups[dim]
         results = await self._execute_batch(batch, input_data, context)
         all_results.extend(results)
-    
+
     return all_results
 
 async def _execute_batch(
@@ -554,11 +554,11 @@ async def _execute_batch(
 ) -> list[EvalResult]:
     """执行一批评估器"""
     semaphore = asyncio.Semaphore(3)
-    
+
     async def run(e):
         async with semaphore:
             return await e.evaluate(input_data, context)
-    
+
     return await asyncio.gather(*[run(e) for e in evaluators])
 ```
 
@@ -581,32 +581,32 @@ async def _execute_batch(
 ```python
 class SelfCorrectionStrategy:
     """分层自修正 - 基于主流实践"""
-    
+
     MAX_ATTEMPTS = 3
-    
+
     @staticmethod
     async def correct(task, output, eval_result, agent) -> str:
         """分层自修正"""
-        
+
         for attempt in range(SelfCorrectionStrategy.MAX_ATTEMPTS):
-            
+
             # 1. Tool-Based: 确定性错误直接修复
             if await SelfCorrectionStrategy._tool_fix(task, output, eval_result):
                 if (await agent.eval_subagent.evaluate(...)).passed:
                     return output
-            
+
             # 2. Prompt-Refine: 语义错误提示词修正
             corrected = await SelfCorrectionStrategy._prompt_refine(
                 task, output, eval_result
             )
             if corrected and (await agent.eval_subagent.evaluate(...)).passed:
                 return corrected
-            
+
             # 3. SubTask-Split: 拆分子任务 (最后尝试)
             if attempt == SelfCorrectionStrategy.MAX_ATTEMPTS - 1:
                 subtasks = await SelfCorrectionStrategy._split(task)
                 output = await agent._execute_subtasks(subtasks)
-        
+
         return output
 ```
 
@@ -637,7 +637,7 @@ class YoungAgent:
             distillate = await self.evolver.distill(
                 self.harness.get_trace()
             )
-            
+
             # 生成 Gene
             if distillate.should_evolve():
                 gene = await self.evolver.compile(distillate)

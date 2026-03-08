@@ -1,0 +1,89 @@
+# OpenYoung Docker Compose
+# 一体化部署配置
+
+services:
+  openyoung:
+    build: .
+    container_name: openyoung
+    environment:
+      # LLM Providers
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - MOONSHOT_API_KEY=${MOONSHOT_API_KEY:-}
+      - QWEN_API_KEY=${QWEN_API_KEY:-}
+      - GLM_API_KEY=${GLM_API_KEY:-}
+
+      # Telegram Bot
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+
+      # Discord Bot
+      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN:-}
+
+      # QQ Bot (Go-CQHTTP)
+      - QQ_HTTP_PORT=5700
+
+      # OpenYoung 配置
+      - OPENYOUNG_MODEL=${OPENYOUNG_MODEL:-deepseek-chat}
+      - OPENYOUNG_EVAL_MODEL=${OPENYOUNG_EVAL_MODEL:-qwen-plus}
+      - OPENYOUNG_STORAGE=/app/.openyoung
+
+    volumes:
+      - ./data:/app/data
+      - ./skills:/app/skills
+      - ./.openyoung:/app/.openyoung
+
+    ports:
+      - "8080:8080"  # CLI/Web API
+      - "5700:5700"   # QQ (Go-CQHTTP)
+
+    depends_on:
+      - redis
+      - sqlite
+
+    networks:
+      - openyoung-network
+
+  # Redis 用于消息队列和缓存
+  redis:
+    image: redis:7-alpine
+    container_name: openyoung-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - openyoung-network
+
+  # SQLite 用于数据持久化
+  sqlite:
+    image: alpine:latest
+    container_name: openyoung-sqlite
+    command: /bin/true
+    volumes:
+      - sqlite-data:/data
+    networks:
+      - openyoung-network
+
+  # Go-CQHTTP (QQ 机器人)
+  # 注意: 需要单独部署或使用 docker-compose.qq.yml
+  # qq-bot:
+  #   image: mashirosakura/go-cqhttp:latest
+  #   container_name: openyoung-qq
+  #   environment:
+  #     - ACCOUNT=${QQ_ACCOUNT:-}
+  #     - QQ_PASSWORD=${QQ_PASSWORD:-}
+  #   volumes:
+  #     - ./cqhttp/config.yml:/etc/go-cqhttp/config.yml
+  #   ports:
+  #     - "5700:5700"
+  #   networks:
+  #     - openyoung-network
+
+networks:
+  openyoung-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+  sqlite-data:

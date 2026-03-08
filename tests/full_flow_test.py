@@ -4,56 +4,49 @@ OpenYoung 全流程测试 - 最终版
 """
 
 import asyncio
-import os
 from datetime import datetime
+
 from dotenv import load_dotenv
 
 load_dotenv()
 
-from src.llm.client import LLMClient
-from src.agents.young_agent import YoungAgent, AgentMode
-from src.core.types import AgentConfig
-from src.memory.auto_memory import AutoMemory
-from src.retriever.unified import UnifiedSkillRetriever, Skill
-from src.flow.sequential import SequentialFlow
+from src.agents.young_agent import YoungAgent
+from src.core.types import AgentConfig, AgentMode
 from src.flow.parallel import ParallelFlow
+from src.flow.sequential import SequentialFlow
+from src.llm.client_adapter import LLMClient
+from src.memory.auto_memory import AutoMemory
+from src.retriever.unified import Skill, UnifiedSkillRetriever
 
 
 async def test_llm_providers(client: LLMClient, results: list):
-    """测试多个 LLM Provider"""
+    """测试 LLM Provider"""
     print("\n" + "=" * 40)
     print("Test 1: LLM Provider 测试")
     print("=" * 40)
-
-    providers_to_test = [
-        ("deepseek", "deepseek-chat"),
-        ("moonshot", "moonshot-v1-8k"),
-        ("qwen", "qwen-turbo"),
-        ("glm", "glm-4-flash"),
-    ]
 
     messages = [
         {"role": "system", "content": "你是一个简洁的AI助手。"},
         {"role": "user", "content": "1+1等于几？"},
     ]
 
-    for provider, model in providers_to_test:
-        if provider not in client._configs:
-            print(f"⏭️  {provider}: 跳过 (无配置)")
-            continue
-
-        print(f"\n测试 {provider} ({model})...")
-        try:
-            response = await client.chat(model, messages, max_tokens=100)
-            print(f"  ✅ 响应: {response[:80]}...")
-            results.append(
-                {"test": f"LLM/{provider}", "status": "PASS", "detail": response[:50]}
-            )
-        except Exception as e:
-            print(f"  ❌ 错误: {str(e)[:80]}")
-            results.append(
-                {"test": f"LLM/{provider}", "status": "FAIL", "detail": str(e)[:50]}
-            )
+    print(f"\n测试默认模型 ({client.model})...")
+    try:
+        response = await client.chat(messages, model=client.model, max_tokens=100)
+        # 兼容旧格式: {"choices": [{"message": {"content": ...}}]}
+        if "choices" in response:
+            content = response["choices"][0]["message"].get("content", "")
+        else:
+            content = str(response)
+        print(f"  ✅ 响应: {content[:80]}...")
+        results.append(
+            {"test": "LLM/default", "status": "PASS", "detail": content[:50]}
+        )
+    except Exception as e:
+        print(f"  ❌ 错误: {str(e)[:80]}")
+        results.append(
+            {"test": "LLM/default", "status": "FAIL", "detail": str(e)[:50]}
+        )
 
 
 async def test_young_agent(client: LLMClient, results: list):
@@ -191,7 +184,7 @@ async def main():
     results = []
     client = LLMClient()
 
-    print("可用 Providers:", list(client._configs.keys()))
+    print("模型:", client.model)
 
     # 运行所有测试
     await test_llm_providers(client, results)

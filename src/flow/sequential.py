@@ -2,15 +2,13 @@
 SequentialFlow - 串行执行工作流
 """
 
-from typing import Optional
-
 from .base import FlowSkill
 
 
 class SequentialFlow(FlowSkill):
     """串行执行 Flow - 按步骤顺序执行任务"""
 
-    def __init__(self, steps: Optional[list[dict]] = None):
+    def __init__(self, steps: list[dict] | None = None):
         self._steps = steps or []
 
     @property
@@ -39,16 +37,14 @@ class SequentialFlow(FlowSkill):
         if current < total - 1:
             context["_current_step"] = current + 1
             next_step = context["_flow_steps"][current + 1]
-            return (
-                f"Step {current + 1}/{total} done: {agent_output}\n\nNext: {next_step}"
-            )
+            return f"Step {current + 1}/{total} done: {agent_output}\n\nNext: {next_step}"
 
         return f"All {total} steps completed: {agent_output}"
 
     async def should_delegate(self, task: str, context: dict) -> bool:
         return len(context.get("_flow_steps", [])) > 1
 
-    async def get_subagent_type(self, task: str) -> Optional[str]:
+    async def get_subagent_type(self, task: str) -> str | None:
         if "search" in task or "find" in task:
             return "search"
         elif "build" in task or "create" in task:

@@ -3,18 +3,15 @@ OpenYoung Interactive REPL
 类似 Claude Code / OpenCode 的交互式命令行界面
 """
 
-import asyncio
-import sys
-from typing import Optional, List, Dict, Any
 from datetime import datetime
 from pathlib import Path
 
 # 尝试导入 prompt_toolkit，如果失败则使用简单模式
 try:
     from prompt_toolkit import PromptSession
-    from prompt_toolkit.history import InMemoryHistory
     from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
     from prompt_toolkit.completion import WordCompleter
+    from prompt_toolkit.history import InMemoryHistory
     from prompt_toolkit.styles import Style
 
     PROMPT_TOOLKIT_AVAILABLE = True
@@ -45,11 +42,11 @@ class OpenYoungREPL:
     - 优雅退出
     """
 
-    def __init__(self, agent_name: str = "default", model: Optional[str] = None):
+    def __init__(self, agent_name: str = "default", model: str | None = None):
         self.agent_name = agent_name
         self.model = model
         self.agent = None
-        self.messages: List[Dict[str, str]] = []
+        self.messages: list[dict[str, str]] = []
         self.session_start = datetime.now()
         self.running = True
 
@@ -79,7 +76,6 @@ class OpenYoungREPL:
     async def initialize(self):
         """初始化 Agent"""
         from src.agents.young_agent import YoungAgent
-        from src.core.types import AgentConfig, AgentMode
 
         # 加载配置
         config = self._load_config()
@@ -150,7 +146,7 @@ class OpenYoungREPL:
 
     def _print_prompt(self) -> str:
         """打印提示符"""
-        return f"\n\033[92mopenyoung\033[0m > "
+        return "\n\033[92mopenyoung\033[0m > "
 
     async def run(self):
         """运行 REPL"""
@@ -219,7 +215,7 @@ class OpenYoungREPL:
 
     async def _execute_task(self, task: str):
         """执行 AI 任务"""
-        print(f"\n[处理请求...]")
+        print("\n[处理请求...]")
 
         try:
             # 调用 Agent
@@ -258,11 +254,7 @@ class OpenYoungREPL:
         print("\n\033[93m对话历史:\033[0m")
         for i, msg in enumerate(self.messages[-10:], 1):
             role = "用户" if msg["role"] == "user" else "助手"
-            content = (
-                msg["content"][50:] + "..."
-                if len(msg["content"]) > 50
-                else msg["content"]
-            )
+            content = msg["content"][50:] + "..." if len(msg["content"]) > 50 else msg["content"]
             print(f"  {i}. [{role}]: {content}")
         print()
 
@@ -290,7 +282,7 @@ class OpenYoungREPL:
 """)
 
 
-async def start_repl(agent_name: str = "default", model: Optional[str] = None):
+async def start_repl(agent_name: str = "default", model: str | None = None):
     """启动 REPL"""
     repl = OpenYoungREPL(agent_name, model)
     await repl.run()

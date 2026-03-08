@@ -143,10 +143,37 @@ openyoung/
 │   ├── evaluation/       # Quality evaluation
 │   ├── llm/              # LLM clients
 │   ├── memory/           # Vector store
-│   └── package_manager/  # Discovery, badges, versions
+│   ├── package_manager/  # Discovery, badges, versions
+│   └── runtime/          # AI Docker runtime
 ├── packages/             # Agent packages
 ├── skills/              # Always-loaded skills
 └── docs/                # Documentation
+```
+
+---
+
+## AI Docker
+
+OpenYoung includes a built-in **AI Docker sandbox execution environment** that provides secure and controlled code execution for AI Agents.
+
+### Core Features
+
+| Feature | Description |
+|---------|-------------|
+| **Sandbox Isolation** | Resource limits (CPU/Memory/Time), network access control |
+| **Security Policy** | Command whitelist, dangerous pattern detection, file path validation |
+| **Instance Pool** | Auto-scaling, instance pre-warming, state persistence |
+| **Audit Logging** | Execution records, statistics, JSONL format |
+
+### Usage
+
+```python
+from src.agents import YoungAgent
+
+agent = YoungAgent(config)
+agent.enable_sandbox(max_memory_mb=512)
+# or
+agent.enable_sandbox_pool(min_size=2, max_size=10)
 ```
 
 ### License
@@ -294,10 +321,37 @@ openyoung/
 │   ├── evaluation/       # 质量评估
 │   ├── llm/              # LLM 客户端
 │   ├── memory/           # 向量存储
-│   └── package_manager/  # 发现、徽章、版本
+│   ├── package_manager/  # 发现、徽章、版本
+│   └── runtime/          # AI Docker 运行时
 ├── packages/             # Agent 包
-├── skills/               # Always Skills
+├── skills/              # Always Skills
 └── docs/                 # 文档
+```
+
+---
+
+## AI Docker
+
+OpenYoung 内置 **AI Docker 沙箱执行环境**，为 AI Agent 提供安全可控的代码执行能力。
+
+### 核心功能
+
+| 功能 | 描述 |
+|------|------|
+| **沙箱隔离** | 资源限制 (CPU/Memory/Time)，网络访问控制 |
+| **安全策略** | 命令白名单，危险模式检测，文件路径验证 |
+| **实例池** | 自动扩缩容，预热实例，状态持久化 |
+| **审计日志** | 执行记录，统计查询 |
+
+### 使用方式
+
+```python
+from src.agents import YoungAgent
+
+agent = YoungAgent(config)
+agent.enable_sandbox(max_memory_mb=512)
+# 或
+agent.enable_sandbox_pool(min_size=2, max_size=10)
 ```
 
 ### 许可证

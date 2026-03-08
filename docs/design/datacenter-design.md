@@ -86,21 +86,21 @@ class TraceRecord:
 class TraceCollector:
     def __init__(self):
         self._traces: list[TraceRecord] = []
-    
+
     def record(self, trace: TraceRecord) -> None:
         self._traces.append(trace)
-    
+
     def get_by_session(self, session_id: str) -> list[TraceRecord]:
         return [t for t in self._traces if t.session_id == session_id]
-    
+
     def get_summary(self) -> dict:
         total = len(self._traces)
         if total == 0:
             return {"total": 0, "success": 0, "failed": 0, "success_rate": 0.0}
-        
+
         success = sum(1 for t in self._traces if t.status == TraceStatus.SUCCESS)
         failed = sum(1 for t in self._traces if t.status == TraceStatus.FAILED)
-        
+
         return {
             "total": total,
             "success": success,
@@ -136,23 +136,23 @@ class BudgetController:
         ComplexityLevel.MEDIUM: 32000,
         ComplexityLevel.HIGH: 64000
     }
-    
+
     def __init__(self):
         self._history: list[BudgetAllocation] = []
-    
+
     def allocate(self, task_description: str, context_length: int = 0, tool_count: int = 0) -> BudgetAllocation:
         complexity = self._estimate_complexity(task_description, context_length, tool_count)
-        
+
         allocation = BudgetAllocation(
             complexity=complexity,
             allocated_budget=self.BUDGET_MAP[complexity],
             reasoning_effort=complexity.value,
             estimated_tokens=int(self.BUDGET_MAP[complexity] * 0.8)
         )
-        
+
         self._history.append(allocation)
         return allocation
-    
+
     def _estimate_complexity(self, task: str, context_length: int, tool_count: int) -> ComplexityLevel:
         score = 0
         if len(task) > 500: score += 2
@@ -161,7 +161,7 @@ class BudgetController:
         elif context_length > 5000: score += 1
         if tool_count > 5: score += 2
         elif tool_count > 2: score += 1
-        
+
         if score >= 4: return ComplexityLevel.HIGH
         elif score >= 2: return ComplexityLevel.MEDIUM
         return ComplexityLevel.LOW
@@ -205,17 +205,17 @@ PATTERN_RULES = [
 class PatternDetector:
     def __init__(self):
         self._patterns: dict[str, FailurePattern] = {}
-    
+
     def detect(self, error_message: str) -> Optional[FailurePattern]:
         error_lower = error_message.lower()
-        
+
         for keywords, pattern_type, severity, suggestion in PATTERN_RULES:
             if any(kw in error_lower for kw in keywords):
                 key = pattern_type.value
                 if key in self._patterns:
                     self._patterns[key].frequency += 1
                     return self._patterns[key]
-                
+
                 pattern = FailurePattern(
                     pattern_type=pattern_type,
                     description=f"检测到 {pattern_type.value}",
@@ -225,7 +225,7 @@ class PatternDetector:
                 )
                 self._patterns[key] = pattern
                 return pattern
-        
+
         return FailurePattern(
             pattern_type=PatternType.UNKNOWN,
             description="未知错误",
@@ -246,7 +246,7 @@ class QualityScore:
     accuracy: float     # 0-1
     overall: float      # 0-1
     issues: list[str] = None
-    
+
     def __post_init__(self):
         if self.issues is None:
             self.issues = []
@@ -260,33 +260,33 @@ class QualityChecker:
             self._check_error_keywords,
             self._check_length_ratio,
         ]
-    
+
     def check(self, input_text: str, output_text: str) -> QualityScore:
         issues = []
-        
+
         for rule in self._rules:
             issue = rule(input_text, output_text)
             if issue:
                 issues.append(issue)
-        
+
         completeness = 1.0 if output_text.strip() else 0.0
         accuracy = 1.0 - (len(issues) * 0.2)
         accuracy = max(0.0, accuracy)
-        
+
         return QualityScore(
             completeness=completeness,
             accuracy=accuracy,
             overall=(completeness + accuracy) / 2,
             issues=issues
         )
-    
+
     def _check_empty_output(self, inp: str, out: str) -> Optional[str]:
         return "输出为空" if not out.strip() else None
-    
+
     def _check_error_keywords(self, inp: str, out: str) -> Optional[str]:
         error_keywords = ["error", "failed", "exception", "错误", "失败"]
         return "输出包含错误信息" if any(kw in out.lower() for kw in error_keywords) else None
-    
+
     def _check_length_ratio(self, inp: str, out: str) -> Optional[str]:
         return "输出过短，可能未完成" if len(inp) > 0 and len(out) < len(inp) * 0.1 else None
 ```
@@ -310,11 +310,11 @@ class HarnessData:
     patterns: list = field(default_factory=list)
     evaluation: Optional[Any] = None
     evaluation_passed: bool = True
-    
+
     @property
     def overall_quality(self) -> float:
         return self.evaluation.overall_score if self.evaluation else 1.0
-    
+
     @property
     def should_continue(self) -> bool:
         if self.evaluation is None:
@@ -379,7 +379,7 @@ datacenter:
       enabled: true
     quality_check:
       enabled: true
-  
+
   # Memory 配置
   memory:
     episodic:
@@ -391,7 +391,7 @@ datacenter:
     working:
       enabled: true
       max_context: 64000
-  
+
   # Checkpoint 配置
   checkpoint:
     enabled: true
@@ -563,7 +563,7 @@ class HarnessData:
     budget_status: dict
     patterns: list[FailurePattern]
     evaluation: EvaluationReport = None
-    
+
     @property
     def overall_quality(self) -> float:
         return self.evaluation.overall_score if self.evaluation else 1.0
@@ -624,7 +624,7 @@ datacenter:
       enabled: true
     quality_check:
       enabled: true
-  
+
   # Memory 配置
   memory:
     episodic:
@@ -636,7 +636,7 @@ datacenter:
     working:
       enabled: true
       max_context: 64000
-  
+
   # Checkpoint 配置
   checkpoint:
     enabled: true

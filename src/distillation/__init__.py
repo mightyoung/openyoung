@@ -4,8 +4,8 @@ Knowledge Distillation - 知识蒸馏
 """
 
 from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
@@ -13,18 +13,18 @@ class Knowledge:
     """知识表示"""
 
     experience_count: int = 0
-    patterns: List[str] = field(default_factory=list)
-    key_insights: List[str] = field(default_factory=list)
-    action_patterns: List[str] = field(default_factory=list)
-    success_patterns: List[str] = field(default_factory=list)
-    compressed_representation: Optional[str] = None
+    patterns: list[str] = field(default_factory=list)
+    key_insights: list[str] = field(default_factory=list)
+    action_patterns: list[str] = field(default_factory=list)
+    success_patterns: list[str] = field(default_factory=list)
+    compressed_representation: str | None = None
 
 
 class KnowledgeDistiller:
     """知识蒸馏器"""
 
     def __init__(self):
-        self._knowledge_cache: Dict[str, Knowledge] = {}
+        self._knowledge_cache: dict[str, Knowledge] = {}
 
     def extract(self, agent: Any) -> Knowledge:
         """从 Agent 提取知识"""
@@ -38,9 +38,7 @@ class KnowledgeDistiller:
 
         return knowledge
 
-    def extract_from_history(
-        self, execution_history: List[Dict[str, Any]]
-    ) -> Knowledge:
+    def extract_from_history(self, execution_history: list[dict[str, Any]]) -> Knowledge:
         """从执行历史提取知识"""
         knowledge = Knowledge()
 
@@ -56,12 +54,10 @@ class KnowledgeDistiller:
 
     def compress(self, knowledge: Knowledge) -> Knowledge:
         """压缩知识表示"""
-        knowledge.compressed_representation = (
-            f"compressed({len(knowledge.patterns)} patterns)"
-        )
+        knowledge.compressed_representation = f"compressed({len(knowledge.patterns)} patterns)"
         return knowledge
 
-    def get_knowledge(self, agent_id: str) -> Optional[Knowledge]:
+    def get_knowledge(self, agent_id: str) -> Knowledge | None:
         """获取缓存的知识"""
         return self._knowledge_cache.get(agent_id)
 

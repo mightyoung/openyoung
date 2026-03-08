@@ -32,7 +32,7 @@ Provide reviews in the following format:
 
 ### Critical
 - [Issue description] (file:line)
-  - Impact: 
+  - Impact:
   - Recommendation:
 
 ### Warnings

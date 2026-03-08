@@ -3,9 +3,8 @@ Evaluation Metrics - 评估指标定义
 基于 CLEAR 框架: Cost, Latency, Efficacy, Assurance, Reliability
 """
 
-from enum import Enum
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from enum import Enum
 
 
 class MetricType(Enum):
@@ -175,11 +174,11 @@ BUILTIN_METRICS = {
 }
 
 
-def get_metrics_by_type(metric_type: MetricType) -> List[MetricDefinition]:
+def get_metrics_by_type(metric_type: MetricType) -> list[MetricDefinition]:
     """获取指定类型的指标"""
     return [m for m in BUILTIN_METRICS.values() if m.type == metric_type]
 
 
-def get_metrics_by_dimension(dimension: EvaluationDimension) -> List[MetricDefinition]:
+def get_metrics_by_dimension(dimension: EvaluationDimension) -> list[MetricDefinition]:
     """获取指定维度的指标"""
     return [m for m in BUILTIN_METRICS.values() if m.dimension == dimension]

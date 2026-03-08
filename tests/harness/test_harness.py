@@ -2,9 +2,7 @@
 Harness Module Tests
 """
 
-import pytest
-import time
-from src.harness import Harness, HarnessStatus, HarnessStats
+from src.harness import Harness, HarnessStats, HarnessStatus
 
 
 class TestHarness:

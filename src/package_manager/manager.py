@@ -2,19 +2,17 @@
 PackageManager - 包管理系统
 """
 
-import os
-from pathlib import Path
-from typing import Optional, List, Dict, Any
 from datetime import datetime
+from typing import Any
 
-from .storage import PackageStorage, PackageMetadata, LLMProviderConfig, LockManager
 from .provider import ProviderManager
+from .storage import LLMProviderConfig, LockManager, PackageMetadata, PackageStorage
 
 
 class PackageManager:
     """包管理器 - 安装和管理依赖包"""
 
-    def __init__(self, package_dir: Optional[str] = None):
+    def __init__(self, package_dir: str | None = None):
         # 初始化存储
         if package_dir:
             self.storage = PackageStorage(package_dir)
@@ -49,7 +47,7 @@ class PackageManager:
     async def install(
         self,
         package_name: str,
-        version: Optional[str] = None,
+        version: str | None = None,
         package_type: str = "skill",
         description: str = "",
         entry: str = "",
@@ -81,13 +79,11 @@ class PackageManager:
 
         return result
 
-    def list_packages(
-        self, package_type: Optional[str] = None
-    ) -> List[PackageMetadata]:
+    def list_packages(self, package_type: str | None = None) -> list[PackageMetadata]:
         """列出已安装的包"""
         return self.storage.list_packages(package_type)
 
-    def get_package(self, name: str) -> Optional[PackageMetadata]:
+    def get_package(self, name: str) -> PackageMetadata | None:
         """获取包信息"""
         return self.storage.get_package(name)
 
@@ -104,7 +100,7 @@ class PackageManager:
         provider_type: str,
         base_url: str,
         api_key: str,
-        models: Optional[List[str]] = None,
+        models: list[str] | None = None,
     ) -> bool:
         """添加 LLM Provider"""
         # 验证配置
@@ -116,8 +112,7 @@ class PackageManager:
             provider_type=provider_type,
             base_url=base_url,
             api_key=api_key,
-            models=models
-            or self.provider_manager.get_models_for_provider(provider_type),
+            models=models or self.provider_manager.get_models_for_provider(provider_type),
         )
 
         self.storage.add_provider(provider)
@@ -127,11 +122,11 @@ class PackageManager:
         """移除 LLM Provider"""
         return self.storage.remove_provider(name)
 
-    def get_provider(self, name: str) -> Optional[LLMProviderConfig]:
+    def get_provider(self, name: str) -> LLMProviderConfig | None:
         """获取 LLM Provider"""
         return self.storage.get_provider(name)
 
-    def list_providers(self, enabled_only: bool = False) -> List[LLMProviderConfig]:
+    def list_providers(self, enabled_only: bool = False) -> list[LLMProviderConfig]:
         """列出 LLM Providers"""
         return self.storage.list_providers(enabled_only)
 
@@ -139,27 +134,27 @@ class PackageManager:
         """设置默认 Provider"""
         self.storage.set_default_provider(name)
 
-    def get_default_provider(self) -> Optional[LLMProviderConfig]:
+    def get_default_provider(self) -> LLMProviderConfig | None:
         """获取默认 Provider"""
         return self.storage.get_default_provider()
 
-    def get_provider_for_model(self, model: str) -> Optional[Dict]:
+    def get_provider_for_model(self, model: str) -> dict | None:
         """根据模型获取 Provider 配置"""
         return self.provider_manager.get_provider_for_model(model)
 
     # ========== Source Operations ==========
 
-    def load_sources(self) -> Dict[str, Any]:
+    def load_sources(self) -> dict[str, Any]:
         """加载 Source 配置"""
         if not self.storage.sources_file.exists():
             return {"sources": []}
 
         import yaml
 
-        with open(self.storage.sources_file, "r", encoding="utf-8") as f:
+        with open(self.storage.sources_file, encoding="utf-8") as f:
             return yaml.safe_load(f) or {"sources": []}
 
-    def save_sources(self, sources: Dict[str, Any]) -> None:
+    def save_sources(self, sources: dict[str, Any]) -> None:
         """保存 Source 配置"""
         import yaml
 
@@ -168,10 +163,10 @@ class PackageManager:
 
     # ========== Lock Operations ==========
 
-    def load_lock(self) -> Dict[str, Any]:
+    def load_lock(self) -> dict[str, Any]:
         """加载 lock 文件"""
         return self.lock_manager.load_lock()
 
-    def save_lock(self, lock_data: Dict[str, Any]) -> None:
+    def save_lock(self, lock_data: dict[str, Any]) -> None:
         """保存 lock 文件"""
         self.lock_manager.save_lock(lock_data)

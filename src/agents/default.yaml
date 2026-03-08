@@ -2,7 +2,7 @@
 name: "default"
 version: "1.0.0"
 
-description: "OpenYoung 默认 Agent - 通用任务处理"
+description: "OpenYoung 默认 Agent - 通用任务处理，支持自动导入 GitHub Agent、 Skills 智能发现、网页内容摘要等功能"
 
 # 模型配置
 model:
@@ -22,8 +22,14 @@ tools:
 
 # 权限配置
 permission:
-  _global: ask
+  _global: allow
   rules: []
+
+# 执行配置
+execution:
+  max_tool_calls: 30
+  timeout_seconds: 600
+  checkpoint_enabled: true
 
 # Flow 配置
 flow:
@@ -34,6 +40,19 @@ flow:
     - parallel     # 并行执行
     - conditional  # 条件分支
     - loop         # 循环执行
+
+# Skills 配置 (always_skills - 自动加载)
+always_skills:
+  - self-improvement    # 自动记录错误、学习、持续改进
+  - find-skills       # 智能发现 skills.sh 生态中的技能
+  - summarize         # 智能摘要网页、文件、PDF、视频
+
+# Skills 配置 (按需加载)
+skills:
+  - github-import     # GitHub Agent 导入 + 自动配置
+  - coding-standards # 编码规范
+  # - tdd-workflow   # TDD 开发流程 (暂未安装)
+  - eval-planner     # 评估计划生成
 
 # 评估配置
 evaluation:

@@ -1,0 +1,15 @@
+name: "eval-planner"
+version: "1.0.0"
+description: |
+  自动生成任务评估计划。在任务执行前分析任务类型，生成成功标准、验证方法、评估指标，并从 GitHub、社区、互联网搜索最佳实践。**务必使用此技能**当用户提到：生成评估计划、任务评估、评估任务质量、成功标准、验证方法、任务评分、任务完成度、任务质量评估、best practices search、搜索评估最佳实践、评估指标、completion rate。
+
+entry: "./SKILL.md"
+
+allowed_tools:
+  - read
+  - write
+  - edit
+  - bash
+  - glob
+  - grep
+  - task

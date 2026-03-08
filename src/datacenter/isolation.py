@@ -1,34 +1,39 @@
 """
-Isolation Manager - 多级别数据隔离控制
-支持：Session / User / Agent / Global 隔离级别
+Isolation - 数据隔离模块
+
+从 enterprise.py 提取的多级别数据隔离功能。
 """
 
-import sqlite3
 import json
-from pathlib import Path
-from typing import Dict, List, Any, Optional
-from datetime import datetime
+import sqlite3
 from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
+from pathlib import Path
 
-from .models import IsolationLevel
+
+class IsolationLevel(str, Enum):
+    """隔离级别"""
+
+    SESSION = "session"  # 会话级别
+    USER = "user"  # 用户级别
+    AGENT = "agent"  # Agent 级别
+    GLOBAL = "global"  # 全局级别
 
 
 @dataclass
 class IsolationConfig:
     """隔离配置"""
-    level: IsolationLevel = IsolationLevel.SESSION
 
-    # 路径配置
+    level: IsolationLevel = IsolationLevel.GLOBAL
     base_path: Path = field(default_factory=lambda: Path(".young"))
-
-    # 隔离标识
     session_id: str = ""
     user_id: str = ""
     agent_id: str = ""
 
-    def get_isolation_path(self) -> Path:
+    def get_isolation_path(self, path: Path = None) -> Path:
         """获取隔离路径"""
-        path = self.base_path
+        path = path or self.base_path
 
         if self.level == IsolationLevel.GLOBAL:
             return path / "global"
@@ -51,8 +56,6 @@ class IsolationManager:
     def __init__(self, data_dir: str = ".young"):
         self.data_dir = Path(data_dir)
         self.data_dir.mkdir(parents=True, exist_ok=True)
-
-        # SQLite 数据库路径
         self.db_path = self.data_dir / "isolation.db"
         self._init_db()
 
@@ -61,8 +64,8 @@ class IsolationManager:
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
-        # 隔离策略表
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS isolation_policies (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 level TEXT NOT NULL,
@@ -72,276 +75,179 @@ class IsolationManager:
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 is_active INTEGER DEFAULT 1
             )
-        """)
+        """
+        )
 
-        # 隔离数据表
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS isolation_data (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                isolation_key TEXT NOT NULL,
-                level TEXT NOT NULL,
-                user_id TEXT,
-                agent_id TEXT,
-                session_id TEXT,
-                data_type TEXT,
+                isolation_level TEXT NOT NULL,
+                resource_type TEXT NOT NULL,
+                resource_id TEXT NOT NULL,
                 data TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-        """)
-
-        # 索引
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_iso_key ON isolation_data(isolation_key)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_iso_level ON isolation_data(level)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_iso_user ON isolation_data(user_id)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_iso_agent ON isolation_data(agent_id)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_iso_session ON isolation_data(session_id)")
+        """
+        )
 
         conn.commit()
         conn.close()
 
-    def get_isolation_key(
-        self,
-        level: IsolationLevel,
-        user_id: str = "",
-        agent_id: str = "",
-        session_id: str = ""
-    ) -> str:
-        """生成隔离键"""
-        if level == IsolationLevel.GLOBAL:
-            return "global"
+    def create_isolation_dirs(
+        self, level: IsolationLevel, session_id: str = "", user_id: str = "", agent_id: str = ""
+    ) -> Path:
+        """创建隔离目录"""
+        config = IsolationConfig(
+            level=level,
+            base_path=self.data_dir,
+            session_id=session_id,
+            user_id=user_id,
+            agent_id=agent_id,
+        )
+        path = config.get_isolation_path()
+        path.mkdir(parents=True, exist_ok=True)
+        return path
 
-        if level == IsolationLevel.AGENT:
-            return f"agent:{agent_id}"
+    def get_isolation_path(
+        self, level: IsolationLevel, session_id: str = "", user_id: str = "", agent_id: str = ""
+    ) -> Path:
+        """获取隔离路径"""
+        return self.create_isolation_dirs(level, session_id, user_id, agent_id)
 
-        if level == IsolationLevel.USER:
-            return f"user:{user_id}"
-
-        if level == IsolationLevel.SESSION:
-            return f"session:{session_id}"
-
-        return "global"
+    def is_isolated(self, level: IsolationLevel) -> bool:
+        """检查是否启用隔离"""
+        return level != IsolationLevel.GLOBAL
 
     def save_data(
         self,
         key: str,
-        data: Any,
+        data: str,
         level: IsolationLevel,
-        data_type: str = "json",
+        session_id: str = "",
         user_id: str = "",
         agent_id: str = "",
-        session_id: str = ""
-    ):
+    ) -> bool:
         """保存隔离数据"""
-        isolation_key = self.get_isolation_key(level, user_id, agent_id, session_id)
-
-        # 序列化数据
-        if data_type == "json":
-            data_str = json.dumps(data, ensure_ascii=False)
-        else:
-            data_str = str(data)
-
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
-        cursor.execute("""
-            INSERT INTO isolation_data (
-                isolation_key, level, user_id, agent_id, session_id, data_type, data
-            ) VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (isolation_key, level.value, user_id, agent_id, session_id, data_type, data_str))
+        level_str = level.value if hasattr(level, "value") else str(level)
+
+        cursor.execute(
+            """
+            INSERT INTO isolation_data (isolation_level, resource_type, resource_id, data)
+            VALUES (?, ?, ?, ?)
+        """,
+            (level_str, key, session_id or user_id or agent_id or "global", json.dumps(data)),
+        )
 
         conn.commit()
         conn.close()
+        return True
 
     def load_data(
         self,
         key: str,
         level: IsolationLevel,
+        session_id: str = "",
         user_id: str = "",
         agent_id: str = "",
-        session_id: str = "",
-        default: Any = None
-    ) -> Any:
+        default: str = None,
+    ) -> str:
         """加载隔离数据"""
-        isolation_key = self.get_isolation_key(level, user_id, agent_id, session_id)
-
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
-        cursor.execute("""
-            SELECT data_type, data FROM isolation_data
-            WHERE isolation_key = ? AND level = ?
+        level_str = level.value if hasattr(level, "value") else str(level)
+        resource_id = session_id or user_id or agent_id or "global"
+
+        cursor.execute(
+            """
+            SELECT data FROM isolation_data
+            WHERE isolation_level = ? AND resource_type = ? AND resource_id = ?
             ORDER BY created_at DESC LIMIT 1
-        """, (isolation_key, level.value))
+        """,
+            (level_str, key, resource_id),
+        )
 
         row = cursor.fetchone()
         conn.close()
 
-        if not row:
-            return default
+        if row:
+            return json.loads(row[0])
+        return default if default is not None else {}
 
-        data_type, data_str = row
-
-        if data_type == "json":
-            try:
-                return json.loads(data_str)
-            except:
-                return default
-        else:
-            return data_str
-
-    def query_data(
-        self,
-        level: IsolationLevel = None,
-        user_id: str = None,
-        agent_id: str = None,
-        session_id: str = None,
-        limit: int = 100
-    ) -> List[Dict]:
+    def query_data(self, level: IsolationLevel = None) -> list:
         """查询隔离数据"""
         conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
-        sql = "SELECT * FROM isolation_data WHERE 1=1"
-        params = []
-
         if level:
-            sql += " AND level = ?"
-            params.append(level.value)
+            level_str = level.value if hasattr(level, "value") else str(level)
+            cursor.execute(
+                "SELECT * FROM isolation_data WHERE isolation_level = ?",
+                (level_str,),
+            )
+        else:
+            cursor.execute("SELECT * FROM isolation_data")
 
-        if user_id:
-            sql += " AND user_id = ?"
-            params.append(user_id)
-
-        if agent_id:
-            sql += " AND agent_id = ?"
-            params.append(agent_id)
-
-        if session_id:
-            sql += " AND session_id = ?"
-            params.append(session_id)
-
-        sql += " ORDER BY created_at DESC LIMIT ?"
-        params.append(limit)
-
-        cursor.execute(sql, params)
         rows = cursor.fetchall()
         conn.close()
 
-        return [dict(row) for row in rows]
+        return [
+            {
+                "id": row[0],
+                "isolation_level": row[1],
+                "resource_type": row[2],
+                "resource_id": row[3],
+                "data": json.loads(row[4]) if row[4] else None,
+                "created_at": row[5],
+            }
+            for row in rows
+        ]
 
     def delete_data(
         self,
         level: IsolationLevel,
+        session_id: str = "",
         user_id: str = "",
         agent_id: str = "",
-        session_id: str = ""
     ) -> int:
         """删除隔离数据"""
-        isolation_key = self.get_isolation_key(level, user_id, agent_id, session_id)
-
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
-        cursor.execute("""
-            DELETE FROM isolation_data WHERE isolation_key = ? AND level = ?
-        """, (isolation_key, level.value))
+        level_str = level.value if hasattr(level, "value") else str(level)
+        resource_id = session_id or user_id or agent_id or "global"
+
+        cursor.execute(
+            """
+            DELETE FROM isolation_data
+            WHERE isolation_level = ? AND resource_id = ?
+        """,
+            (level_str, resource_id),
+        )
 
         count = cursor.rowcount
         conn.commit()
         conn.close()
-
         return count
 
-    def get_isolation_path(
-        self,
-        level: IsolationLevel,
-        user_id: str = "",
-        agent_id: str = "",
-        session_id: str = ""
-    ) -> Path:
-        """获取隔离目录路径"""
-        base = self.data_dir
-
-        if level == IsolationLevel.GLOBAL:
-            return base / "global"
-
-        if level == IsolationLevel.AGENT and agent_id:
-            return base / "agents" / agent_id
-
-        if level == IsolationLevel.USER and user_id:
-            return base / "users" / user_id
-
-        if level == IsolationLevel.SESSION and session_id:
-            return base / "sessions" / session_id
-
-        return base
-
-    def create_isolation_dirs(
-        self,
-        level: IsolationLevel,
-        user_id: str = "",
-        agent_id: str = "",
-        session_id: str = ""
-    ) -> Path:
-        """创建隔离目录结构"""
-        base = self.get_isolation_path(level, user_id, agent_id, session_id)
-
-        # 创建子目录
-        (base / "memory").mkdir(parents=True, exist_ok=True)
-        (base / "checkpoints").mkdir(parents=True, exist_ok=True)
-        (base / "traces").mkdir(parents=True, exist_ok=True)
-        (base / "output").mkdir(parents=True, exist_ok=True)
-        (base / "config").mkdir(parents=True, exist_ok=True)
-
-        return base
-
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict:
         """获取隔离统计"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
-        # 按级别统计
-        cursor.execute("""
-            SELECT level, COUNT(*) as count
-            FROM isolation_data
-            GROUP BY level
-        """)
-        by_level = {row[0]: row[1] for row in cursor.fetchall()}
-
-        # 按 user 统计
-        cursor.execute("""
-            SELECT user_id, COUNT(*) as count
-            FROM isolation_data
-            WHERE user_id IS NOT NULL AND user_id != ''
-            GROUP BY user_id
-        """)
-        by_user = {row[0]: row[1] for row in cursor.fetchall()}
-
-        # 按 agent 统计
-        cursor.execute("""
-            SELECT agent_id, COUNT(*) as count
-            FROM isolation_data
-            WHERE agent_id IS NOT NULL AND agent_id != ''
-            GROUP BY agent_id
-        """)
-        by_agent = {row[0]: row[1] for row in cursor.fetchall()}
-
         cursor.execute("SELECT COUNT(*) FROM isolation_data")
         total = cursor.fetchone()[0]
 
+        cursor.execute("SELECT isolation_level, COUNT(*) FROM isolation_data GROUP BY isolation_level")
+        by_level = {row[0]: row[1] for row in cursor.fetchall()}
+
         conn.close()
 
-        return {
-            "total_records": total,
-            "by_level": by_level,
-            "by_user": by_user,
-            "by_agent": by_agent,
-        }
+        return {"total_records": total, "by_level": by_level}
 
 
-# ========== 便捷函数 ==========
-
-def get_isolation_manager(data_dir: str = ".young") -> IsolationManager:
-    """获取隔离管理器实例"""
-    return IsolationManager(data_dir)
+__all__ = ["IsolationLevel", "IsolationConfig", "IsolationManager"]

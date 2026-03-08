@@ -5,14 +5,15 @@ Tracing - OpenTelemetry/LangSmith 集成
 
 import json
 import os
-from typing import Dict, List, Any, Optional
-from datetime import datetime
 from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Any
 
 
 @dataclass
 class TraceSpan:
     """追踪跨度"""
+
     name: str
     span_id: str = ""
     parent_id: str = ""
@@ -20,13 +21,13 @@ class TraceSpan:
 
     # 时间
     start_time: datetime = field(default_factory=datetime.now)
-    end_time: Optional[datetime] = None
+    end_time: datetime | None = None
 
     # 属性
-    attributes: Dict[str, Any] = field(default_factory=dict)
+    attributes: dict[str, Any] = field(default_factory=dict)
 
     # 事件
-    events: List[Dict] = field(default_factory=list)
+    events: list[dict] = field(default_factory=list)
 
     # 状态
     status_code: int = 0
@@ -35,10 +36,11 @@ class TraceSpan:
     def __post_init__(self):
         """自动生成 span_id 和 trace_id"""
         import uuid
+
         if not self.span_id:
-            object.__setattr__(self, 'span_id', str(uuid.uuid4())[:16])
+            object.__setattr__(self, "span_id", str(uuid.uuid4())[:16])
         if not self.trace_id:
-            object.__setattr__(self, 'trace_id', str(uuid.uuid4()))
+            object.__setattr__(self, "trace_id", str(uuid.uuid4()))
 
     def duration_ms(self) -> float:
         """获取持续时间(毫秒)"""
@@ -46,7 +48,7 @@ class TraceSpan:
             return (self.end_time - self.start_time).total_seconds() * 1000
         return 0
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """转换为字典"""
         return {
             "name": self.name,
@@ -70,7 +72,7 @@ class TracingExporter:
         """导出跨度"""
         raise NotImplementedError
 
-    def export_spans(self, spans: List[TraceSpan]):
+    def export_spans(self, spans: list[TraceSpan]):
         """批量导出跨度"""
         for span in spans:
             self.export_span(span)
@@ -79,8 +81,10 @@ class TracingExporter:
 class OpenTelemetryExporter(TracingExporter):
     """OpenTelemetry 导出器"""
 
-    def __init__(self, endpoint: str = None, headers: Dict[str, str] = None):
-        self.endpoint = endpoint or os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317")
+    def __init__(self, endpoint: str = None, headers: dict[str, str] = None):
+        self.endpoint = endpoint or os.getenv(
+            "OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317"
+        )
         self.headers = headers or {}
 
     def export_span(self, span: TraceSpan):
@@ -98,7 +102,7 @@ class OpenTelemetryExporter(TracingExporter):
             "status": {
                 "code": span.status_code,
                 "message": span.status_message,
-            }
+            },
         }
 
         # 如果配置了端点，发送到 OTLP
@@ -107,10 +111,11 @@ class OpenTelemetryExporter(TracingExporter):
 
         return otel_span
 
-    def _send_to_otlp(self, spans: List[Dict]):
+    def _send_to_otlp(self, spans: list[dict]):
         """发送到 OTLP 端点"""
         try:
             import requests
+
             payload = {"resource_spans": [{"spans": spans}]}
 
             headers = {"Content-Type": "application/json"}
@@ -118,10 +123,7 @@ class OpenTelemetryExporter(TracingExporter):
 
             # 使用 v1/traces 端点
             response = requests.post(
-                f"{self.endpoint}/v1/traces",
-                json=payload,
-                headers=headers,
-                timeout=5
+                f"{self.endpoint}/v1/traces", json=payload, headers=headers, timeout=5
             )
             return response.status_code == 200
         except Exception as e:
@@ -164,24 +166,21 @@ class LangSmithExporter(TracingExporter):
 
         return ls_record
 
-    def _send_to_langsmith(self, record: Dict):
+    def _send_to_langsmith(self, record: dict):
         """发送到 LangSmith API"""
         try:
             import requests
 
             headers = {
                 "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             }
 
             response = requests.post(
                 f"{self.base_url}/v1/runs",
-                json={
-                    "project_name": self.project_name,
-                    "runs": [record]
-                },
+                json={"project_name": self.project_name, "runs": [record]},
                 headers=headers,
-                timeout=5
+                timeout=5,
             )
             return response.status_code in (200, 201)
         except Exception as e:
@@ -205,7 +204,7 @@ class MultiExporter(TracingExporter):
     """多导出器组合"""
 
     def __init__(self):
-        self.exporters: List[TracingExporter] = []
+        self.exporters: list[TracingExporter] = []
 
     def add_exporter(self, exporter: TracingExporter):
         """添加导出器"""
@@ -220,7 +219,7 @@ class MultiExporter(TracingExporter):
 class TracingContext:
     """追踪上下文管理器"""
 
-    def __init__(self, name: str, exporter: TracingExporter = None, attributes: Dict = None):
+    def __init__(self, name: str, exporter: TracingExporter = None, attributes: dict = None):
         self.name = name
         self.exporter = exporter or ConsoleExporter()
         self.attributes = attributes or {}
@@ -228,6 +227,7 @@ class TracingContext:
 
     def __enter__(self):
         import uuid
+
         self.span.span_id = str(uuid.uuid4())[:16]
         self.span.trace_id = str(uuid.uuid4())
         return self.span
@@ -247,7 +247,7 @@ class TracingManager:
 
     def __init__(self):
         self.exporter = MultiExporter()
-        self.spans: List[TraceSpan] = []
+        self.spans: list[TraceSpan] = []
 
         # 添加默认控制台导出器
         self.exporter.add_exporter(ConsoleExporter())
@@ -256,15 +256,16 @@ class TracingManager:
         """添加导出器"""
         self.exporter.add_exporter(exporter)
 
-    def start_span(self, name: str, attributes: Dict = None, parent_id: str = None) -> TraceSpan:
+    def start_span(self, name: str, attributes: dict = None, parent_id: str = None) -> TraceSpan:
         """开始跨度"""
         import uuid
+
         span = TraceSpan(
             name=name,
             span_id=str(uuid.uuid4())[:16],
             parent_id=parent_id or "",
             trace_id=str(uuid.uuid4()),
-            attributes=attributes or {}
+            attributes=attributes or {},
         )
         self.spans.append(span)
         return span
@@ -276,7 +277,7 @@ class TracingManager:
         span.status_message = status_message
         self.exporter.export_span(span)
 
-    def trace(self, name: str, attributes: Dict = None):
+    def trace(self, name: str, attributes: dict = None):
         """追踪上下文管理器"""
         return TracingContext(name, self.exporter, attributes)
 
@@ -288,6 +289,7 @@ class TracingManager:
 
 
 # ========== 便捷函数 ==========
+
 
 def get_tracing_manager() -> TracingManager:
     """获取追踪管理器"""

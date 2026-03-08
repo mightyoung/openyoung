@@ -3,10 +3,11 @@ PermissionEvaluator Tests - Task 2.3
 """
 
 import pytest
+
 from src.agents.permission import PermissionEvaluator
 from src.core.types import (
-    PermissionConfig,
     PermissionAction,
+    PermissionConfig,
     PermissionRule,
 )
 

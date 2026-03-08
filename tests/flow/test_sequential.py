@@ -3,7 +3,7 @@ Flow Tests - Phase 3
 """
 
 import pytest
-from src.flow.base import FlowSkill
+
 from src.flow.sequential import SequentialFlow
 
 

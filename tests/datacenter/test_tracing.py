@@ -1,13 +1,20 @@
 """追踪导出单元测试"""
-import pytest
 import sys
+
+import pytest
+
 sys.path.insert(0, '.')
 
-from src.datacenter.tracing import (
-    TracingManager, TraceSpan, OpenTelemetryExporter,
-    LangSmithExporter, ConsoleExporter, MultiExporter
-)
 from datetime import datetime
+
+from src.datacenter.tracing import (
+    ConsoleExporter,
+    LangSmithExporter,
+    MultiExporter,
+    OpenTelemetryExporter,
+    TraceSpan,
+    TracingManager,
+)
 
 
 def test_trace_span_creation():

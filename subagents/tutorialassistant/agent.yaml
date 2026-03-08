@@ -1,0 +1,11 @@
+description: Tutorial assistant, input one sentence to generate a tutorial document
+  in markup format.
+evaluations: []
+hidden: false
+instructions: ''
+mcps: []
+model: deepseek-chat
+name: tutorialassistant
+skills: []
+temperature: 0.7
+type: general

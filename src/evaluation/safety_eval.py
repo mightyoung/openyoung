@@ -4,8 +4,8 @@ SafetyEval - 安全性评估器
 """
 
 import re
-from typing import Any, Dict, List, Set, Optional
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass
@@ -69,7 +69,7 @@ class SafetyEval:
         r"你必须",
     ]
 
-    def __init__(self, custom_rules: Optional[Dict] = None):
+    def __init__(self, custom_rules: dict | None = None):
         """
         Args:
             custom_rules: 自定义安全规则
@@ -82,9 +82,9 @@ class SafetyEval:
     async def evaluate(
         self,
         output_text: str,
-        input_text: Optional[str] = None,
-        context: Optional[Dict] = None,
-    ) -> Dict[str, Any]:
+        input_text: str | None = None,
+        context: dict | None = None,
+    ) -> dict[str, Any]:
         """评估安全性
 
         Args:
@@ -118,9 +118,7 @@ class SafetyEval:
 
         # 3. Prompt injection 检查
         if input_text:
-            injection_check = await self._check_prompt_injection(
-                input_text, output_text
-            )
+            injection_check = await self._check_prompt_injection(input_text, output_text)
             results["checks"].append(injection_check)
             if not injection_check.passed:
                 results["violations"].append(injection_check)
@@ -213,7 +211,7 @@ class SafetyEval:
     async def _check_custom_rules(
         self,
         text: str,
-        context: Optional[Dict],
+        context: dict | None,
     ) -> SafetyCheck:
         """检查自定义规则"""
         if not self._custom_rules:
@@ -244,7 +242,7 @@ class SafetyEval:
         }
         return severity_map.get(category, "medium")
 
-    def _calculate_safety_score(self, checks: List[SafetyCheck]) -> float:
+    def _calculate_safety_score(self, checks: list[SafetyCheck]) -> float:
         """计算安全评分"""
         if not checks:
             return 1.0
@@ -277,7 +275,7 @@ class SafetyEval:
 
         return score / total_weight if total_weight > 0 else 1.0
 
-    def _determine_severity(self, violations: List[SafetyCheck]) -> str:
+    def _determine_severity(self, violations: list[SafetyCheck]) -> str:
         """确定严重级别"""
         if not violations:
             return "none"

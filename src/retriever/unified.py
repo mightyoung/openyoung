@@ -3,13 +3,11 @@ Unified Skill Retriever - 统一技能检索
 双轨检索: Package + Semantic
 """
 
-from typing import List, Dict, Any, Optional
-
 
 class Skill:
     """技能"""
 
-    def __init__(self, name: str, description: str, tags: List[str] = None):
+    def __init__(self, name: str, description: str, tags: list[str] = None):
         self.name = name
         self.description = description
         self.tags = tags or []
@@ -19,8 +17,8 @@ class UnifiedSkillRetriever:
     """统一技能检索器 - 双轨检索"""
 
     def __init__(self):
-        self._package_skills: Dict[str, List[Skill]] = {}  # package -> skills
-        self._all_skills: List[Skill] = []
+        self._package_skills: dict[str, list[Skill]] = {}  # package -> skills
+        self._all_skills: list[Skill] = []
 
     def register_skill(self, skill: Skill, package: str = "default"):
         """注册技能"""
@@ -29,19 +27,16 @@ class UnifiedSkillRetriever:
         self._package_skills[package].append(skill)
         self._all_skills.append(skill)
 
-    def retrieve_by_keyword(self, keyword: str) -> List[Skill]:
+    def retrieve_by_keyword(self, keyword: str) -> list[Skill]:
         """基于关键词检索"""
         results = []
         keyword_lower = keyword.lower()
         for skill in self._all_skills:
-            if (
-                keyword_lower in skill.name.lower()
-                or keyword_lower in skill.description.lower()
-            ):
+            if keyword_lower in skill.name.lower() or keyword_lower in skill.description.lower():
                 results.append(skill)
         return results
 
-    def retrieve_by_tags(self, tags: List[str]) -> List[Skill]:
+    def retrieve_by_tags(self, tags: list[str]) -> list[Skill]:
         """基于标签检索"""
         results = []
         tags_lower = [t.lower() for t in tags]
@@ -52,9 +47,7 @@ class UnifiedSkillRetriever:
                     break
         return results
 
-    def retrieve_unified(
-        self, query: str, tags: Optional[List[str]] = None
-    ) -> List[Skill]:
+    def retrieve_unified(self, query: str, tags: list[str] | None = None) -> list[Skill]:
         """统一检索 - 结合关键词和标签"""
         keyword_results = self.retrieve_by_keyword(query)
 
@@ -71,6 +64,6 @@ class UnifiedSkillRetriever:
 
         return keyword_results
 
-    def list_skills(self) -> List[Skill]:
+    def list_skills(self) -> list[Skill]:
         """列出所有技能"""
         return self._all_skills

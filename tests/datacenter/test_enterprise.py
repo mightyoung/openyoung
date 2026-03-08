@@ -1,8 +1,9 @@
 """企业功能单元测试"""
-import pytest
-import sys
 import shutil
+import sys
 from pathlib import Path
+
+import pytest
 
 sys.path.insert(0, '.')
 
@@ -90,15 +91,15 @@ def test_check_permission_admin(em):
     """测试管理员权限"""
     em.create_tenant("t9", "Company")
     user = em.create_user("u4", "t9", "admin", role="admin", permissions=[Permission.ADMIN])
-    assert em.check_permission(user, Permission.DELETE) == True
+    assert em.check_permission(user, Permission.DELETE)
 
 
 def test_check_permission_user_role(em):
     """测试用户角色权限"""
     em.create_tenant("t10", "Company")
     user = em.create_user("u5", "t10", "regular", role="user")
-    assert em.check_permission(user, Permission.READ) == True
-    assert em.check_permission(user, Permission.ADMIN) == False
+    assert em.check_permission(user, Permission.READ)
+    assert not em.check_permission(user, Permission.ADMIN)
 
 
 def test_audit_log(em):

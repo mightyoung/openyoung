@@ -2,13 +2,44 @@
 Skills - 技能加载与管理
 """
 
-from .metadata import SkillMetadata, LoadedSkill, RetrievalConfig
+from .creator import (
+    CreatedSkill,
+    SkillCategory,
+    SkillCreator,
+    SkillTemplate,
+    TriggerType,
+    create_skill,
+    list_templates,
+)
+from .heartbeat import (
+    HeartbeatConfig,
+    HeartbeatPhase,
+    HeartbeatResult,
+    HeartbeatScheduler,
+    get_heartbeat_scheduler,
+)
+from .learnings import (
+    LearningsManager,
+    LearningEntry,
+    LearningType,
+    Priority,
+    get_learnings_manager,
+)
 from .loader import SkillLoader
+from .metadata import LoadedSkill, RetrievalConfig, SkillMetadata
 from .registry import SkillRegistry
-from .retriever import UnifiedSkillRetriever, RetrievalResult
+from .retriever import RetrievalResult, UnifiedSkillRetriever
+from .versioning import (
+    ReleaseType,
+    SkillRelease,
+    SkillVersion,
+    SkillVersionManager,
+    get_version_manager,
+)
 
 # 导出主要类
 __all__ = [
+    # 原有模块
     "SkillMetadata",
     "LoadedSkill",
     "RetrievalConfig",
@@ -16,13 +47,40 @@ __all__ = [
     "SkillRegistry",
     "UnifiedSkillRetriever",
     "RetrievalResult",
+    # 新增模块 - 技能创建
+    "SkillCreator",
+    "SkillTemplate",
+    "CreatedSkill",
+    "SkillCategory",
+    "TriggerType",
+    "create_skill",
+    "list_templates",
+    # 新增模块 - 心跳
+    "HeartbeatConfig",
+    "HeartbeatPhase",
+    "HeartbeatResult",
+    "HeartbeatScheduler",
+    "get_heartbeat_scheduler",
+    # 新增模块 - 经验日志
+    "LearningsManager",
+    "LearningEntry",
+    "LearningType",
+    "Priority",
+    "get_learnings_manager",
+    # 新增模块 - 版本管理
+    "SkillVersion",
+    "SkillRelease",
+    "ReleaseType",
+    "SkillVersionManager",
+    "get_version_manager",
 ]
 
 # 保持向后兼容
-from dataclasses import dataclass
-from typing import Dict, Any, Callable, Optional, List
 import importlib.util
+from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
@@ -39,8 +97,8 @@ class SkillManager:
     """技能管理器"""
 
     def __init__(self):
-        self._skills: Dict[str, Skill] = {}
-        self._skill_paths: List[str] = []
+        self._skills: dict[str, Skill] = {}
+        self._skill_paths: list[str] = []
 
     def register(self, skill: Skill) -> None:
         """注册技能"""
@@ -53,7 +111,7 @@ class SkillManager:
             return True
         return False
 
-    def load(self, name: str) -> Optional[Skill]:
+    def load(self, name: str) -> Skill | None:
         """加载技能"""
         skill = self._skills.get(name)
         if skill:
@@ -68,15 +126,15 @@ class SkillManager:
             return True
         return False
 
-    def list_skills(self) -> List[str]:
+    def list_skills(self) -> list[str]:
         """列出所有技能"""
         return list(self._skills.keys())
 
-    def get_skill(self, name: str) -> Optional[Skill]:
+    def get_skill(self, name: str) -> Skill | None:
         """获取技能"""
         return self._skills.get(name)
 
-    def discover_skills(self, path: str) -> List[Skill]:
+    def discover_skills(self, path: str) -> list[Skill]:
         """自动发现技能"""
         discovered = []
         skill_path = Path(path)
@@ -108,6 +166,6 @@ class SkillManager:
         """添加工具路径"""
         self._skill_paths.append(path)
 
-    def get_skill_paths(self) -> List[str]:
+    def get_skill_paths(self) -> list[str]:
         """获取工具路径"""
         return self._skill_paths.copy()

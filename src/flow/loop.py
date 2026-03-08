@@ -2,7 +2,7 @@
 LoopFlow - 循环执行工作流
 """
 
-from typing import Optional, Callable
+from collections.abc import Callable
 
 from .base import FlowSkill
 
@@ -13,7 +13,7 @@ class LoopFlow(FlowSkill):
     def __init__(
         self,
         max_iterations: int = 10,
-        stop_condition: Optional[Callable[[str, dict], bool]] = None,
+        stop_condition: Callable[[str, dict], bool] | None = None,
     ):
         """
         Args:
@@ -59,7 +59,9 @@ class LoopFlow(FlowSkill):
 
         # 继续循环
         context["_loop_iteration"] = iteration + 1
-        return f"Iteration {iteration + 1}/{self.max_iterations}: {agent_output}\n\nContinuing loop..."
+        return (
+            f"Iteration {iteration + 1}/{self.max_iterations}: {agent_output}\n\nContinuing loop..."
+        )
 
     def set_stop_condition(self, condition: Callable[[str, dict], bool]):
         """设置停止条件"""
@@ -69,5 +71,5 @@ class LoopFlow(FlowSkill):
         """循环任务可能需要委托"""
         return True
 
-    async def get_subagent_type(self, task: str) -> Optional[str]:
+    async def get_subagent_type(self, task: str) -> str | None:
         return "general"

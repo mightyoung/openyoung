@@ -1,0 +1,10 @@
+description: Support configurable teacher roles,
+evaluations: []
+hidden: false
+instructions: ''
+mcps: []
+model: deepseek-chat
+name: teacher
+skills: []
+temperature: 0.7
+type: general

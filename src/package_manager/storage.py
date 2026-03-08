@@ -3,10 +3,9 @@ PackageManager Storage - 持久化存储层
 """
 
 import json
-import os
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Dict, Any, Optional, List
-from dataclasses import dataclass, asdict
+from typing import Any
 
 
 @dataclass
@@ -18,7 +17,7 @@ class PackageMetadata:
     package_type: str  # skill, mcp, evaluation, dataset, capsule, hybrid
     description: str = ""
     entry: str = ""
-    dependencies: List[str] = None
+    dependencies: list[str] = None
     checksum: str = ""
     source: str = "local"  # local, github, npm
     installed_at: str = ""
@@ -36,7 +35,7 @@ class LLMProviderConfig:
     provider_type: str  # deepseek, moonshot, qwen, glm, openai
     base_url: str
     api_key: str
-    models: List[str] = None
+    models: list[str] = None
     enabled: bool = True
 
     def __post_init__(self):
@@ -47,9 +46,9 @@ class LLMProviderConfig:
 class PackageStorage:
     """包存储管理器 - 负责持久化"""
 
-    DEFAULT_DIR = ".mightyoung"
+    DEFAULT_DIR = ".openyoung"
 
-    def __init__(self, base_dir: Optional[str] = None):
+    def __init__(self, base_dir: str | None = None):
         self.base_dir = Path(base_dir) if base_dir else Path.cwd() / self.DEFAULT_DIR
         self._ensure_dirs()
 
@@ -83,12 +82,12 @@ class PackageStorage:
 
     # ========== Registry Operations ==========
 
-    def load_registry(self) -> Dict[str, PackageMetadata]:
+    def load_registry(self) -> dict[str, PackageMetadata]:
         """加载注册表"""
         if not self.registry_file.exists():
             return {}
 
-        with open(self.registry_file, "r", encoding="utf-8") as f:
+        with open(self.registry_file, encoding="utf-8") as f:
             data = json.load(f)
 
         result = {}
@@ -96,7 +95,7 @@ class PackageStorage:
             result[name] = PackageMetadata(**pkg_data)
         return result
 
-    def save_registry(self, registry: Dict[str, PackageMetadata]) -> None:
+    def save_registry(self, registry: dict[str, PackageMetadata]) -> None:
         """保存注册表"""
         data = {name: asdict(pkg) for name, pkg in registry.items()}
         with open(self.registry_file, "w", encoding="utf-8") as f:
@@ -117,14 +116,12 @@ class PackageStorage:
             return True
         return False
 
-    def get_package(self, name: str) -> Optional[PackageMetadata]:
+    def get_package(self, name: str) -> PackageMetadata | None:
         """获取包"""
         registry = self.load_registry()
         return registry.get(name)
 
-    def list_packages(
-        self, package_type: Optional[str] = None
-    ) -> List[PackageMetadata]:
+    def list_packages(self, package_type: str | None = None) -> list[PackageMetadata]:
         """列出包"""
         registry = self.load_registry()
         packages = list(registry.values())
@@ -136,12 +133,12 @@ class PackageStorage:
 
     # ========== LLM Provider Operations ==========
 
-    def load_providers(self) -> Dict[str, LLMProviderConfig]:
+    def load_providers(self) -> dict[str, LLMProviderConfig]:
         """加载 LLM Provider 配置"""
         if not self.providers_file.exists():
             return {}
 
-        with open(self.providers_file, "r", encoding="utf-8") as f:
+        with open(self.providers_file, encoding="utf-8") as f:
             data = json.load(f)
 
         result = {}
@@ -149,7 +146,7 @@ class PackageStorage:
             result[name] = LLMProviderConfig(**cfg_data)
         return result
 
-    def save_providers(self, providers: Dict[str, LLMProviderConfig]) -> None:
+    def save_providers(self, providers: dict[str, LLMProviderConfig]) -> None:
         """保存 LLM Provider 配置"""
         data = {name: asdict(cfg) for name, cfg in providers.items()}
         with open(self.providers_file, "w", encoding="utf-8") as f:
@@ -170,12 +167,12 @@ class PackageStorage:
             return True
         return False
 
-    def get_provider(self, name: str) -> Optional[LLMProviderConfig]:
+    def get_provider(self, name: str) -> LLMProviderConfig | None:
         """获取 LLM Provider"""
         providers = self.load_providers()
         return providers.get(name)
 
-    def list_providers(self, enabled_only: bool = False) -> List[LLMProviderConfig]:
+    def list_providers(self, enabled_only: bool = False) -> list[LLMProviderConfig]:
         """列出 LLM Providers"""
         providers = self.load_providers()
         result = list(providers.values())
@@ -199,7 +196,7 @@ class PackageStorage:
 
         self.save_providers(providers)
 
-    def get_default_provider(self) -> Optional[LLMProviderConfig]:
+    def get_default_provider(self) -> LLMProviderConfig | None:
         """获取默认 Provider"""
         providers = self.load_providers()
         for p in providers.values():
@@ -214,24 +211,24 @@ class LockManager:
     def __init__(self, storage: PackageStorage):
         self.storage = storage
 
-    def load_lock(self) -> Dict[str, Any]:
+    def load_lock(self) -> dict[str, Any]:
         """加载 lock 文件"""
         if not self.storage.lock_file.exists():
             return {}
 
         import yaml
 
-        with open(self.storage.lock_file, "r", encoding="utf-8") as f:
+        with open(self.storage.lock_file, encoding="utf-8") as f:
             return yaml.safe_load(f) or {}
 
-    def save_lock(self, lock_data: Dict[str, Any]) -> None:
+    def save_lock(self, lock_data: dict[str, Any]) -> None:
         """保存 lock 文件"""
         import yaml
 
         with open(self.storage.lock_file, "w", encoding="utf-8") as f:
             yaml.dump(lock_data, f, default_flow_style=False)
 
-    def generate_lock(self, packages: Dict[str, PackageMetadata]) -> None:
+    def generate_lock(self, packages: dict[str, PackageMetadata]) -> None:
         """生成 lock 文件"""
         from datetime import datetime
 

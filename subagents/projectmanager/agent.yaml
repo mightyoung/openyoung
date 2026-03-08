@@ -1,0 +1,11 @@
+description: Represents a Project Manager role responsible for overseeing project
+  execution and team efficiency.
+evaluations: []
+hidden: false
+instructions: ''
+mcps: []
+model: deepseek-chat
+name: projectmanager
+skills: []
+temperature: 0.7
+type: general

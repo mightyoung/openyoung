@@ -2,8 +2,7 @@
 Distillation Module Tests
 """
 
-import pytest
-from src.distillation import KnowledgeDistiller, Knowledge
+from src.distillation import Knowledge, KnowledgeDistiller
 
 
 class TestKnowledgeDistiller:

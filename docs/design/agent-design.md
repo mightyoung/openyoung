@@ -96,10 +96,10 @@ class AgentPermission:
     """权限配置 - 完全对齐 OpenCode"""
     # 简单配置：全局设置
     _global: str = "allow"  # 默认动作
-    
+
     # 粒度配置：按工具 + 模式
     rules: List[PermissionRule] = field(default_factory=list)
-    
+
     @staticmethod
     def from_dict(perm: Dict[str, Union[str, dict]]) -> "AgentPermission":
         """从字典创建 - 参考 OpenCode fromConfig"""
@@ -113,7 +113,7 @@ class AgentPermission:
                 for pattern, action in value.items():
                     rules.append(PermissionRule(permission=key, pattern=pattern, action=PermissionAction(action)))
         return AgentPermission(rules=rules)
-    
+
     def evaluate(self, permission: str, pattern: str = "*") -> PermissionAction:
         """评估权限 - 参考 OpenCode PermissionNext.evaluate"""
         # 查找匹配规则 (最后匹配的规则优先)
@@ -121,7 +121,7 @@ class AgentPermission:
             if self._match(permission, rule.permission) and self._match(pattern, rule.pattern):
                 return rule.action
         return PermissionAction(self._global)
-    
+
     @staticmethod
     def _match(text: str, pattern: str) -> bool:
         """通配符匹配 - 参考 OpenCode Wildcard.match"""
@@ -161,10 +161,10 @@ class AgentConfig:
     temperature: float = 0.7                     # 温度
     max_steps: Optional[int] = None               # 最大迭代次数
     hidden: bool = False                         # 是否隐藏（不在 @ 提示中显示）
-    
+
     # 权限配置 - 完全对齐 OpenCode
     permission: AgentPermission = field(default_factory=AgentPermission)
-    
+
     # 提示词
     prompt: Optional[str] = None                 # 内联提示词
     prompt_file: Optional[str] = None           # 提示词文件路径
@@ -207,26 +207,26 @@ class SubAgentConfig:
 
 class SubAgent(Protocol):
     """SubAgent 协议 - 轻量级任务执行者"""
-    
+
     @property
     def name(self) -> str:
         """SubAgent 名称"""
         ...
-    
+
     @property
     def description(self) -> str:
         """SubAgent 描述"""
         ...
-    
+
     @property
     def agent_type(self) -> SubAgentType:
         """SubAgent 类型"""
         ...
-    
+
     async def run(self, prompt: str, context: dict) -> dict:
         """执行任务，返回结果"""
         ...
-    
+
     def get_capabilities(self) -> List[str]:
         """返回能力列表"""
         ...
@@ -261,13 +261,13 @@ class Task:
 
 class AdvancedAgent:
     """高级智能体 - 参考 OpenCode Primary Agent
-    
+
     通用模板 Agent：
     - 完整工具权限 (可配置)
     - 可调用 SubAgent
     - 无功能定位区分 (Plan/Build)
     """
-    
+
     def __init__(
         self,
         name: str,
@@ -283,45 +283,45 @@ class AdvancedAgent:
         self.skills = skills
         self.tools = tools
         self.sub_agents = {sa.name: sa for sa in sub_agents}
-        
+
         # 会话上下文
         self._context: Dict[str, Any] = {}
         self._session_id: str = str(uuid.uuid4())
-    
+
     async def run(self, user_input: str) -> str:
         """主入口：接收用户输入，返回结果"""
         # 1. 检查权限
         self._check_permissions()
-        
+
         # 2. 上下文准备
         context = await self._prepare_context(user_input)
-        
+
         # 3. 决定是否调用 SubAgent
         if needs_subagent := await self._should_delegate(context):
             return await self._delegate_to_subagent(context)
-        
+
         # 4. 直接执行
         return await self._execute_direct(context)
-    
+
     def _check_permissions(self):
         """检查权限配置"""
         # 权限在执行工具时动态检查
         pass
-    
+
     # === 内部方法 ===
-    
+
     async def _prepare_context(self, user_input: str) -> dict:
         """准备执行上下文"""
         ...
-    
+
     async def _should_delegate(self, context: dict) -> bool:
         """判断是否需要委托给 SubAgent"""
         ...
-    
+
     async def _delegate_to_subagent(self, context: dict) -> str:
         """委托任务给 SubAgent"""
         ...
-    
+
     async def _execute_direct(self, context: dict) -> str:
         """直接执行任务"""
         ...
@@ -354,10 +354,10 @@ class TaskDispatchParams:
 ```python
 class TaskDispatcher:
     """任务调度器 - 完全对齐 OpenCode"""
-    
+
     def __init__(self, sub_agents: Dict[str, SubAgent]):
         self.sub_agents = sub_agents
-    
+
     async def dispatch(
         self,
         params: TaskDispatchParams,
@@ -365,25 +365,25 @@ class TaskDispatcher:
         existing_task_id: Optional[str] = None
     ) -> dict:
         """调度任务到 SubAgent"""
-        
+
         # 1. 获取或恢复会话 (参考 OpenCode Session.create)
         session_id = await self._get_or_create_session(
             params.task_id or existing_task_id,
             parent_context.get("session_id"),
             params.description
         )
-        
+
         # 2. 构建隔离上下文
         context = self._build_isolated_context(params, parent_context)
-        
+
         # 3. 获取 SubAgent
         sub_agent = self.sub_agents.get(params.sub_agent_type)
         if not sub_agent:
             raise ValueError(f"Unknown sub_agent_type: {params.sub_agent_type}")
-        
+
         # 4. 执行任务
         result = await sub_agent.run(params.prompt, context)
-        
+
         # 5. 返回结果 (对齐 OpenCode 输出格式)
         return {
             "task_id": session_id,
@@ -391,10 +391,10 @@ class TaskDispatcher:
             "output": self._format_output(result),
             "status": "success"
         }
-    
+
     async def _get_or_create_session(
-        self, 
-        task_id: Optional[str], 
+        self,
+        task_id: Optional[str],
         parent_session_id: str,
         description: str
     ) -> str:
@@ -404,7 +404,7 @@ class TaskDispatcher:
             existing = await self._get_session(task_id)
             if existing:
                 return existing
-        
+
         # 创建新的子会话
         new_session_id = str(uuid.uuid4())
         await self._create_session(
@@ -413,10 +413,10 @@ class TaskDispatcher:
             title=f"{description} (@{self.sub_agent_type})"
         )
         return new_session_id
-    
+
     def _build_isolated_context(
-        self, 
-        params: TaskDispatchParams, 
+        self,
+        params: TaskDispatchParams,
         parent_context: dict
     ) -> dict:
         """构建隔离的上下文"""
@@ -426,7 +426,7 @@ class TaskDispatcher:
             "relevant_files": parent_context.get("relevant_files", []),
             "session_id": parent_context.get("session_id")
         }
-    
+
     def _format_output(self, result: dict) -> str:
         """格式化输出 - 参考 OpenCode task.ts"""
         return f"""<task_result>
@@ -439,7 +439,7 @@ class TaskDispatcher:
 ```python
 class TaskExecutor:
     """任务执行器 - 完全对齐 OpenCode"""
-    
+
     async def execute_tasks(
         self,
         tasks: List[TaskDispatchParams],
@@ -447,11 +447,11 @@ class TaskExecutor:
         mode: str = "sequential"
     ) -> List[dict]:
         """执行任务 - 参考 OpenCode 实现
-        
+
         Sequential: 默认模式，串行执行
         Parallel: 通过多次 task 调用实现并行
         """
-        
+
         if mode == "parallel":
             # 并行执行 - 多个 task 调用创建独立子会话
             results = await asyncio.gather(
@@ -465,10 +465,10 @@ class TaskExecutor:
                 result = await self._dispatch_one(task, parent_context)
                 results.append(result)
             return results
-    
+
     async def _dispatch_one(
-        self, 
-        params: TaskDispatchParams, 
+        self,
+        params: TaskDispatchParams,
         parent_context: dict
     ) -> dict:
         """执行单个任务"""
@@ -481,35 +481,35 @@ class TaskExecutor:
 ```python
 class PermissionChecker:
     """权限检查器 - 完全对齐 OpenCode PermissionNext"""
-    
+
     def __init__(self, permission: AgentPermission):
         self.permission = permission
-    
+
     async def check(
-        self, 
-        tool_name: str, 
+        self,
+        tool_name: str,
         pattern: str = "*",
         user_override: Optional[str] = None
     ) -> bool:
         """检查权限 - 参考 OpenCode PermissionNext.evaluate
-        
+
         Returns True if allowed, False if denied.
         Raises PermissionAskError if user confirmation needed.
         """
         # 1. 检查用户覆盖 (once/always/reject)
         if user_override:
             return user_override in ("once", "always")
-        
+
         # 2. 评估权限规则
         action = self.permission.evaluate(tool_name, pattern)
-        
+
         if action == PermissionAction.ALLOW:
             return True
         elif action == PermissionAction.DENY:
             return False
         else:  # ASK
             raise PermissionAskError(tool_name, pattern)
-    
+
     async def check_subagent(self, subagent_type: str) -> bool:
         """检查 SubAgent 调用权限"""
         return await self.check("task", subagent_type)
@@ -527,11 +527,11 @@ class PermissionAskError(Exception):
 ```python
 class ResultAggregator:
     """结果聚合器 - 参考 OpenCode task.ts 输出格式"""
-    
+
     @staticmethod
     async def aggregate(results: List[dict]) -> str:
         """聚合多个子任务的结果
-        
+
         输出格式对齐 OpenCode:
         task_id: xxx
         <task_result>
@@ -543,7 +543,7 @@ class ResultAggregator:
             task_id = r.get("task_id", "unknown")
             result_text = r.get("output", r.get("result", ""))
             outputs.append(f"task_id: {task_id}\n\n{result_text}")
-        
+
         return "\n\n---\n\n".join(outputs)
 ```
 
@@ -646,7 +646,7 @@ agents:
     model: "qwen-plus"
     temperature: 0.7
     max_steps: 100
-    
+
     # 权限配置 - 完全对齐 OpenCode
     permission:
       # 全局默认
@@ -663,9 +663,9 @@ agents:
       task:
         "*": "allow"
         "builder": "deny"
-    
+
     prompt: "{file:./prompts/assistant.txt}"
-  
+
   # SubAgent 配置
   sub_agents:
     - name: "explore"
@@ -678,14 +678,14 @@ agents:
         read: "allow"
         grep: "allow"
         glob: "allow"
-      
+
     - name: "general"
       type: "general"
       description: "通用任务处理"
       hidden: false
       permission:
         "*": "allow"
-      
+
     - name: "reviewer"
       type: "reviewer"
       description: "代码审查"
@@ -717,7 +717,7 @@ agents:
 ```python
 class EnhancedAdvancedAgent(AdvancedAgent):
     """增强型 Agent - 集成 Harness"""
-    
+
     def __init__(
         self,
         *args,
@@ -725,13 +725,13 @@ class EnhancedAdvancedAgent(AdvancedAgent):
         **kwargs
     ):
         super().__init__(*args, **kwargs)
-        
+
         # 初始化 Harness 组件
         self._trace_collector = TraceCollector()
         self._budget_controller = BudgetController()
         self._pattern_detector = PatternDetector()
         self._quality_checker = QualityChecker()
-        
+
         # 构建中间件链
         self._middleware_chain = self._build_middleware_chain()
 ```
@@ -780,21 +780,21 @@ class EnhancedAdvancedAgent(AdvancedAgent):
 harness:
   enabled: true
   mode: "auto"  # auto | manual | disabled
-  
+
   storage:
     backend: "memory"  # memory | postgres
-  
+
   trace:
     enabled: true
-  
+
   budget:
     enabled: true
     dynamic: true
-  
+
   pattern_detection:
     enabled: true
     auto_apply: true
-  
+
   quality_check:
     enabled: true
 ```

@@ -1,0 +1,10 @@
+description: '複雑な問題には、役割分担したサブ agent を使用:'
+evaluations: []
+hidden: false
+instructions: ''
+mcps: []
+model: deepseek-chat
+name: 多角的分析
+skills: []
+temperature: 0.7
+type: general

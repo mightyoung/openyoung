@@ -3,8 +3,8 @@ MCP Module Tests
 """
 
 import pytest
-import asyncio
-from src.mcp import MCPClient, MCPServer, MCPTool, MCPConnectionStatus, MCPToolMapper
+
+from src.mcp import MCPClient, MCPConnectionStatus, MCPServer, MCPTool, MCPToolMapper
 
 
 class TestMCPServer:

@@ -3,10 +3,9 @@ Cached DataStore - 带缓存的数据访问层
 使用 cachetools 实现 LRU 缓存
 """
 
-from typing import Dict, List, Any, Optional
-from datetime import datetime
-from cachetools import LRUCache, TTLCache
 import threading
+
+from cachetools import LRUCache, TTLCache
 
 from .store import DataStore
 
@@ -14,9 +13,7 @@ from .store import DataStore
 class CachedDataStore(DataStore):
     """带缓存的 DataStore"""
 
-    def __init__(self, data_dir: str = ".young",
-                 maxsize: int = 100,
-                 ttl: int = 3600):
+    def __init__(self, data_dir: str = ".young", maxsize: int = 100, ttl: int = 3600):
         super().__init__(data_dir)
 
         # LRU 缓存
@@ -29,11 +26,7 @@ class CachedDataStore(DataStore):
         self._lock = threading.RLock()
 
         # 缓存统计
-        self._stats = {
-            "hits": 0,
-            "misses": 0,
-            "evictions": 0
-        }
+        self._stats = {"hits": 0, "misses": 0, "evictions": 0}
 
     def _make_key(self, entity_type: str, entity_id: str) -> str:
         """生成缓存键"""
@@ -48,7 +41,7 @@ class CachedDataStore(DataStore):
             if key in self._ttl_cache:
                 del self._ttl_cache[key]
 
-    def get_agent(self, agent_id: str, use_cache: bool = True) -> Optional[Dict]:
+    def get_agent(self, agent_id: str, use_cache: bool = True) -> dict | None:
         """获取 Agent (带缓存)"""
         if not use_cache:
             return super().get_agent(agent_id)
@@ -71,7 +64,7 @@ class CachedDataStore(DataStore):
 
         return result
 
-    def save_agent(self, agent_id: str, data: Dict) -> str:
+    def save_agent(self, agent_id: str, data: dict) -> str:
         """保存 Agent (使缓存失效)"""
         result = super().save_agent(agent_id, data)
         self._invalidate("agent", agent_id)
@@ -83,7 +76,7 @@ class CachedDataStore(DataStore):
         self._invalidate("agent", agent_id)
         return result
 
-    def get_run(self, run_id: str, use_cache: bool = True) -> Optional[Dict]:
+    def get_run(self, run_id: str, use_cache: bool = True) -> dict | None:
         """获取 Run (带缓存)"""
         if not use_cache:
             return super().get_run(run_id)
@@ -105,13 +98,13 @@ class CachedDataStore(DataStore):
 
         return result
 
-    def save_run(self, run_id: str, data: Dict) -> str:
+    def save_run(self, run_id: str, data: dict) -> str:
         """保存 Run (使缓存失效)"""
         result = super().save_run(run_id, data)
         self._invalidate("run", run_id)
         return result
 
-    def get_checkpoint(self, checkpoint_id: str, use_cache: bool = True) -> Optional[Dict]:
+    def get_checkpoint(self, checkpoint_id: str, use_cache: bool = True) -> dict | None:
         """获取 Checkpoint (带缓存)"""
         if not use_cache:
             return super().get_checkpoint(checkpoint_id)
@@ -133,13 +126,13 @@ class CachedDataStore(DataStore):
 
         return result
 
-    def save_checkpoint(self, checkpoint_id: str, data: Dict) -> str:
+    def save_checkpoint(self, checkpoint_id: str, data: dict) -> str:
         """保存 Checkpoint (使缓存失效)"""
         result = super().save_checkpoint(checkpoint_id, data)
         self._invalidate("checkpoint", checkpoint_id)
         return result
 
-    def get_workspace(self, workspace_id: str, use_cache: bool = True) -> Optional[Dict]:
+    def get_workspace(self, workspace_id: str, use_cache: bool = True) -> dict | None:
         """获取 Workspace (带缓存)"""
         if not use_cache:
             return super().get_workspace(workspace_id)
@@ -161,7 +154,7 @@ class CachedDataStore(DataStore):
 
         return result
 
-    def save_workspace(self, workspace_id: str, data: Dict) -> str:
+    def save_workspace(self, workspace_id: str, data: dict) -> str:
         """保存 Workspace (使缓存失效)"""
         result = super().save_workspace(workspace_id, data)
         self._invalidate("workspace", workspace_id)
@@ -173,7 +166,7 @@ class CachedDataStore(DataStore):
             self._cache.clear()
             self._ttl_cache.clear()
 
-    def get_cache_stats(self) -> Dict:
+    def get_cache_stats(self) -> dict:
         """获取缓存统计"""
         with self._lock:
             total = self._stats["hits"] + self._stats["misses"]
@@ -184,12 +177,15 @@ class CachedDataStore(DataStore):
                 "misses": self._stats["misses"],
                 "hit_rate": hit_rate,
                 "size": len(self._cache),
-                "maxsize": self._cache.maxsize
+                "maxsize": self._cache.maxsize,
             }
 
 
 # ========== 便捷函数 ==========
 
-def get_cached_store(data_dir: str = ".young", maxsize: int = 100, ttl: int = 3600) -> CachedDataStore:
+
+def get_cached_store(
+    data_dir: str = ".young", maxsize: int = 100, ttl: int = 3600
+) -> CachedDataStore:
     """获取带缓存的 DataStore"""
     return CachedDataStore(data_dir, maxsize, ttl)

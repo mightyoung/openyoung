@@ -3,10 +3,11 @@ MCP - Model Context Protocol
 MCP Server 客户端实现
 """
 
-from dataclasses import dataclass
-from typing import Dict, Any, List, Optional, Callable
-from enum import Enum
 import asyncio
+from collections.abc import Callable
+from dataclasses import dataclass
+from enum import Enum
+from typing import Any, Dict, List, Optional
 
 
 class MCPConnectionStatus(str, Enum):
@@ -24,7 +25,7 @@ class MCPTool:
 
     name: str
     description: str
-    input_schema: Dict[str, Any]
+    input_schema: dict[str, Any]
 
 
 class MCPServer:
@@ -41,7 +42,7 @@ class MCPClient:
     def __init__(self, server: MCPServer):
         self.server = server
         self.status = MCPConnectionStatus.DISCONNECTED
-        self._tools: Dict[str, MCPTool] = {}
+        self._tools: dict[str, MCPTool] = {}
         self._connected = False
 
     def connect(self) -> bool:
@@ -61,7 +62,7 @@ class MCPClient:
         """检查是否已连接"""
         return self._connected and self.status == MCPConnectionStatus.CONNECTED
 
-    def list_tools(self) -> List[MCPTool]:
+    def list_tools(self) -> list[MCPTool]:
         """列出可用工具"""
         return list(self._tools.values())
 
@@ -69,7 +70,7 @@ class MCPClient:
         """注册工具"""
         self._tools[tool.name] = tool
 
-    def call_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Any:
+    def call_tool(self, tool_name: str, arguments: dict[str, Any]) -> Any:
         """调用工具"""
         if not self.is_connected():
             raise ConnectionError("Not connected to MCP server")
@@ -81,11 +82,11 @@ class MCPClient:
         # 模拟工具调用
         return {"result": f"Called {tool_name} with {arguments}"}
 
-    async def call_tool_async(self, tool_name: str, arguments: Dict[str, Any]) -> Any:
+    async def call_tool_async(self, tool_name: str, arguments: dict[str, Any]) -> Any:
         """异步调用工具"""
         return await asyncio.to_thread(self.call_tool, tool_name, arguments)
 
-    def get_tool(self, name: str) -> Optional[MCPTool]:
+    def get_tool(self, name: str) -> MCPTool | None:
         """获取工具"""
         return self._tools.get(name)
 
@@ -95,7 +96,7 @@ class MCPToolMapper:
 
     def __init__(self, client: MCPClient):
         self.client = client
-        self._mappings: Dict[str, str] = {}
+        self._mappings: dict[str, str] = {}
 
     def map_tool(self, local_name: str, remote_name: str) -> None:
         """映射工具名称"""
@@ -112,7 +113,7 @@ class MCPToolMapper:
         """获取远程工具名称"""
         return self._mappings.get(local_name, local_name)
 
-    def call_local_tool(self, local_name: str, arguments: Dict[str, Any]) -> Any:
+    def call_local_tool(self, local_name: str, arguments: dict[str, Any]) -> Any:
         """调用本地映射的工具"""
         remote_name = self.get_remote_name(local_name)
         return self.client.call_tool(remote_name, arguments)

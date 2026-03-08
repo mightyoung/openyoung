@@ -1,0 +1,70 @@
+# OpenYoung Channels Configuration
+# 消息通道配置文件示例
+
+# 通道列表
+channels:
+  # CLI 通道 (默认启用)
+  - platform: cli
+    enabled: true
+    config:
+      timeout: 300
+
+  # Telegram 通道
+  - platform: telegram
+    enabled: false
+    config:
+      bot_token: "${TELEGRAM_BOT_TOKEN}"
+      # api_base_url: ""  # 自定义 API 地址 (可选)
+
+  # Discord 通道
+  - platform: discord
+    enabled: false
+    config:
+      bot_token: "${DISCORD_BOT_TOKEN}"
+      # intents: ["messages", "reactions"]
+
+  # QQ 通道 (需要 Go-CQHTTP)
+  - platform: qq
+    enabled: false
+    config:
+      http_port: 5700
+      ws_port: 5701
+
+  # 钉钉通道
+  - platform: dingtalk
+    enabled: false
+    config:
+      webhook_url: "${DINGTALK_WEBHOOK_URL}"
+      secret: "${DINGTALK_SECRET}"
+
+  # 飞书通道
+  - platform: feishu
+    enabled: false
+    config:
+      app_id: "${FEISHU_APP_ID}"
+      app_secret: "${FEISHU_APP_SECRET}"
+
+# Agent 配置
+agent:
+  # 默认模型
+  default_model: "deepseek-chat"
+
+  # 评估模型
+  eval_model: "qwen-plus"
+
+  # 权限模式: ask | allow | deny
+  permission_mode: "ask"
+
+  # 最大工具调用次数
+  max_tool_calls: 10
+
+# 日志配置
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+# 存储配置
+storage:
+  base_dir: ".openyoung"
+  enable_vector: true
+  enable_checkpoint: true

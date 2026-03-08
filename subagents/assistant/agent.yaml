@@ -1,0 +1,10 @@
+description: Assistant for solving common issues.
+evaluations: []
+hidden: false
+instructions: ''
+mcps: []
+model: deepseek-chat
+name: assistant
+skills: []
+temperature: 0.7
+type: general

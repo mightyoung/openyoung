@@ -3,9 +3,9 @@ LLMJudgeEval - LLM 评判评估器
 使用 LLM 进行质量评估
 """
 
-from typing import Any, Dict, List, Optional
-from dataclasses import dataclass
 import json
+from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass
@@ -75,7 +75,7 @@ class LLMJudgeEval:
         },
     }
 
-    def __init__(self, judge_client=None, rubric: Optional[Dict] = None):
+    def __init__(self, judge_client=None, rubric: dict | None = None):
         """
         Args:
             judge_client: LLM 客户端 (用于实际评判)
@@ -90,9 +90,9 @@ class LLMJudgeEval:
         self,
         input_text: str,
         output_text: str,
-        expected_output: Optional[str] = None,
-        dimensions: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        expected_output: str | None = None,
+        dimensions: list[str] | None = None,
+    ) -> dict[str, Any]:
         """评估输出质量
 
         Args:
@@ -137,8 +137,8 @@ class LLMJudgeEval:
         input_text: str,
         output_a: str,
         output_b: str,
-        dimensions: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        dimensions: list[str] | None = None,
+    ) -> dict[str, Any]:
         """Pairwise 对比评估
 
         评估两个输出的相对优劣，缓解 position bias
@@ -205,8 +205,10 @@ class LLMJudgeEval:
                 max_tokens=500,
             )
 
-            # 解析响应
-            result = json.loads(response)
+            # response 是 dict 格式: {"choices": [{"message": {"content": "..."}}], ...}
+            # LLM 返回的是 JSON 字符串，需要从中解析
+            content = response.get("choices", [{}])[0].get("message", {}).get("content", "{}")
+            result = json.loads(content)
 
             return JudgeScore(
                 dimension=dimension,
@@ -251,8 +253,8 @@ class LLMJudgeEval:
         input_text: str,
         output_a: str,
         output_b: str,
-        dimensions: List[str],
-    ) -> Dict[str, Any]:
+        dimensions: list[str],
+    ) -> dict[str, Any]:
         """比较两个输出"""
         # 简化实现
         return {
@@ -262,8 +264,8 @@ class LLMJudgeEval:
 
     def _determine_winner(
         self,
-        result_ab: Dict,
-        result_ba: Dict,
+        result_ab: dict,
+        result_ba: dict,
     ) -> str:
         """确定获胜者"""
         wins_a = 0
@@ -287,18 +289,18 @@ class LLMJudgeEval:
 
     def _calculate_confidence(
         self,
-        result_ab: Dict,
-        result_ba: Dict,
+        result_ab: dict,
+        result_ba: dict,
     ) -> float:
         """计算判断置信度"""
         # 简化实现
         return 0.8
 
-    def set_rubric(self, rubric: Dict):
+    def set_rubric(self, rubric: dict):
         """设置自定义评分标准"""
         self._rubric = rubric
 
-    def get_rubric(self) -> Dict:
+    def get_rubric(self) -> dict:
         """获取当前评分标准"""
         return self._rubric
 

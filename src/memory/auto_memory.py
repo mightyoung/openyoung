@@ -5,7 +5,7 @@ AutoMemory - 自动记忆系统（三层记忆）
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import List, Optional, Dict, Any
+from typing import Any
 
 
 @dataclass
@@ -18,7 +18,7 @@ class Memory:
     created_at: datetime
     last_accessed: datetime
     access_count: int = 0
-    tags: List[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
 
 
 class AutoMemory:
@@ -34,16 +34,16 @@ class AutoMemory:
         self.importance_threshold = importance_threshold
 
         # 三层记忆
-        self.working_memory: List[Memory] = []  # 当前任务
-        self.session_memory: List[Memory] = []  # 当前会话
-        self.persistent_memory: List[Memory] = []  # 长期记忆
+        self.working_memory: list[Memory] = []  # 当前任务
+        self.session_memory: list[Memory] = []  # 当前会话
+        self.persistent_memory: list[Memory] = []  # 长期记忆
 
     async def add_memory(
         self,
         content: str,
-        context: Optional[Dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
         layer: str = "session",
-    ) -> Optional[Memory]:
+    ) -> Memory | None:
         """添加记忆
 
         Args:
@@ -82,20 +82,18 @@ class AutoMemory:
 
         return memory
 
-    async def get_relevant_memories(self, query: str, limit: int = 5) -> List[Memory]:
+    async def get_relevant_memories(self, query: str, limit: int = 5) -> list[Memory]:
         """获取相关记忆
 
         按重要性排序，返回最相关的记忆
         """
         # 合并所有记忆层
-        all_memories = (
-            self.working_memory + self.session_memory + self.persistent_memory
-        )
+        all_memories = self.working_memory + self.session_memory + self.persistent_memory
 
         # 按重要性和访问次数排序
-        relevant = sorted(
-            all_memories, key=lambda m: (m.importance, m.access_count), reverse=True
-        )[:limit]
+        relevant = sorted(all_memories, key=lambda m: (m.importance, m.access_count), reverse=True)[
+            :limit
+        ]
 
         # 更新访问记录
         for memory in relevant:
@@ -121,9 +119,7 @@ class AutoMemory:
                 return True
         return False
 
-    async def _evaluate_importance(
-        self, content: str, context: Optional[Dict[str, Any]]
-    ) -> float:
+    async def _evaluate_importance(self, content: str, context: dict[str, Any] | None) -> float:
         """评估记忆重要性
 
         简单实现：基于内容关键词
@@ -164,7 +160,7 @@ class AutoMemory:
         if len(self.persistent_memory) > self.max_memories:
             self.persistent_memory = self.persistent_memory[-self.max_memories :]
 
-    def get_stats(self) -> Dict[str, int]:
+    def get_stats(self) -> dict[str, int]:
         """获取记忆统计"""
         return {
             "working": len(self.working_memory),

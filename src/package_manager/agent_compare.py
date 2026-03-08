@@ -3,26 +3,27 @@ Agent Compare - Agent 对比功能
 并排比较两个 Agent 的各项指标
 """
 
-import asyncio
-from typing import Dict, List, Any, Optional
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
+from typing import Any
 
 
 class ComparisonDimension(Enum):
     """对比维度"""
-    QUALITY = "quality"         # 质量评分
-    DOWNLOADS = "downloads"     # 下载/使用次数
-    RATING = "rating"          # 评分
+
+    QUALITY = "quality"  # 质量评分
+    DOWNLOADS = "downloads"  # 下载/使用次数
+    RATING = "rating"  # 评分
     DOCUMENTATION = "documentation"  # 文档完整性
-    COMPLETENESS = "completeness"   # 功能完整性
-    SECURITY = "security"       # 安全性
-    RUNTIME = "runtime"       # 运行时能力
+    COMPLETENESS = "completeness"  # 功能完整性
+    SECURITY = "security"  # 安全性
+    RUNTIME = "runtime"  # 运行时能力
 
 
 @dataclass
 class DimensionResult:
     """单维度对比结果"""
+
     dimension: str
     agent_a_value: Any
     agent_b_value: Any
@@ -35,10 +36,11 @@ class DimensionResult:
 @dataclass
 class AgentComparison:
     """Agent 对比结果"""
+
     agent_a: str
     agent_b: str
-    dimensions: List[DimensionResult]
-    winner: Optional[str]  # "a", "b", "tie"
+    dimensions: list[DimensionResult]
+    winner: str | None  # "a", "b", "tie"
     summary: str
 
 
@@ -79,7 +81,7 @@ class AgentComparer:
                 agent_b=agent_b_name,
                 dimensions=[],
                 winner=None,
-                summary="One or both agents not found"
+                summary="One or both agents not found",
             )
 
         # 对比各维度
@@ -125,14 +127,14 @@ class AgentComparer:
             agent_b=agent_b_name,
             dimensions=results,
             winner=winner,
-            summary=summary
+            summary=summary,
         )
 
-    async def _get_agent_data(self, agent_name: str) -> Optional[Dict]:
+    async def _get_agent_data(self, agent_name: str) -> dict | None:
         """获取 Agent 数据"""
         from src.package_manager.agent_evaluator import AgentEvaluator
-        from src.package_manager.registry import AgentRegistry
         from src.package_manager.base_registry import BaseRegistry
+        from src.package_manager.registry import AgentRegistry
 
         # 获取评估数据
         evaluator = AgentEvaluator()
@@ -160,10 +162,12 @@ class AgentComparer:
             "quality_score": report.overall_score if report else 0,
             "downloads": downloads,
             "rating": rating,
-            "dimensions": {d.dimension.value: d.score for d in (report.dimensions if report else [])},
+            "dimensions": {
+                d.dimension.value: d.score for d in (report.dimensions if report else [])
+            },
         }
 
-    def _compare_quality(self, a: Dict, b: Dict) -> DimensionResult:
+    def _compare_quality(self, a: dict, b: dict) -> DimensionResult:
         """对比质量评分"""
         a_score = a.get("quality_score", 0)
         b_score = b.get("quality_score", 0)
@@ -175,10 +179,10 @@ class AgentComparer:
             agent_a_score=a_score,
             agent_b_score=b_score,
             winner="a" if a_score > b_score else "b" if b_score > a_score else "tie",
-            reasoning=f"质量评分 {a_score:.2f} vs {b_score:.2f}"
+            reasoning=f"质量评分 {a_score:.2f} vs {b_score:.2f}",
         )
 
-    def _compare_downloads(self, a: Dict, b: Dict) -> DimensionResult:
+    def _compare_downloads(self, a: dict, b: dict) -> DimensionResult:
         """对比下载/使用次数"""
         a_count = a.get("downloads", 0)
         b_count = b.get("downloads", 0)
@@ -190,10 +194,10 @@ class AgentComparer:
             agent_a_score=min(a_count / 100, 1.0),
             agent_b_score=min(b_count / 100, 1.0),
             winner="a" if a_count > b_count else "b" if b_count > a_count else "tie",
-            reasoning=f"使用次数 {a_count} vs {b_count}"
+            reasoning=f"使用次数 {a_count} vs {b_count}",
         )
 
-    def _compare_rating(self, a: Dict, b: Dict) -> DimensionResult:
+    def _compare_rating(self, a: dict, b: dict) -> DimensionResult:
         """对比评分"""
         a_rating = a.get("rating", 0)
         b_rating = b.get("rating", 0)
@@ -205,10 +209,10 @@ class AgentComparer:
             agent_a_score=a_rating / 5.0,
             agent_b_score=b_rating / 5.0,
             winner="a" if a_rating > b_rating else "b" if b_rating > a_rating else "tie",
-            reasoning=f"用户评分 {a_rating:.1f} vs {b_rating:.1f}"
+            reasoning=f"用户评分 {a_rating:.1f} vs {b_rating:.1f}",
         )
 
-    def _compare_documentation(self, a: Dict, b: Dict) -> DimensionResult:
+    def _compare_documentation(self, a: dict, b: dict) -> DimensionResult:
         """对比文档完整性"""
         a_score = a.get("dimensions", {}).get("documentation", 0)
         b_score = b.get("dimensions", {}).get("documentation", 0)
@@ -220,10 +224,10 @@ class AgentComparer:
             agent_a_score=a_score,
             agent_b_score=b_score,
             winner="a" if a_score > b_score else "b" if b_score > a_score else "tie",
-            reasoning=f"文档评分 {a_score:.2f} vs {b_score:.2f}"
+            reasoning=f"文档评分 {a_score:.2f} vs {b_score:.2f}",
         )
 
-    def _compare_completeness(self, a: Dict, b: Dict) -> DimensionResult:
+    def _compare_completeness(self, a: dict, b: dict) -> DimensionResult:
         """对比功能完整性"""
         a_score = a.get("dimensions", {}).get("completeness", 0)
         b_score = b.get("dimensions", {}).get("completeness", 0)
@@ -235,10 +239,10 @@ class AgentComparer:
             agent_a_score=a_score,
             agent_b_score=b_score,
             winner="a" if a_score > b_score else "b" if b_score > a_score else "tie",
-            reasoning=f"完整性评分 {a_score:.2f} vs {b_score:.2f}"
+            reasoning=f"完整性评分 {a_score:.2f} vs {b_score:.2f}",
         )
 
-    def _compare_security(self, a: Dict, b: Dict) -> DimensionResult:
+    def _compare_security(self, a: dict, b: dict) -> DimensionResult:
         """对比安全性"""
         a_score = a.get("dimensions", {}).get("security", 0)
         b_score = b.get("dimensions", {}).get("security", 0)
@@ -250,10 +254,10 @@ class AgentComparer:
             agent_a_score=a_score,
             agent_b_score=b_score,
             winner="a" if a_score > b_score else "b" if b_score > a_score else "tie",
-            reasoning=f"安全性评分 {a_score:.2f} vs {b_score:.2f}"
+            reasoning=f"安全性评分 {a_score:.2f} vs {b_score:.2f}",
         )
 
-    def _compare_runtime(self, a: Dict, b: Dict) -> DimensionResult:
+    def _compare_runtime(self, a: dict, b: dict) -> DimensionResult:
         """对比运行时能力"""
         a_score = a.get("dimensions", {}).get("runtime", 0)
         b_score = b.get("dimensions", {}).get("runtime", 0)
@@ -265,11 +269,12 @@ class AgentComparer:
             agent_a_score=a_score,
             agent_b_score=b_score,
             winner="a" if a_score > b_score else "b" if b_score > a_score else "tie",
-            reasoning=f"运行时评分 {a_score:.2f} vs {b_score:.2f}"
+            reasoning=f"运行时评分 {a_score:.2f} vs {b_score:.2f}",
         )
 
 
 # ========== 便捷函数 ==========
+
 
 async def compare_agents(agent_a: str, agent_b: str) -> AgentComparison:
     """对比两个 Agent"""

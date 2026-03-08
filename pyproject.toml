@@ -14,6 +14,10 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "httpx>=0.25.0",
     "prompt-toolkit>=3.0.0",
+    # Data layer dependencies
+    "sqlalchemy>=2.0.0",
+    "blinker>=1.9.0",
+    "cachetools>=6.0.0",
 ]
 
 [project.scripts]
@@ -22,7 +26,139 @@ openyoung = "src.cli.main:cli"
 [project.urls]
 Homepage = "https://github.com/mightyoung/openyoung"
 
+# R2-2-3: mypy type checking configuration
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+follow_imports = "normal"
+ignore_missing_imports = true
+
+# Exclude directories
+[[tool.mypy.files]]
+ignore = ["tests/", "docs/", "github-import-workspace/", "packages/", "skills/", "evals/"]
+
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["src*"]
+
+# R3-1: Ruff linter configuration
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+# Exclude directories
+exclude = [
+    "tests/",
+    "docs/",
+    "github-import-workspace/",
+    "packages/",
+    "skills/",
+    "evals/",
+    ".git/",
+    "__pycache__/",
+]
+
+[tool.ruff.lint]
+# Select rules
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes
+    "I",     # isort
+    "UP",    # pyupgrade
+]
+# Ignore some rules that are too noisy for legacy code
+ignore = [
+    "E402",  # Module level import not at top of file
+    "E501",  # Line too long (handled by formatter)
+    "E722",  # Do not use bare 'except'
+    "F841",  # Local variable is assigned to but never used
+    "F823",  # Local variable referenced before assignment
+    "F401",  # Unused imports (too noisy for legacy code)
+    "F821",  # Undefined names (need manual review)
+    "E741",  # Ambiguous variable names
+    "W293",  # Blank line contains whitespace
+    "F811",  # Redefinition of unused
+    "UP035",  # typing.Dict deprecated (Python 3.9+ native)
+    "UP006",  # Use dict/list instead of Dict/List
+    "UP045",  # Use X | None instead of Optional[X]
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+
+# R3-1-2: Pytest configuration
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+# Register custom marks
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "e2e: marks tests as end-to-end tests",
+    "security: marks tests as security tests",
+    "performance: marks tests as performance tests",
+    "integration: marks tests as integration tests",
+]
+
+# R3-2-2: API Documentation configuration
+[tool.openyoung.docs]
+# API doc generation settings
+api_modules = [
+    "src.agents",
+    "src.cli",
+    "src.core",
+    "src.datacenter",
+    "src.evaluation",
+    "src.llm",
+    "src.memory",
+    "src.package_manager",
+    "src.skills",
+    "src.flow",
+]
+output_dir = "docs/api/generated"
+asyncio_mode = "auto"
+addopts = [
+    "-v",
+    "--tb=short",
+    "--strict-markers",
+]
+
+# Coverage options
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "tests/*",
+    "*/tests/*",
+    "docs/*",
+    "*/migrations/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+]
+# Minimum coverage thresholds
+precision = 2
+show_missing = true
+skip_empty = true
+
+[tool.coverage.html]
+title = "OpenYoung Test Coverage Report"
+directory = "htmlcov"

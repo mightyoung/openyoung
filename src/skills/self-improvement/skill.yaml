@@ -1,0 +1,9 @@
+name: self-improvement
+description: "Captures learnings, errors, and corrections to enable continuous improvement."
+entry: SKILL.md
+version: 1.0.0
+tags:
+  - learning
+  - improvement
+  - errors
+always: true

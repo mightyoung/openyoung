@@ -1,0 +1,14 @@
+[
+  {
+    "agent_id": "agent1",
+    "first_run": "2026-03-06T17:52:52.534427",
+    "total_runs": 2,
+    "success_runs": 2
+  },
+  {
+    "agent_id": "agent2",
+    "first_run": "2026-03-06T17:52:52.537107",
+    "total_runs": 1,
+    "success_runs": 0
+  }
+]

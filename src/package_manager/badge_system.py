@@ -3,31 +3,31 @@ Badge System - 质量徽章系统
 为 Agent 授予各种质量徽章
 """
 
-from typing import Dict, List, Any, Optional
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from dataclasses import dataclass
 from enum import Enum
 
 
 class BadgeType(Enum):
     """徽章类型"""
-    VERIFIED = "verified"       # 官方验证
-    TOP_RATED = "top_rated"   # 高评分
-    TRENDING = "trending"     # 趋势上升
-    NEW = "new"              # 新增
-    POPULAR = "popular"       # 热门
+
+    VERIFIED = "verified"  # 官方验证
+    TOP_RATED = "top_rated"  # 高评分
+    TRENDING = "trending"  # 趋势上升
+    NEW = "new"  # 新增
+    POPULAR = "popular"  # 热门
     WELL_DOCUMENTED = "well_documented"  # 文档完善
 
 
 @dataclass
 class Badge:
     """徽章"""
+
     badge_type: BadgeType
-    name: str          # 显示名称
-    icon: str         # 图标
-    color: str        # 颜色
+    name: str  # 显示名称
+    icon: str  # 图标
+    color: str  # 颜色
     description: str  # 描述
-    earned_at: Optional[str] = None  # 获得时间（可选，用于实际授予时设置）
+    earned_at: str | None = None  # 获得时间（可选，用于实际授予时设置）
 
 
 # 徽章定义
@@ -83,7 +83,7 @@ class BadgeSystem:
     def __init__(self):
         pass
 
-    async def evaluate_badges(self, agent_name: str, agent_data: Dict) -> List[Badge]:
+    async def evaluate_badges(self, agent_name: str, agent_data: dict) -> list[Badge]:
         """评估 Agent 可获得的徽章
 
         Args:
@@ -115,6 +115,7 @@ class BadgeSystem:
         if created_at:
             try:
                 from datetime import datetime
+
                 created = datetime.fromisoformat(created_at)
                 days_since = (datetime.now() - created).days
                 if days_since <= 30:
@@ -133,7 +134,7 @@ class BadgeSystem:
 
         return badges
 
-    async def _is_trending(self, agent_data: Dict) -> bool:
+    async def _is_trending(self, agent_data: dict) -> bool:
         """判断是否趋势上升"""
         recent_downloads = agent_data.get("recent_downloads", 0)
         total_downloads = agent_data.get("downloads", 1)
@@ -144,11 +145,7 @@ class BadgeSystem:
         return False
 
     def calculate_trending_score(
-        self,
-        recent_downloads: int,
-        total_downloads: int,
-        rating: float,
-        days_since_release: int
+        self, recent_downloads: int, total_downloads: int, rating: float, days_since_release: int
     ) -> float:
         """计算趋势分数
 
@@ -172,7 +169,7 @@ class BadgeSystem:
         # 加权总分
         return velocity_score * 0.5 + rating_score * 0.3 + freshness_score * 0.2
 
-    def format_badges(self, badges: List[Badge]) -> str:
+    def format_badges(self, badges: list[Badge]) -> str:
         """格式化徽章为字符串"""
         if not badges:
             return ""
@@ -186,7 +183,8 @@ class BadgeSystem:
 
 # ========== 便捷函数 ==========
 
-async def get_agent_badges(agent_name: str, agent_data: Dict) -> List[Badge]:
+
+async def get_agent_badges(agent_name: str, agent_data: dict) -> list[Badge]:
     """获取 Agent 的徽章"""
     system = BadgeSystem()
     return await system.evaluate_badges(agent_name, agent_data)

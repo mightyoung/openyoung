@@ -1,7 +1,7 @@
 # OpenYoung 配置手册
 
-> **版本**: 1.0.0  
-> **更新日期**: 2026-03-02
+> **版本**: 1.1.0
+> **更新日期**: 2026-03-06
 
 ---
 
@@ -44,13 +44,32 @@ agent:
   temperature: 0.7
   max_tokens: 4096
   mode: "primary"  # primary | subagent | all
-  
+
   # 可选配置
   system_prompt: |
     你是一个专业的 AI 助手。
-    
+
   history_limit: 100
   timeout: 120
+```
+
+### 2.2 Skills 配置
+
+```yaml
+# Agent 技能配置
+# 技能分为 always_skills（自动加载）和 skills（按需加载）
+
+# Always Skills - Agent 启动时自动加载
+always_skills:
+  - self-improvement    # 自动记录错误、学习、持续改进
+  - find-skills         # 智能发现 skills.sh 生态中的技能
+  - summarize           # 智能摘要网页、文件、PDF、视频
+
+# 按需 Skills - 任务触发时加载
+skills:
+  - github-import      # GitHub Agent 导入
+  - coding-standards   # 编码规范
+  - eval-planner      # 评估计划生成
 ```
 
 ### 2.2 权限配置
@@ -59,28 +78,28 @@ agent:
 permission:
   # 全局策略: allow | ask | deny
   _global: ask
-  
+
   rules:
     # 规则1: 允许读取操作
     - tool_pattern: "read|glob|grep"
       action: allow
-    
+
     # 规则2: 写操作需要确认
     - tool_pattern: "write|edit"
       action: ask
       params_pattern:
         force: false
-    
+
     # 规则3: 危险操作拒绝
     - tool_pattern: "rm.*-rf|system.*admin"
       action: deny
-    
+
     # 规则4: 特定文件保护
     - tool_pattern: "write"
       action: deny
       params_pattern:
         path: "/etc/*"
-    
+
   confirm_message: "确定要执行此操作吗?"
 ```
 
@@ -93,13 +112,13 @@ subagents:
     description: "快速探索代码库"
     permission:
       _global: allow
-      
+
   - name: "builder"
     type: "builder"
     description: "构建和执行任务"
     permission:
       _global: allow
-      
+
   - name: "reviewer"
     type: "reviewer"
     description: "代码审查"
@@ -125,23 +144,23 @@ flow:
       - action: "analyze"
         description: "分析需求"
         timeout: 60
-        
+
       - action: "design"
         description: "设计架构"
         timeout: 120
-        
+
       - action: "implement"
         description: "实现代码"
         timeout: 300
-        
+
       - action: "test"
         description: "测试验证"
         timeout: 180
-        
+
       - action: "review"
         description: "代码审查"
         timeout: 120
-    
+
     on_error: "rollback"  # rollback | continue | stop
 ```
 
@@ -152,17 +171,17 @@ flow:
   parallel:
     name: "data_pipeline"
     max_workers: 4
-    
+
     tasks:
       - id: "download"
         description: "下载数据"
-        
+
       - id: "process"
         description: "处理数据"
-        
+
       - id: "upload"
         description: "上传结果"
-        
+
     timeout: 300
     on_error: "cancel_all"  # cancel_all | wait_completion
 ```
@@ -173,20 +192,20 @@ flow:
 flow:
   conditional:
     name: "task_router"
-    
+
     conditions:
       - pattern: ".*bug.*|.*fix.*"
         branch: "fix_bug"
-        
+
       - pattern: ".*feature.*|.*add.*"
         branch: "add_feature"
-        
+
       - pattern: ".*refactor.*|.*improve.*"
         branch: "refactor"
-        
+
       - pattern: ".*docs?.*|.*document.*"
         branch: "update_docs"
-    
+
     default_branch: "general_task"
 ```
 
@@ -197,14 +216,14 @@ flow:
   loop:
     name: "retry_task"
     max_iterations: 5
-    
+
     condition:
       type: "until_success"  # until_success | until_max | while_true
-      
+
     body:
       action: "execute_task"
       timeout: 60
-      
+
     on_complete:
       - action: "notify"
       - action: "log"
@@ -221,16 +240,16 @@ memory:
   auto_memory:
     # 最大记忆数量
     max_memories: 100
-    
+
     # 重要性阈值 (0-1)
     importance_threshold: 0.5
-    
+
     # 各层大小限制
     limits:
       working: 10
       session: 50
       persistent: 100
-    
+
     # 清理策略
     cleanup:
       enabled: true
@@ -244,15 +263,15 @@ memory:
 checkpoint:
   enabled: true
   storage: "redis"  # redis | file | database
-  
+
   redis:
     url: "redis://localhost:6379/0"
     prefix: "young:checkpoint:"
-    
+
   file:
     path: "./checkpoints"
     max_size: 100MB
-    
+
   # 自动检查点
   auto_checkpoint:
     enabled: true
@@ -270,25 +289,25 @@ checkpoint:
 evaluation:
   hub:
     enabled: true
-    
+
     # 默认指标
     metrics:
       - name: "accuracy"
         weight: 0.3
         threshold: 0.7
-        
+
       - name: "coherence"
         weight: 0.2
         threshold: 0.6
-        
+
       - name: "safety"
         weight: 0.3
         threshold: 0.9
-        
+
       - name: "helpfulness"
         weight: 0.2
         threshold: 0.5
-    
+
     # 评估缓存
     cache:
       enabled: true
@@ -304,12 +323,12 @@ custom_metrics:
     prompt: |
       评估以下代码质量 (1-10分):
       {{code}}
-      
+
     criteria:
       - "可读性"
       - "性能"
       - "安全性"
-      
+
   - name: "response_time"
     type: "threshold"
     threshold: 5.0  # 秒
@@ -330,44 +349,49 @@ skills:
       paths:
         - "./skills"
         - "./src/skills"
-        
+        - "./packages"
+
     # 技能路径
     paths:
       - "/usr/local/share/young/skills"
-      
+
     # 默认超时
     default_timeout: 60
-    
+
     # 隔离执行
     isolation:
       enabled: true
       sandbox: "none"  # none | docker | subprocess
 ```
 
-### 6.2 技能定义
+### 6.2 技能定义 (skill.yaml)
+
+技能通过 YAML 文件定义，存放在 `src/skills/` 或 `packages/skill-*/` 目录：
 
 ```yaml
-skills:
-  definitions:
-    - name: "code_analyzer"
-      description: "分析代码质量"
-      handler: "skills.code_analyzer.analyze"
-      category: "analysis"
-      tags:
-        - "code"
-        - "quality"
-      parameters:
-        - name: "language"
-          type: "string"
-          required: false
-          default: "python"
-          
-    - name: "web_search"
-      description: "网络搜索"
-      handler: "skills.web_search.search"
-      category: "utility"
-      timeout: 30
+# src/skills/my-skill/skill.yaml
+name: "my-skill"
+description: |
+  技能描述，当用户请求相关内容时自动触发
+version: "1.0.0"
+entry: "SKILL.md"  # 技能入口文件
+tags:
+  - utility
+  - automation
+always: false  # 是否作为 always_skills 加载
 ```
+
+### 6.3 技能来源
+
+| 来源 | 目录 | 用途 |
+|------|------|------|
+| 内置技能 | `src/skills/{skill_name}/` | Agent 内置技能 |
+| 包技能 | `packages/skill-{name}/` | 可发布的技能包 |
+
+### 6.4 技能加载优先级
+
+1. **Always Skills** - 从 `src/skills/` 加载，Agent 启动时自动加载
+2. **Regular Skills** - 从 `packages/` 加载，按需加载
 
 ---
 
@@ -380,13 +404,13 @@ mcp:
   client:
     # 默认超时
     timeout: 30
-    
+
     # 重试配置
     retry:
       enabled: true
       max_attempts: 3
       backoff: "exponential"
-      
+
     # 连接池
     pool:
       max_size: 10
@@ -401,12 +425,12 @@ mcp:
     - name: "local"
       url: "http://localhost:8080"
       enabled: true
-      
+
     - name: "openai"
       url: "https://api.openai.com/v1"
       api_key: "${OPENAI_API_KEY}"
       enabled: false
-      
+
   # 工具映射
   mappings:
     local_search: "web_search"
@@ -422,7 +446,7 @@ mcp:
 ```yaml
 evolver:
   enabled: true
-  
+
   # 演化参数
   evolution:
     population_size: 10
@@ -430,24 +454,24 @@ evolver:
     mutation_rate: 0.1
     crossover_rate: 0.7
     selection_strategy: "tournament"
-    
+
   # 基因定义
   genes:
     - name: "intelligence"
       min: 0.0
       max: 1.0
       default: 0.7
-      
+
     - name: "creativity"
       min: 0.0
       max: 1.0
       default: 0.5
-      
+
     - name: "patience"
       min: 0.0
       max: 1.0
       default: 0.6
-  
+
   # 胶囊配置
   capsules:
     storage: "file"
@@ -464,17 +488,17 @@ evolver:
 datacenter:
   trace:
     enabled: true
-    
+
     # 存储
     storage: "redis"  # redis | file | database
-    
+
     redis:
       url: "redis://localhost:6379/1"
       prefix: "young:trace:"
-    
+
     # 采样率
     sample_rate: 1.0  # 0-1
-    
+
     # 保留时间
     retention: 604800  # 7天 (秒)
 ```
@@ -487,13 +511,13 @@ datacenter:
     tokens:
       max_per_request: 10000
       max_per_session: 100000
-      
+
     # 速率限制
     rate_limit:
       enabled: true
       requests_per_minute: 60
       requests_per_hour: 1000
-      
+
     # 配额
     quota:
       daily_limit: 10000
@@ -505,15 +529,15 @@ datacenter:
 ```yaml
   pattern_detector:
     enabled: true
-    
+
     # 检测模式
     patterns:
       - name: "frequent_file_access"
         threshold: 10
-        
+
       - name: "error_pattern"
         threshold: 5
-        
+
     # 通知
     alert:
       enabled: true
@@ -531,7 +555,7 @@ datacenter:
 ```yaml
 logging:
   level: "info"  # debug | info | warning | error | critical
-  
+
   # 模块级别
   modules:
     "src.agents": "debug"
@@ -546,13 +570,13 @@ logging:
     console:
       enabled: true
       format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-      
+
     file:
       enabled: true
       path: "./logs/openyoung.log"
       max_size: 100MB
       backup_count: 10
-      
+
     syslog:
       enabled: false
       address: "localhost:514"
@@ -596,18 +620,18 @@ agent:
   name: "dev_agent"
   model: "gpt-4"
   mode: "primary"
-  
+
 permission:
   _global: allow
 
 flow:
   sequential:
     name: "dev_flow"
-    
+
 memory:
   auto_memory:
     max_memories: 50
-    
+
 logging:
   level: "debug"
 ```
@@ -623,34 +647,34 @@ agent:
   model: "gpt-4"
   mode: "primary"
   timeout: 120
-  
+
 permission:
   _global: ask
   rules:
     - tool_pattern: ".*"
       action: ask
-      
+
 flow:
   sequential:
     name: "prod_flow"
     on_error: "stop"
-    
+
 memory:
   auto_memory:
     max_memories: 100
   checkpoint:
     enabled: true
     storage: "redis"
-    
+
 evaluation:
   hub:
     enabled: true
-    
+
 mcp:
   servers:
     - name: "prod_mcp"
       url: "${MCP_SERVER_URL}"
-      
+
 logging:
   level: "info"
   handlers:

@@ -1,28 +1,80 @@
 """
 CheckpointManager - 检查点管理器
+基于 SQLite 存储，符合 LangGraph 风格
 """
 
-import json
 import shutil
-from pathlib import Path
+import sqlite3
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from pathlib import Path
+from typing import Any
 
 
 class CheckpointManager:
     """Checkpoint 管理器
 
-    负责创建、恢复和列出文件检查点
+    基于 SQLite 存储，负责创建、恢复和列出文件检查点
+    符合 LangGraph 风格 CheckpointSaver 协议
     """
 
-    def __init__(self, checkpoint_dir: str = ".young/checkpoints"):
+    def __init__(
+        self, checkpoint_dir: str = ".young/checkpoints", db_path: str = ".young/checkpoints.db"
+    ):
         self.checkpoint_dir = Path(checkpoint_dir)
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
         self.max_checkpoints = 10
+        self.db_path = db_path
+        self._init_db()
 
-    async def create_checkpoint(
-        self, file_path: str, reason: str = "edit"
-    ) -> Optional[str]:
+    def _init_db(self):
+        """初始化 SQLite 数据库"""
+        Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        # 检查点表（存储文件内容快照）
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS file_checkpoints (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                checkpoint_id TEXT NOT NULL UNIQUE,
+                original_path TEXT NOT NULL,
+                file_name TEXT NOT NULL,
+                content_path TEXT NOT NULL,
+                reason TEXT DEFAULT 'edit',
+                file_size INTEGER,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # 元数据表
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS checkpoint_metadata (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                checkpoint_id TEXT NOT NULL,
+                key TEXT NOT NULL,
+                value TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (checkpoint_id) REFERENCES file_checkpoints(checkpoint_id)
+            )
+        """)
+
+        # 索引
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_original_path ON file_checkpoints(original_path)"
+        )
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_created_at ON file_checkpoints(created_at)")
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_checkpoint_id ON checkpoint_metadata(checkpoint_id)"
+        )
+
+        conn.commit()
+        conn.close()
+
+    def _get_connection(self):
+        """获取数据库连接"""
+        return sqlite3.connect(self.db_path)
+
+    async def create_checkpoint(self, file_path: str, reason: str = "edit") -> str | None:
         """创建检查点
 
         Args:
@@ -40,33 +92,40 @@ class CheckpointManager:
         # 生成唯一 ID
         checkpoint_id = f"{file_path.name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
-        # 存储路径
-        checkpoint_path = self.checkpoint_dir / checkpoint_id
-        checkpoint_path.mkdir(parents=True, exist_ok=True)
+        # 存储文件副本
+        content_path = self.checkpoint_dir / checkpoint_id
+        content_path.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(file_path, content_path / file_path.name)
 
-        # 复制文件
-        shutil.copy2(file_path, checkpoint_path / file_path.name)
+        # 保存到数据库
+        conn = self._get_connection()
+        cursor = conn.cursor()
 
-        # 保存元数据
-        metadata = {
-            "checkpoint_id": checkpoint_id,
-            "original_path": str(file_path),
-            "reason": reason,
-            "created_at": datetime.now().isoformat(),
-            "file_size": file_path.stat().st_size,
-        }
+        cursor.execute(
+            """
+            INSERT INTO file_checkpoints
+            (checkpoint_id, original_path, file_name, content_path, reason, file_size)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """,
+            (
+                checkpoint_id,
+                str(file_path),
+                file_path.name,
+                str(content_path / file_path.name),
+                reason,
+                file_path.stat().st_size,
+            ),
+        )
 
-        with open(checkpoint_path / "metadata.json", "w") as f:
-            json.dump(metadata, f, indent=2)
+        conn.commit()
+        conn.close()
 
         # 清理旧检查点
         await self._cleanup_old_checkpoints(file_path.name)
 
         return checkpoint_id
 
-    async def restore_checkpoint(
-        self, checkpoint_id: str, target_path: Optional[str] = None
-    ) -> bool:
+    async def restore_checkpoint(self, checkpoint_id: str, target_path: str | None = None) -> bool:
         """恢复检查点
 
         Args:
@@ -76,26 +135,34 @@ class CheckpointManager:
         Returns:
             是否成功
         """
-        checkpoint_path = self.checkpoint_dir / checkpoint_id
+        conn = self._get_connection()
+        cursor = conn.cursor()
 
-        if not checkpoint_path.exists():
+        cursor.execute(
+            """
+            SELECT original_path, content_path, file_name
+            FROM file_checkpoints
+            WHERE checkpoint_id = ?
+        """,
+            (checkpoint_id,),
+        )
+
+        row = cursor.fetchone()
+        conn.close()
+
+        if not row:
             return False
 
-        # 读取元数据
-        with open(checkpoint_path / "metadata.json") as f:
-            metadata = json.load(f)
-
-        original_path = target_path or metadata["original_path"]
+        original_path = target_path or row[0]
+        content_path = row[1]
+        file_name = row[2]
 
         # 恢复文件
-        source_file = checkpoint_path / Path(original_path).name
-        shutil.copy2(source_file, original_path)
+        shutil.copy2(content_path, original_path)
 
         return True
 
-    async def list_checkpoints(
-        self, file_path: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+    async def list_checkpoints(self, file_path: str | None = None) -> list[dict[str, Any]]:
         """列出检查点
 
         Args:
@@ -104,48 +171,111 @@ class CheckpointManager:
         Returns:
             检查点列表
         """
-        checkpoints = []
+        conn = self._get_connection()
+        cursor = conn.cursor()
 
-        for checkpoint_dir in self.checkpoint_dir.iterdir():
-            if not checkpoint_dir.is_dir():
-                continue
+        if file_path:
+            cursor.execute(
+                """
+                SELECT checkpoint_id, original_path, file_name, reason, file_size, created_at
+                FROM file_checkpoints
+                WHERE original_path = ?
+                ORDER BY created_at DESC
+            """,
+                (file_path,),
+            )
+        else:
+            cursor.execute("""
+                SELECT checkpoint_id, original_path, file_name, reason, file_size, created_at
+                FROM file_checkpoints
+                ORDER BY created_at DESC
+            """)
 
-            metadata_file = checkpoint_dir / "metadata.json"
-            if not metadata_file.exists():
-                continue
+        rows = cursor.fetchall()
+        conn.close()
 
-            with open(metadata_file) as f:
-                metadata = json.load(f)
-
-            # 如果指定了文件路径，则过滤
-            if file_path and metadata.get("original_path") != file_path:
-                continue
-
-            checkpoints.append(metadata)
-
-        # 按创建时间排序
-        checkpoints.sort(key=lambda x: x.get("created_at", ""), reverse=True)
-        return checkpoints
+        return [
+            {
+                "checkpoint_id": row[0],
+                "original_path": row[1],
+                "file_name": row[2],
+                "reason": row[3],
+                "file_size": row[4],
+                "created_at": row[5],
+            }
+            for row in rows
+        ]
 
     async def delete_checkpoint(self, checkpoint_id: str) -> bool:
         """删除检查点"""
-        checkpoint_path = self.checkpoint_dir / checkpoint_id
+        conn = self._get_connection()
+        cursor = conn.cursor()
 
-        if not checkpoint_path.exists():
+        # 获取文件路径
+        cursor.execute(
+            "SELECT content_path FROM file_checkpoints WHERE checkpoint_id = ?", (checkpoint_id,)
+        )
+        row = cursor.fetchone()
+
+        if not row:
+            conn.close()
             return False
 
-        shutil.rmtree(checkpoint_path)
+        content_path = row[0]
+
+        # 删除文件
+        content_file = Path(content_path)
+        if content_file.exists():
+            content_file.unlink()
+
+        # 删除目录
+        checkpoint_dir = content_file.parent
+        if checkpoint_dir.exists() and not any(checkpoint_dir.iterdir()):
+            checkpoint_dir.rmdir()
+
+        # 删除数据库记录
+        cursor.execute("DELETE FROM checkpoint_metadata WHERE checkpoint_id = ?", (checkpoint_id,))
+        cursor.execute("DELETE FROM file_checkpoints WHERE checkpoint_id = ?", (checkpoint_id,))
+
+        conn.commit()
+        conn.close()
+
         return True
 
     async def _cleanup_old_checkpoints(self, file_name: str):
         """清理旧检查点"""
-        # 获取该文件的所有检查点
-        checkpoints = await self.list_checkpoints()
-        file_checkpoints = [
-            cp for cp in checkpoints if cp.get("original_path", "").endswith(file_name)
-        ]
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        # 获取该文件的检查点，按时间排序
+        cursor.execute(
+            """
+            SELECT checkpoint_id FROM file_checkpoints
+            WHERE file_name = ?
+            ORDER BY created_at DESC
+        """,
+            (file_name,),
+        )
+
+        rows = cursor.fetchall()
+        conn.close()
 
         # 删除超过限制的旧检查点
-        if len(file_checkpoints) > self.max_checkpoints:
-            for cp in file_checkpoints[self.max_checkpoints :]:
-                await self.delete_checkpoint(cp["checkpoint_id"])
+        if len(rows) > self.max_checkpoints:
+            for row in rows[self.max_checkpoints :]:
+                await self.delete_checkpoint(row[0])
+
+    def get_stats(self) -> dict[str, Any]:
+        """获取检查点统计"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT COUNT(*) FROM file_checkpoints")
+        total = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(DISTINCT original_path) FROM file_checkpoints")
+        files = cursor.fetchone()[0]
+
+        conn.close()
+
+        return {"total_checkpoints": total, "total_files": files}

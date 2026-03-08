@@ -1,6 +1,6 @@
 # OpenYoung 部署手册
 
-> **版本**: 1.0.0  
+> **版本**: 1.0.0
 > **更新日期**: 2026-03-02
 
 ---
@@ -320,12 +320,12 @@ sudo certbot certonly --standalone -d api.example.com
 server {
     listen 443 ssl http2;
     server_name api.example.com;
-    
+
     ssl_certificate /etc/letsencrypt/live/api.example.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/api.example.com/privkey.pem;
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256;
-    
+
     location / {
         proxy_pass http://127.0.0.1:8000;
         proxy_set_header Host $host;

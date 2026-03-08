@@ -3,22 +3,24 @@ SQLite Storage with Vector Search Support
 SQLite 存储 + 向量检索
 """
 
-import sqlite3
 import json
 import os
-from pathlib import Path
-from typing import Dict, Any, List, Optional
+import sqlite3
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
 import numpy as np
 
 
 @dataclass
 class VectorRecord:
     """向量记录"""
+
     id: int
     content: str
-    embedding: List[float]
-    metadata: Dict[str, Any]
+    embedding: list[float]
+    metadata: dict[str, Any]
 
 
 class SQLiteStorage:
@@ -122,7 +124,7 @@ class SQLiteStorage:
         conn.close()
         return trace_id
 
-    def get_traces(self, session_id: str = None, limit: int = 100) -> List[Dict]:
+    def get_traces(self, session_id: str = None, limit: int = 100) -> list[dict]:
         """获取 traces"""
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
@@ -134,9 +136,7 @@ class SQLiteStorage:
                 (session_id, limit),
             )
         else:
-            cursor.execute(
-                "SELECT * FROM traces ORDER BY created_at DESC LIMIT ?", (limit,)
-            )
+            cursor.execute("SELECT * FROM traces ORDER BY created_at DESC LIMIT ?", (limit,))
 
         rows = cursor.fetchall()
         conn.close()
@@ -149,7 +149,7 @@ class SQLiteStorage:
         session_id: str,
         metric: str,
         score: float,
-        details: Dict = None,
+        details: dict = None,
         evaluator: str = "default",
     ):
         """添加评估"""
@@ -166,7 +166,7 @@ class SQLiteStorage:
         conn.close()
         return eval_id
 
-    def get_evaluations(self, session_id: str = None, limit: int = 100) -> List[Dict]:
+    def get_evaluations(self, session_id: str = None, limit: int = 100) -> list[dict]:
         """获取 evaluations"""
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
@@ -178,9 +178,7 @@ class SQLiteStorage:
                 (session_id, limit),
             )
         else:
-            cursor.execute(
-                "SELECT * FROM evaluations ORDER BY created_at DESC LIMIT ?", (limit,)
-            )
+            cursor.execute("SELECT * FROM evaluations ORDER BY created_at DESC LIMIT ?", (limit,))
 
         rows = cursor.fetchall()
         conn.close()
@@ -191,9 +189,9 @@ class SQLiteStorage:
     def add_memory(
         self,
         content: str,
-        embedding: List[float] = None,
+        embedding: list[float] = None,
         namespace: str = "default",
-        tags: List[str] = None,
+        tags: list[str] = None,
         importance: float = 0.5,
     ):
         """添加记忆"""
@@ -204,6 +202,7 @@ class SQLiteStorage:
         embedding_blob = None
         if embedding:
             import numpy as np
+
             embedding_blob = np.array(embedding).tobytes()
 
         cursor.execute(
@@ -219,10 +218,10 @@ class SQLiteStorage:
     def search_memory(
         self,
         query: str = None,
-        embedding: List[float] = None,
+        embedding: list[float] = None,
         namespace: str = None,
         limit: int = 5,
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """搜索记忆"""
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
@@ -279,15 +278,13 @@ class SQLiteStorage:
         conn.commit()
         conn.close()
 
-    def get_capsules(self, limit: int = 100) -> List[Dict]:
+    def get_capsules(self, limit: int = 100) -> list[dict]:
         """获取 capsules"""
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
-        cursor.execute(
-            "SELECT * FROM capsules ORDER BY created_at DESC LIMIT ?", (limit,)
-        )
+        cursor.execute("SELECT * FROM capsules ORDER BY created_at DESC LIMIT ?", (limit,))
 
         rows = cursor.fetchall()
         conn.close()
@@ -301,7 +298,7 @@ class EmbeddingClient:
         self.provider = provider
         self.api_key = os.getenv("OPENAI_API_KEY") or os.getenv("DASHSCOPE_API_KEY")
 
-    def embed(self, texts: List[str]) -> List[List[float]]:
+    def embed(self, texts: list[str]) -> list[list[float]]:
         """获取 embedding"""
         if not texts:
             return []
@@ -314,7 +311,7 @@ class EmbeddingClient:
             # 返回随机向量作为占位
             return [self._random_embedding() for _ in texts]
 
-    def _embed_qwen(self, texts: List[str]) -> List[List[float]]:
+    def _embed_qwen(self, texts: list[str]) -> list[list[float]]:
         """使用通义千问 API"""
         try:
             import httpx
@@ -340,7 +337,7 @@ class EmbeddingClient:
             print(f"[Warning] Embedding API failed: {e}")
             return [self._random_embedding() for _ in texts]
 
-    def _embed_openai(self, texts: List[str]) -> List[List[float]]:
+    def _embed_openai(self, texts: list[str]) -> list[list[float]]:
         """使用 OpenAI API"""
         try:
             import httpx
@@ -366,9 +363,8 @@ class EmbeddingClient:
             print(f"[Warning] Embedding API failed: {e}")
             return [self._random_embedding() for _ in texts]
 
-    def _random_embedding(self, dim: int = 1536) -> List[float]:
+    def _random_embedding(self, dim: int = 1536) -> list[float]:
         """随机 embedding (占位)"""
-        import numpy as np
 
         vec = np.random.randn(dim)
         vec = vec / np.linalg.norm(vec)

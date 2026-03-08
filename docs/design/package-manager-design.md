@@ -1,8 +1,12 @@
 #VT|# Mightyoung Package Manager 设计
 #KM|
-#BK|> 版本: 1.0.0
-#BX|> 更新日期: 2026-03-01
+#BK|> 版本: 1.0.1
+#BX|> 更新日期: 2026-03-07
 #BT|
+
+> **重要更新 (2026-03-07)**: 包管理相关功能已迁移至 `src/hub/` 模块，保留 `src/package_manager/` 作为向后兼容导入。
+
+---
 
 ## 1. 概述
 
@@ -147,12 +151,12 @@ mcp:
   args: ["--port", "8080"]
   env:                                 # 环境变量
     API_KEY: "${API_KEY}"
-  
+
   # 远程服务配置
   url: "https://api.example.com/mcp"  # 远程服务地址
   headers:                             # 请求头
     Authorization: "Bearer ${TOKEN}"
-  
+
   # MCP 能力声明 (可选，用于注册发现)
   capabilities:
     tools: true
@@ -197,7 +201,7 @@ mcp:
 # 解决冲突示例
 dependencies:
   "@org/skill": "^1.0.0"
-  "@other/skill": 
+  "@other/skill":
     version: "^2.0.0"
     alias: "skill-v2"  # 使用别名避免冲突
 ```
@@ -245,7 +249,7 @@ sources:
   - name: "my-market"
     type: "local"
     path: "./my-market"
-    
+
   - name: "github-skills"
     type: "github"
     repo: "owner/repo"
@@ -565,15 +569,15 @@ mightyoung source search <query>           # 搜索所有 Source
 请选择：
 [A] 自动合并 (推荐)
     - 升级版新功能 + 进化版修改 → 智能合并
-    
+
 [B] 保留进化版
     - 继续使用本地进化版
     - 忽略升级
-    
+
 [C] 覆盖为升级版
     - 丢弃进化版
     - 使用升级版 v1.2.0
-    
+
 [D] 手动查看差异
     - 查看详细 diff
 ```
@@ -738,6 +742,42 @@ Center 独立：如何使用这些配置（注入策略、触发规则）
 - **MCP Protocol**: MCP Server 标准
 - **diff3**: 三路合并算法
 - **LLMinus**: LLM 辅助合并冲突解决
+
+---
+
+## 16. Hub 模块架构 (2026-03-07)
+
+### 16.1 模块迁移
+
+为提高代码组织性，包管理相关功能已迁移至 `src/hub/` 目录：
+
+```
+src/hub/
+├── hooks/       # HooksLoader - 生命周期钩子
+├── intent/     # IntentAnalyzer - 意图分析
+├── version/    # VersionManager - 版本管理
+├── template/   # TemplateRegistry - 模板注册
+├── mcp/        # MCPServerManager, MCPLoader
+├── badge/      # BadgeSystem - 徽章系统
+├── registry/   # AgentRegistry, SubAgentRegistry
+├── io/         # AgentExporter, AgentImporter
+├── evaluate/   # AgentEvaluator - 评估器
+└── discover/   # AgentRetriever - 技能检索
+```
+
+### 16.2 向后兼容
+
+保留原始导入路径确保向后兼容：
+
+```python
+# 新路径（推荐）
+from src.hub.hooks import HooksLoader
+from src.hub.mcp import MCPServerManager
+
+# 旧路径（兼容）
+from src.package_manager.hooks_loader import HooksLoader
+from src.package_manager.mcp_manager import MCPServerManager
+```
 
 ---
 

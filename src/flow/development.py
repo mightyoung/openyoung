@@ -3,11 +3,9 @@ DevelopmentFlow - 集成开发工作流
 基于 integrated-dev-workflow 构建
 """
 
-import os
 import re
-from pathlib import Path
-from typing import Optional, Dict, Any, List
 from datetime import datetime
+from pathlib import Path
 
 from .base import FlowSkill
 
@@ -21,6 +19,11 @@ class DevelopmentFlow(FlowSkill):
     - Phase 3: Implementation (TDD)
     - Phase 4: Testing & Review
     - Phase 5: Completion
+
+    智能路由:
+    - URL 检测 → 自动使用 summarize 技能
+    - "如何做" / "how to" → 自动使用 find-skills 技能
+    - 其他 → 正常开发流程
 
     文件跟踪:
     - task_plan.md - 任务计划和进度
@@ -44,6 +47,21 @@ class DevelopmentFlow(FlowSkill):
         "bug",
     ]
 
+    # 智能路由模式
+    URL_PATTERN = re.compile(r'https?://[^\s<>"{}|\\^`\[\]]+', re.IGNORECASE)
+
+    HOW_TO_PATTERNS = [
+        r"如何",
+        r"怎么做",
+        r"怎么写",
+        r"how to",
+        r"how do i",
+        r"how can i",
+        r"ways to",
+        r"帮我找",
+        r"找一个",
+    ]
+
     def __init__(self, project_root: str = "."):
         self.project_root = Path(project_root)
         self._current_phase = 1
@@ -64,21 +82,97 @@ class DevelopmentFlow(FlowSkill):
         return self.TRIGGER_PATTERNS
 
     async def pre_process(self, user_input: str, context: dict) -> str:
-        """前置处理 - 检查会话恢复并初始化"""
+        """前置处理 - 智能路由 + 会话恢复"""
 
-        # Step 1: 检查会话恢复
+        # Step 1: 智能路由检测
+        route_result = await self._smart_route(user_input, context)
+        if route_result:
+            # 设置路由标记，Agent 会自动使用对应技能
+            context["_routed_skill"] = route_result["skill"]
+            context["_route_reason"] = route_result["reason"]
+            # 返回路由后的输入
+            return route_result["processed_input"]
+
+        # Step 2: 检查会话恢复
         if await self._check_session_recovery(context):
             context["_flow_phase"] = self._current_phase
             context["_session_resumed"] = True
             return user_input
 
-        # Step 2: 初始化跟踪文件
+        # Step 3: 初始化跟踪文件
         await self._initialize_tracking(user_input, context)
 
         context["_flow_phase"] = 1
         context["_session_resumed"] = False
 
         return user_input
+
+    async def _smart_route(self, user_input: str, context: dict) -> dict[str, str] | None:
+        """智能路由 - 检测 URL 或 how-to 模式并路由到对应技能"""
+
+        # 检查用户意图关键词
+        user_input_lower = user_input.lower()
+
+        # 导入意图关键词 - 不路由到 summarize，让 github-import 处理
+        import_keywords = [
+            "导入",
+            "import",
+            "克隆",
+            "clone",
+            "下载",
+            "download",
+            "安装",
+            "install",
+            "配置成",
+            "配置为",
+            "设置为",
+        ]
+
+        has_import_intent = any(k in user_input_lower for k in import_keywords)
+
+        # 1. URL 检测
+        urls = self.URL_PATTERN.findall(user_input)
+        if urls:
+            # 如果有导入意图，路由到 github-import
+            if has_import_intent:
+                return None  # 让正常流程处理，github-import skill 会处理
+
+            # 否则路由到 summarize
+            url = urls[0]
+            return {
+                "skill": "summarize",
+                "reason": "检测到 URL，自动使用 summarize 技能",
+                "processed_input": f'summarize "{url}"',
+            }
+
+        # 2. How-to 模式检测 → find-skills 技能
+        for pattern in self.HOW_TO_PATTERNS:
+            if re.search(pattern, user_input, re.IGNORECASE):
+                # 提取关键信息
+                return {
+                    "skill": "find-skills",
+                    "reason": "检测到学习意图，自动使用 find-skills 技能",
+                    "processed_input": user_input,
+                }
+
+        # 3. 技能请求检测
+        skill_request_patterns = [
+            (r"找.*技能", "find-skills"),
+            (r"skill.*搜索", "find-skills"),
+            (r"搜索.*技能", "find-skills"),
+            (r"总结.*(url|网址|网页|文章)", "summarize"),
+        ]
+
+        for pattern, skill in skill_request_patterns:
+            if re.search(pattern, user_input, re.IGNORECASE):
+                return {
+                    "skill": skill,
+                    "reason": f"检测到技能请求，自动使用 {skill} 技能",
+                    "processed_input": user_input,
+                }
+
+        # 无需路由
+        return None
 
     async def post_process(self, agent_output: str, context: dict) -> str:
         """后置处理 - 更新进度"""
@@ -105,21 +199,74 @@ class DevelopmentFlow(FlowSkill):
         keywords = ["complex", "multiple", "several", "复杂", "多个"]
         return any(k in task.lower() for k in keywords)
 
-    async def get_subagent_type(self, task: str) -> Optional[str]:
+    async def get_subagent_type(self, task: str) -> str | None:
         """获取合适的 SubAgent 类型"""
 
+        # 探索/研究类型
         if any(
-            k in task.lower() for k in ["search", "find", "explore", "搜索", "查找"]
+            k in task.lower()
+            for k in [
+                "search",
+                "find",
+                "explore",
+                "research",
+                "调查",
+                "搜索",
+                "查找",
+                "研究",
+                "分析",
+                "what is",
+                "how does",
+            ]
         ):
-            return "explore"
-        elif any(
-            k in task.lower() for k in ["build", "create", "implement", "创建", "实现"]
+            return "explorer"
+
+        # 构建/实现类型
+        if any(
+            k in task.lower()
+            for k in [
+                "build",
+                "create",
+                "implement",
+                "add",
+                "develop",
+                "创建",
+                "实现",
+                "开发",
+                "新建",
+                "feature",
+            ]
         ):
             return "builder"
-        elif any(k in task.lower() for k in ["review", "review", "审查"]):
+
+        # 审查/评审类型
+        if any(
+            k in task.lower()
+            for k in ["review", "check", "audit", "analyze", "审查", "检查", "分析"]
+        ):
             return "reviewer"
 
-        return "general"
+        # 测试类型
+        if any(
+            k in task.lower() for k in ["test", "testing", "verify", "测试", "验证", "单元测试"]
+        ):
+            return "tester"
+
+        # 修复 bug 类型
+        if any(k in task.lower() for k in ["fix", "bug", "error", "issue", "修复", "错误", "问题"]):
+            return "fixer"
+
+        # 重构类型
+        if any(
+            k in task.lower() for k in ["refactor", "optimize", "improve", "重构", "优化", "改进"]
+        ):
+            return "refactorer"
+
+        # 文档类型
+        if any(k in task.lower() for k in ["doc", "document", "readme", "文档", "说明"]):
+            return "documenter"
+
+        return None
 
     # === 私有方法 ===
 
@@ -127,9 +274,7 @@ class DevelopmentFlow(FlowSkill):
         """检查是否有之前的会话需要恢复"""
 
         has_files = (
-            self._task_file.exists()
-            or self._findings_file.exists()
-            or self._progress_file.exists()
+            self._task_file.exists() or self._findings_file.exists() or self._progress_file.exists()
         )
 
         if has_files:
@@ -270,9 +415,7 @@ Phase 1: Requirements & Design
 
             # 追加到 Session Log
             if "## Session Log" in content:
-                content = content.replace(
-                    "## Session Log", f"## Session Log{log_entry}"
-                )
+                content = content.replace("## Session Log", f"## Session Log{log_entry}")
 
             self._progress_file.write_text(content)
         except Exception:

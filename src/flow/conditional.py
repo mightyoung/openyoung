@@ -2,8 +2,6 @@
 ConditionalFlow - 条件分支工作流
 """
 
-from typing import Optional, Callable
-
 from .base import FlowSkill
 
 
@@ -12,7 +10,7 @@ class ConditionalFlow(FlowSkill):
 
     def __init__(
         self,
-        conditions: Optional[dict[str, str]] = None,
+        conditions: dict[str, str] | None = None,
         default_branch: str = "default",
     ):
         """
@@ -67,7 +65,7 @@ class ConditionalFlow(FlowSkill):
         """有多个条件时可能需要委托"""
         return len(self._conditions) > 1
 
-    async def get_subagent_type(self, task: str) -> Optional[str]:
+    async def get_subagent_type(self, task: str) -> str | None:
         if "search" in task or "find" in task:
             return "search"
         return "general"

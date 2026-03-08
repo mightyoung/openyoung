@@ -3,9 +3,9 @@ Session Manager - 会话管理
 """
 
 import uuid
-from typing import Dict, Optional, Any
-from datetime import datetime
 from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Any
 
 
 @dataclass
@@ -13,28 +13,28 @@ class Session:
     """任务会话"""
 
     session_id: str
-    task_id: Optional[str]
+    task_id: str | None
     description: str
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
-    context: Dict[str, Any] = field(default_factory=dict)
+    context: dict[str, Any] = field(default_factory=dict)
     status: str = "pending"  # pending, running, completed, failed
-    result: Optional[str] = None
-    parent_session_id: Optional[str] = None
+    result: str | None = None
+    parent_session_id: str | None = None
 
 
 class SessionManager:
     """会话管理器 - 管理任务会话生命周期"""
 
     def __init__(self):
-        self._sessions: Dict[str, Session] = {}
+        self._sessions: dict[str, Session] = {}
 
     def create_session(
         self,
-        task_id: Optional[str],
-        parent_session_id: Optional[str],
+        task_id: str | None,
+        parent_session_id: str | None,
         description: str,
-        initial_context: Dict[str, Any] = None,
+        initial_context: dict[str, Any] = None,
     ) -> Session:
         """创建新会话"""
         session_id = str(uuid.uuid4())
@@ -50,16 +50,16 @@ class SessionManager:
         self._sessions[session_id] = session
         return session
 
-    def get_session(self, session_id: str) -> Optional[Session]:
+    def get_session(self, session_id: str) -> Session | None:
         """获取会话"""
         return self._sessions.get(session_id)
 
     def get_or_create(
         self,
-        task_id: Optional[str],
-        parent_session_id: Optional[str],
+        task_id: str | None,
+        parent_session_id: str | None,
         description: str,
-        context: Dict[str, Any] = None,
+        context: dict[str, Any] = None,
     ) -> Session:
         """获取或创建会话"""
         # 尝试通过 task_id 查找现有会话
@@ -74,9 +74,9 @@ class SessionManager:
     def update_session(
         self,
         session_id: str,
-        status: Optional[str] = None,
-        result: Optional[str] = None,
-        context_update: Dict[str, Any] = None,
+        status: str | None = None,
+        result: str | None = None,
+        context_update: dict[str, Any] = None,
     ) -> bool:
         """更新会话"""
         session = self._sessions.get(session_id)
@@ -99,9 +99,7 @@ class SessionManager:
 
     def get_active_sessions(self) -> list:
         """获取活跃会话"""
-        return [
-            s for s in self._sessions.values() if s.status in ("pending", "running")
-        ]
+        return [s for s in self._sessions.values() if s.status in ("pending", "running")]
 
     def cleanup_old_sessions(self, max_age_seconds: int = 3600):
         """清理旧会话"""

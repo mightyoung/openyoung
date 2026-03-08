@@ -1,7 +1,7 @@
 # OpenYoung 用户手册
 
-> **版本**: 1.0.0  
-> **更新日期**: 2026-03-02
+> **版本**: 1.1.0
+> **更新日期**: 2026-03-06
 
 ---
 
@@ -22,6 +22,8 @@ OpenYoung 是一个自主 AI Agent 系统，参考 OpenCode 架构设计，支�
 | **评估机制** | 多维度评估指标体系 |
 | **技能管理** | 动态技能加载与发现 |
 | **MCP 协议** | Model Context Protocol 支持 |
+| **Always Skills** | 自动加载的核心技能（无需触发） |
+| **智能技能发现** | 基于 LLM 的技能推荐与自动发现 |
 
 ---
 
@@ -365,7 +367,7 @@ results = await hub.evaluate_comprehensive(
     response="...",
     criteria_list=[
         "accuracy",
-        "coherence", 
+        "coherence",
         "safety",
         "helpfulness"
     ]
@@ -379,7 +381,49 @@ for r in results:
 
 ## 8. 技能管理
 
-### 8.1 注册技能
+### 8.1 技能类型
+
+OpenYoung 支持两种技能加载方式：
+
+| 类型 | 说明 | 加载方式 |
+|------|------|----------|
+| **always_skills** | 自动加载的核心技能 | Agent 启动时自动加载 |
+| **skills** | 按需加载的技能 | 任务触发时加载 |
+
+### 8.2 Always Skills
+
+Always Skills 是 Agent 启动时自动加载的核心技能，无需用户触发：
+
+```yaml
+# src/agents/default.yaml
+always_skills:
+  - self-improvement    # 自动记录错误、学习、持续改进
+  - find-skills       # 智能发现 skills.sh 生态中的技能
+  - summarize         # 智能摘要网页、文件、PDF、视频
+```
+
+内置 Always Skills：
+- **self-improvement**: 自动记录错误和学习，持续改进
+- **find-skills**: 智能发现技能市场中的技能
+- **summarize**: 智能摘要网页、文件、PDF、视频内容
+
+### 8.3 技能定义 (skill.yaml)
+
+技能通过 `skill.yaml` 定义：
+
+```yaml
+# src/skills/my-skill/skill.yaml
+name: "my-skill"
+description: "技能描述"
+entry: "SKILL.md"
+version: "1.0.0"
+tags:
+  - utility
+  - automation
+always: false  # 是否作为 always_skills 加载
+```
+
+### 8.4 注册技能
 
 ```python
 from src.skills import SkillManager, Skill
@@ -403,7 +447,7 @@ manager.load("code_analyzer")
 result = manager.execute_skill("code_analyzer", code)
 ```
 
-### 8.2 技能发现
+### 8.5 技能发现
 
 ```python
 # 自动发现技能
@@ -411,6 +455,29 @@ skills = manager.discover_skills("src/skills/")
 
 # 列出所有技能
 print(manager.list_skills())
+```
+
+### 8.6 智能路由 (Smart Routing)
+
+DevelopmentFlow 支持自动路由到合适的技能：
+
+| 输入类型 | 检测模式 | 路由到 |
+|----------|----------|--------|
+| URL + 导入意图 | "导入"、"克隆" | github-import |
+| URL + 总结意图 | 纯 URL | summarize |
+| 学习意图 | "如何"、"怎么"、"how to" | find-skills |
+| 技能请求 | "找技能"、"搜索技能" | find-skills |
+
+```yaml
+# 智能路由示例
+# 用户输入: "请总结 https://github.com/anthropics/claude-code"
+# 自动路由到 summarize 技能
+
+# 用户输入: "帮我从 GitHub 导入 https://github.com/owner/repo"
+# 自动路由到 github-import 技能
+
+# 用户输入: "如何实现 Python 排序算法？"
+# 自动路由到 find-skills 技能
 ```
 
 ---
@@ -553,6 +620,178 @@ top = detector.get_top_patterns(limit=5)
 # [("file_read", 2), ("code_analyze", 1)]
 ```
 
+### 11.4 运行追踪 (RunTracker)
+
+```python
+from src.datacenter import RunTracker
+
+tracker = RunTracker()
+
+# 开始追踪
+run_id = tracker.start_run("agent_001", "分析代码")
+print(f"Run ID: {run_id}")
+
+# 完成追踪
+tracker.complete_run(
+    run_id,
+    status="success",
+    input_tokens=1000,
+    output_tokens=2000
+)
+
+# 获取统计
+stats = tracker.get_stats(agent_id="agent_001", days=7)
+print(f"Total runs: {stats['total_runs']}")
+print(f"Success rate: {stats['success_rate']}")
+```
+
+### 11.5 步骤追踪 (StepRecorder)
+
+```python
+from src.datacenter import StepRecorder
+
+recorder = StepRecorder()
+
+# 开始步骤
+step_id = recorder.start_step(
+    run_id="run_xxx",
+    step_name="analyze",
+    step_order=1,
+    tool_name="grep"
+)
+
+# 完成步骤
+recorder.complete_step(step_id, status="success", latency_ms=150)
+
+# 获取运行摘要
+summary = recorder.get_run_summary(run_id)
+print(f"Total steps: {summary['total_steps']}")
+```
+
+### 11.6 数据分析 (Analytics)
+
+```python
+from src.datacenter import DataAnalytics
+
+analytics = DataAnalytics()
+
+# Agent 统计
+stats = analytics.get_agent_stats("agent_001", days=30)
+
+# 趋势分析
+trends = analytics.get_trends(metric="runs", days=30)
+
+# 仪表盘
+dashboard = analytics.get_dashboard()
+```
+
+### 11.7 数据导出 (Exporter)
+
+```python
+from src.datacenter import DataExporter
+
+exporter = DataExporter()
+
+# 导出运行记录
+exporter.export_runs("output/runs.json", format="json")
+
+# 带授权导出
+exporter.export_with_license(
+    "output/data.json",
+    data_type="runs",
+    license={"type": "MIT", "owner": "user1"}
+)
+
+# 导出全部
+exporter.export_full("output/full_export")
+```
+
+### 11.8 数据授权 (License)
+
+```python
+from src.datacenter import DataLicenseManager, AccessLog
+
+# 管理许可证
+license_mgr = DataLicenseManager()
+
+# 创建许可证
+license_id = license_mgr.create_license(
+    owner_id="user1",
+    license_type="public",
+    usage_terms="MIT"
+)
+
+# 检查访问权限
+can_access = license_mgr.check_access(license_id, "user2")
+
+# 记录访问日志
+access_log = AccessLog()
+log_id = access_log.log_access(
+    data_id="data_001",
+    accessed_by="user2",
+    access_type="read",
+    purpose="analysis"
+)
+```
+
+### 11.9 团队共享 (TeamShare)
+
+```python
+from src.datacenter import TeamShareManager
+
+team_mgr = TeamShareManager()
+
+# 创建团队
+team_mgr.create_team("team_alpha", "Alpha Team", owner_id="user1")
+
+# 添加成员
+team_mgr.add_member("team_alpha", "user2", role="member")
+
+# 共享数据
+share_id = team_mgr.share_data(
+    data_id="run_001",
+    data_type="run",
+    team_id="team_alpha",
+    owner_id="user1",
+    permission="read"
+)
+
+# 检查访问
+can_access = team_mgr.check_access("team_alpha", "user2", "run_001")
+```
+
+---
+
+### 11.10 CLI 数据命令
+
+```bash
+# 查看统计
+openyoung data stats --agent agent_001 --days 7
+
+# 查看运行列表
+openyoung data runs --agent agent_001 --limit 20
+
+# 查看步骤
+openyoung data steps --run run_xxx
+
+# 查看仪表盘
+openyoung data dashboard
+
+# 导出数据
+openyoung data export ./output --format json
+
+# 管理许可证
+openyoung data license --list
+openyoung data license --create --owner user1 --type public
+
+# 团队管理
+openyoung data team --list
+openyoung data team --create --team-id team_alpha --name "Alpha Team" --owner user1
+
+# 记录访问
+openyoung data access --data-id data_001 --user user2 --type read
+```
+
 ---
 
 ## 12. 配置管理
@@ -654,6 +893,9 @@ openyoung run <agent_name> <task>
 
 # 交互式模式
 openyoung run <agent_name> -i
+
+# 带 GitHub 导入运行
+openyoung run <agent_name> -g https://github.com/owner/repo
 ```
 
 ### 15.2 Agent 管理
@@ -669,7 +911,20 @@ openyoung agent info <agent_name>
 openyoung agent use <agent_name>
 ```
 
-### 15.3 LLM Provider 管理
+### 15.3 SubAgent 管理
+
+```bash
+# 列出所有 SubAgent
+openyoung subagent list
+
+# 查看 SubAgent 详情
+openyoung subagent info <subagent_name>
+
+# 搜索 SubAgent
+openyoung subagent search <keyword>
+```
+
+### 15.4 LLM Provider 管理
 
 ```bash
 # 列出 LLM Provider
@@ -691,7 +946,7 @@ openyoung llm remove <provider_name>
 
 支持的 Provider: DeepSeek, Moonshot, Qwen, GLM
 
-### 15.4 包管理
+### 15.5 包管理
 
 ```bash
 # 列出已安装包
@@ -701,7 +956,36 @@ openyoung package list
 openyoung install <package_name>
 ```
 
-### 15.5 配置管理
+### 15.6 GitHub 导入
+
+```bash
+# 从 GitHub 导入 Agent
+openyoung import github https://github.com/owner/repo <agent_name>
+
+# 完整克隆（包含所有文件）
+openyoung import github https://github.com/owner/repo <agent_name> --no-lazy
+
+# 快速克隆（仅配置）
+openyoung import github https://github.com/owner/repo --lazy
+```
+
+### 15.7 MCP Server 管理
+
+```bash
+# 列出 MCP Server
+openyoung mcp list
+
+# 启动 MCP Server
+openyoung mcp start <server_name>
+
+# 停止 MCP Server
+openyoung mcp stop <server_name>
+
+# 添加 MCP Server
+openyoung mcp add <server_name> --command <command>
+```
+
+### 15.8 配置管理
 
 ```bash
 # 列出配置
@@ -714,7 +998,7 @@ openyoung config get <key>
 openyoung config set <key> <value>
 ```
 
-### 15.6 源码管理
+### 15.9 源码管理
 
 ```bash
 # 列出源码源
@@ -724,20 +1008,57 @@ openyoung source list
 openyoung source add <source_name> --url <url>
 ```
 
-### 15.7 Agent 配置验证
+### 15.10 模板管理
 
-```python
-from src.cli.main import AgentLoader
+```bash
+# 列出模板
+openyoung templates list
 
-loader = AgentLoader()
+# 安装模板
+openyoung templates install <template_name>
+```
 
-# 验证配置
-is_valid, error = loader.validate_config(config)
-if not is_valid:
-    print(f"Invalid: {error}")
+### 15.11 记忆管理
 
-# 验证 Agent 文件
-is_valid, error = loader.validate_agent_file(Path("agents/my_agent.yaml"))
+```bash
+# 搜索记忆
+openyoung memory search <query>
+
+# 列出记忆
+openyoung memory list
+
+# 查看记忆详情
+openyoung memory get <key>
+```
+
+### 15.12 Channel 管理
+
+```bash
+# 列出 Channel
+openyoung channel list
+
+# 添加 Channel
+openyoung channel add <channel_name> --type <type>
+```
+
+### 15.13 评估管理
+
+```bash
+# 查看评估历史
+openyoung eval history
+
+# 查看评估详情
+openyoung eval info <eval_id>
+```
+
+### 15.14 初始化
+
+```bash
+# 初始化配置
+openyoung init
+
+# 强制重新初始化
+openyoung init --force
 ```
 
 ---

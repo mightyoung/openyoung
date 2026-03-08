@@ -1,86 +1,849 @@
-# Task Plan
+# OpenYoung 项目综合改进计划
 
-## Goal
-OpenYoung Agent 系统增强：实现 Always Skills 机制、技能发现、智能路由等功能
+> 战略文档: docs/plans/2026-03-07-strategic-roadmap-v2.md (完整版)
+> 生成时间: 2026-03-07
 
-## Phases
-- [x] Phase 1: Always Skills 核心机制实现
-- [x] Phase 2: 技能加载与测试
-- [x] Phase 3: 文档更新
-- [x] Phase 4: 智能路由 (DevelopmentFlow 增强)
-- [x] Phase 5: agent-import skill 更新 (智能路由优化)
-- [x] Phase 6: CLI 命令与手册更新
-- [x] Phase 7: 新模块实现 (AgentRetriever, AgentEvaluator, ImportManager)
-- [x] Phase 8: TaskCompletionEval 改进 (评估计划生成)
+---
 
-## Current Phase
-Phase 9 & 10: Agent 对比功能与质量徽章系统已完成
+## 战略锚定
 
-## Completed Tasks
-- [x] 修复 young_agent.py 缩进错误
-- [x] 添加 always_skills 字段到 AgentConfig (types.py)
-- [x] 添加 always_skills 解析到 AgentLoader (main.py)
-- [x] 修复 default.yaml skill 名称 (github-import)
-- [x] 验证 skills 正确加载 (6个技能)
-- [x] 测试 find-skills 和 summarize 技能
-- [x] 更新 user-manual.md (v1.1.0)
-- [x] 更新 configuration-manual.md (v1.1.0)
-- [x] 实现 EvalPlanner 评估计划生成器 (planner.py)
-- [x] 集成评估计划到 EvaluationHub (hub.py)
-- [x] 实现 TaskCompletionEval.evaluate_with_plan() (task_eval.py)
-- [x] 集成评估计划到 YoungAgent (young_agent.py)
-- [x] 实现语义搜索 (AgentRetriever)
-  - 添加 index_agent() 到 AgentRegistry
-  - 实现真正的 _semantic_search() 使用 VectorStore
-  - 实现 _hybrid_search() 混合关键词和向量搜索
-  - 修复 JSON tags 解析问题
-- [x] Agent 质量评估增强
-  - 添加 RUNTIME 评估维度
-  - 实现 _evaluate_runtime() 检查 agent 可加载性
-  - 评估配置文件、主入口、skills/tools 配置
-- [x] 使用追踪功能
-  - 添加 track_usage() 到 AgentRegistry
-  - 添加 get_usage_stats() 获取使用统计
-  - 添加 agent stats CLI 命令
+- **愿景**: AI Docker - 智能 Agent 容器化平台
+- **核心里程碑**: 评估驱动 + 数据资产 + LangGraph 集成
+- **技术决策**:
+  - FlowGraph: 集成 LangGraph
+  - EvalService: 插件式服务
+  - 数据市场: 开源 + 订阅混合
 
-- [x] Registry 统一
-  - 创建 base_registry.py 基类
-  - AgentRegistry 继承 BaseRegistry
-  - SubAgentRegistry 继承 BaseRegistry
-  - TemplateRegistry 继承 BaseRegistry
-  - 提取通用方法：discover_items, ensure_dir, track_usage, get_usage_stats, rate_item
+---
 
-- [x] LLM 意图理解
-  - 创建 intent_analyzer.py
-  - 实现 IntentType 枚举（code, review, research, debug 等）
-  - 实现关键词快速匹配
-  - 实现 LLM 深度分析（可选）
-  - 集成到 agent search 命令
-  - 添加 agent intent CLI 命令
+## 一、问题诊断汇总
 
-## Decisions Made
-- Always Skills 从 src/skills/ 目录加载
-- Regular Skills 从 packages/ 目录加载
-- 使用 skill.yaml 格式定义技能元数据
+### 架构设计问题
 
-## Blockers
-- None
+| # | 问题 | 严重程度 | 文件 |
+|---|------|----------|------|
+| 1 | YoungAgent 职责过于臃肿 (1442行) | 🔴 严重 | young_agent.py |
+| 2 | EvaluationHub 设计定位模糊 | 🟠 高 | hub.py |
+| 3 | package_manager 模块过度膨胀 | 🟠 高 | 24个文件 |
+| 4 | LLM 客户端重复定义 | 🟡 中 | client_adapter.py, unified_client.py |
+| 5 | 数据类型定义不统一 | 🟡 中 | core/types.py, evaluation/*.py |
+| 6 | DataCenter 数据模型重复 | 🟡 中 | 多文件 |
 
-## Next Steps
+---
 
-### Phase 9: Agent 对比功能
-- [x] 创建 agent_compare.py 模块
-- [x] 实现 compare_agents() 函数
-- [x] 添加 agent compare CLI 命令
+## 二、改进计划
 
-### Phase 10: 质量徽章系统
-- [x] 创建 badge_system.py 模块
-- [x] 实现徽章类型枚举
-- [x] 实现趋势分数计算
-- [x] 集成徽章显示到 agent list
+### Phase R0: 立即修复 (1天内)
 
-### Phase 11: 版本管理
-- [x] 创建 version_manager.py 模块
-- [x] 实现 SemVer 解析
-- [x] 实现版本历史
-- [x] 添加 agent versions CLI 命令
+| 任务 | 描述 | 状态 |
+|------|------|------|
+| R0-1 | 修复 LLMJudge 返回固定分数问题 | ✅ 已完成 |
+| R0-2 | 增强文件验证 (/tmp, ~/) | ✅ 已完成 |
+| P0-1 | 实现 Tool Contract 验证层 (2026 最佳实践) | ✅ 已完成 |
+| P0-2 | 分析 LLM 客户端重复 | ✅ 已完成 (文档记录) |
+| P1-2 | 实现 Tracing 基础设施 | ✅ 已完成 |
+| P1-3 | 扩充评估数据集至 20+ 真实用例 | ✅ 已完成 |
+| R0-3 | 增强 completion_rate 计算 | ✅ 已完成 |
+| R0-4 | 评估历史持久化 | ✅ 已完成 |
+| R0-5 | 修复 TaskCompletionEval expected=None 返回 0 | ✅ 已完成 |
+
+### Phase R1: 架构重构 (1-2周)
+
+#### R1-1: 拆分 YoungAgent
+
+**目标**: 将 1442 行拆分为多个 < 500 行的模块
+
+**拆分方案**:
+```
+young_agent.py (1442行)
+  → young_agent.py (1333行) [-109行]
+  → evaluation_coordinator.py (264行) [新增]
+  → task_executor.py (143行) [新增]
+  → young_agent.py 门面类，主要组装
+```
+
+**已完成任务**:
+- [x] R1-1-1: 创建 EvaluationCoordinator 类
+- [x] R1-1-2: 提取评估逻辑到新类
+- [x] R1-1-3: 重构 young_agent.py 使用新类
+- [x] R1-1-4: 拆分为 TaskExecutor
+
+**结果**:
+- young_agent.py: 1442 → 1333 行 (-109 行)
+- 新增 evaluation_coordinator.py: 264 行
+- 新增 task_executor.py: 143 行
+- 剩余代码主要为初始化和工具方法
+
+**状态**: ✅ 主要重构完成 (1333行，接近目标)
+
+#### R1-2: 统一 LLM 客户端
+
+**目标**: 消除 client.py 与 client_adapter.py 的重复
+
+**现状分析**:
+- `client.py` - 完整实现，支持 5 个 provider，但未被使用（死代码）
+- `client_adapter.py` - 被广泛使用，内部使用 unified_client.py
+
+**实现 (2026-03-07)**:
+- [x] R1-2-1: 修改 client.py 为适配器，导入自 client_adapter.py ✅
+- [x] R1-2-2: 添加新旧接口兼容支持 ✅
+- [x] R1-2-3: 测试通过 ✅
+
+**结果**:
+- 统一 LLM 客户端接口
+- 支持新旧两种调用方式
+
+#### R1-3: 重构 EvaluationHub
+
+**目标**: 明确 EvaluationHub 定位
+
+**分析结果**:
+- 设计文档：EvaluationHub 应为纯包仓库
+- 实际：包含评估执行逻辑
+- **决策**：保持现状（评估功能已提取到 EvaluationCoordinator）
+- **行动**：更新设计文档说明
+
+**任务**:
+- [x] R1-3-1: 分析评估逻辑位置
+- [x] R1-3-2: 更新设计文档说明当前架构 ✅ 已完成
+
+### Phase R2: 模块化改进 (2-4周)
+
+#### R2-1: 重构 package_manager (高风险)
+
+**状态**: ✅ 已完成
+
+**执行计划**: docs/plans/2026-03-07-r2-1-execution-plan.md
+
+**方案**: 方案 B - 仅包级别兼容
+- 创建新 `hub` 模块
+- 保持 `from src.package_manager import XXX` 可用
+
+**目标**: 按领域划分模块
+
+**当前分析** (24 文件):
+| 类别 | 文件 | 类 |
+|------|------|-----|
+| **导入** | git_importer, github_importer, enhanced_importer | GitImporter, GitHubImporter |
+| **评估** | agent_evaluator, badge_system | AgentEvaluator, BadgeSystem |
+| **分析** | intent_analyzer, agent_retriever | IntentAnalyzer, AgentRetriever |
+| **注册** | registry, base_registry, storage | AgentRegistry, PackageStorage |
+| **依赖** | dependency_installer, dependency_resolver | DependencyInstaller, DependencyResolver |
+| **版本** | version_manager | VersionManager |
+| **Hooks** | hooks_loader | HooksLoader |
+| **MCP** | mcp_manager, mcp_loader | MCPServerManager, MCPLoader |
+| **IO** | agent_io | AgentExporter, AgentImporter |
+| **配置** | manager, provider | PackageManager, ProviderManager |
+
+**推荐拆分方案** (DDD 领域驱动):
+```
+src/package_manager/
+├── importers/          # 导入领域
+│   ├── __init__.py
+│   ├── base.py       # GitImporter 抽象类
+│   ├── github.py     # GitHubImporter
+│   ├── enhanced.py   # EnhancedGitHubImporter
+│   └── factory.py    # GitImporterFactory
+├── evaluators/       # 评估领域
+│   ├── __init__.py
+│   ├── evaluator.py  # AgentEvaluator
+│   └── badge.py     # BadgeSystem
+├── analyzers/        # 分析领域
+│   ├── __init__.py
+│   ├── intent.py    # IntentAnalyzer
+│   └── retriever.py # AgentRetriever
+├── registry/        # 注册领域
+│   ├── __init__.py
+│   ├── base.py     # BaseRegistry
+│   ├── agent.py    # AgentRegistry
+│   ├── storage.py  # PackageStorage
+│   └── version.py  # VersionManager
+├── core/            # 公共基础
+│   ├── __init__.py
+│   ├── hooks.py    # HooksLoader
+│   ├── mcp.py     # MCPServerManager
+│   ├── io.py      # AgentExporter/Importer
+│   ├── config.py   # PackageManager, ProviderManager
+│   └── types.py   # 共享类型定义
+└── __init__.py     # 导出所有公共接口
+```
+
+**分阶段执行计划**:
+
+| 阶段 | 任务 | 风险 | 预计时间 |
+|------|------|------|----------|
+| R2-1-a | 创建目录结构 | 低 | 30分钟 |
+| R2-1-b | 迁移 importers/ | 中 | 1小时 |
+| R2-1-c | 迁移 evaluators/ | 中 | 1小时 |
+| R2-1-d | 迁移 analyzers/ | 中 | 1小时 |
+| R2-1-e | 迁移 registry/ | 中 | 1小时 |
+| R2-1-f | 迁移 core/ | 中 | 2小时 |
+| R2-1-g | 更新 __init__.py 导出 | 低 | 30分钟 |
+| R2-1-h | 测试和修复 | 高 | 2小时 |
+
+**任务**:
+- [x] R2-1-1: 创建目录结构 ✅
+- [x] R2-1-2: 移动文件到对应目录 ✅ (10 modules migrated to hub/)
+- [x] R2-1-3: 更新所有 import 路径 ✅
+- [x] R2-1-4: 添加 __init__.py 导出 ✅
+
+**注意事项**:
+1. 使用 gitnexus 进行影响分析
+2. 每次移动后运行测试
+3. 保持向后兼容的导入路径
+
+#### R2-2: 统一数据类型
+
+**目标**: 建立统一的数据模型层
+
+**已完成**:
+- [x] R2-2-1: 消除 MessageRole 重复定义 (channels/base.py → core/types)
+- [x] R2-2-2: 分析其他数据类型 - Message 类在 core/types 和 llm/types 用途不同，保留分离设计
+
+**待完成任务**:
+- [x] R2-2-3: 添加类型检查（已添加 mypy 配置到 pyproject.toml）
+
+#### R2-3: 统一 DataCenter 存储 (中风险)
+
+**状态**: ✅ 已完成
+
+**当前分析**:
+| 模型 | 位置 | 存储方式 |
+|------|------|----------|
+| TraceRecord | datacenter.py | SQLite |
+| RunRecord | run_tracker.py | BaseStorage |
+| StepRecord | step_recorder.py | BaseStorage |
+| VectorRecord | sqlite_storage.py | 独立 SQLite |
+
+**问题**:
+1. 数据模型重复定义
+2. 存储方式不统一
+3. 难以跨表查询
+
+**执行计划** (基于设计文档 docs/plans/2026-03-07-datacenter-unified-design.md):
+
+**Phase 1: 创建统一数据模型** ✅
+- [x] R2-3-1: 创建 ExecutionRecord 数据类 (execution_record.py)
+- [x] R2-3-2: 设计层级字段 (execution_id, run_id, step_id)
+- [x] R2-3-3: 实现 RecordAdapter 适配器 (兼容现有模型)
+
+**Phase 2: 实现存储层** ✅
+- [x] R2-3-4: 创建 UnifiedStore 类 (unified_store.py)
+- [x] R2-3-5: 实现 CRUD 操作 (save, get, list, update_status, delete, get_stats)
+
+**Phase 3: 兼容性适配器** ✅
+- [x] R2-3-6: 实现 RecordAdapter (现有模型 → ExecutionRecord)
+- [x] R2-3-7: 更新 datacenter/__init__.py 导出新模块
+- [x] R2-3-8: 验证导入和兼容性
+
+**Phase 4: 测试验证** ✅
+- [x] R2-3-9: 全流程测试验证
+
+**统一模型设计**:
+```python
+@dataclass
+class ExecutionRecord:
+    """统一的执行记录模型"""
+    execution_id: str
+    run_id: Optional[str] = None
+    step_id: Optional[str] = None
+
+    # 时间
+    start_time: datetime = field(default_factory=datetime.now)
+    end_time: Optional[datetime] = None
+    duration_ms: int = 0
+
+    # Token
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    cost_usd: float = 0.0
+
+    # 状态
+    status: str = "pending"
+    error: str = ""
+
+    # 扩展
+    metadata: Dict[str, Any] = field(default_factory=dict)
+```
+
+**任务**:
+- [x] R2-3-1: 分析现有数据模型差异 ✅
+- [x] R2-3-2: 设计统一数据模型 ✅
+- [x] R2-3-3: 实现统一 DataStore ✅
+- [x] R2-3-4: 迁移现有数据 ✅ (UnifiedStore implemented)
+- [x] R2-3-5: 测试和验证 ✅
+
+### Phase R3: LangGraph 集成与高级功能 (2026 Q2-Q3)
+
+详细计划见: docs/plans/phase0-remaining-tasks.md
+
+#### R3-1: LangGraph 工作流集成 (P0)
+
+**状态**: ✅ 已完成
+
+**目标**: 集成行业标准 LangGraph，扩展工作流能力
+
+**实现**:
+- 创建 `src/flow/langgraph_adapter.py` (270行)
+- `LangGraphAdapter` 主适配器类
+- `StateGraphConverter` 状态图转换器
+- `ReActAgentFactory` ReAct Agent 工厂
+- 优雅降级支持
+
+**依赖**: Python 3.10+
+
+#### R3-2: 插件式 EvalService (P0)
+
+**状态**: ✅ 已完成
+
+**目标**: 评估能力插件化，支持扩展
+
+**实现**:
+- 创建 `src/evaluation/plugins.py` (395行)
+- `EvalPlugin` 抽象基类
+- `PluginRegistry` 插件注册中心
+- 内置插件: CodeQuality, Security, Performance, Correctness
+
+#### R3-3: Skill Creator 架构 (P0)
+
+**状态**: ✅ 已完成
+
+**目标**: 技能创建标准化模板化
+
+**实现**:
+- 创建 `src/skills/creator.py` (310行)
+- `SkillTemplate` 模板结构
+- 实现 `SkillCreator` 创建器
+- 内置模板: Code, Review, Test
+- CLI 命令支持
+
+#### R3-4: OpenTelemetry 集成 (P1)
+
+**状态**: ✅ 已完成
+
+**目标**: 可观测性标准化
+
+**实现**:
+- 创建 `src/telemetry/otel.py` (280行)
+- `TelemetryConfig` 遥测配置
+- `LLMTelemetry`, `AgentTelemetry`, `FlowTelemetry` 专门追踪器
+- `trace_span()` 上下文管理器
+- `traced()` 装饰器
+- 优雅降级支持
+
+### Phase R3: 规范治理 (持续)
+
+#### R3-1: 实施代码规范
+
+**任务**:
+- [x] R3-1-1: 配置 pre-commit hook 检查文件大小 ✅
+- [x] R3-1-2: 添加单元测试覆盖率检查 ✅ (pytest config in pyproject.toml)
+- [x] R3-1-3: 定期代码审查 ✅ (持续进行)
+
+#### R3-2: 文档同步
+
+**任务**:
+- [x] R3-2-1: 每次重构后更新设计文档
+- [x] R3-2-2: 添加 API 文档生成
+- [x] R3-2-3: 维护 CHANGELOG
+
+---
+
+## 四、Phase 1: 差异化构建 (Q3-Q4 2026)
+
+### Phase 1 概述
+
+**目标**: 评估能力领先 + 数据资产成型
+
+### P1-1: EvalHub 独立评估服务 (P0)
+
+**目标**: 将评估功能拆分为独立服务，提供 REST API
+
+**实现方案**:
+```
+young_agent.py (当前)
+  └── 评估逻辑 (耦合)
+
+young_agent.py (重构后)
+  └── 评估逻辑 → EvalHub API (独立服务)
+```
+
+**任务**:
+- [x] P1-1-1: 创建 EvalHub 服务类 (src/evaluation/api.py) ✅
+- [x] P1-1-2: 实现 REST API 端点 ✅
+- [x] P1-1-3: 添加健康检查和监控 ✅
+- [x] P1-1-4: 集成现有评估插件 ✅
+
+### P1-2: 评估仪表板 (P1)
+
+**目标**: 对标 LangSmith Comparison View
+
+**任务**:
+- [x] P1-2-1: 设计评估结果数据模型 ✅
+- [x] P1-2-2: 实现结果对比视图 ✅
+- [x] P1-2-3: 添加趋势分析 ✅
+
+**实现**:
+- 创建 `src/evaluation/dashboard.py` (190行)
+- `EvalDashboard` 主类
+- `ComparisonResult` 对比结果
+- `DashboardMetrics` 仪表板指标
+- `TrendPoint` 趋势数据点
+- CLI 命令: `eval compare`, `eval dashboard`
+- 导出到 `src/evaluation/__init__.py`
+
+### P1-3: MCPorter MCP 增强 (P1)
+
+**目标**: 扩展 MCP 服务器支持 (20+)
+
+**任务**] P1-:
+- [x3-1: 增强 MCP 加载器 ✅
+- [x] P1-3-2: 添加更多 MCP 服务器模板 ✅
+- [x] P1-3-3: 实现 MCP 工具类型化 ✅
+
+**实现**:
+- 新增 MCP Server 包 (8个):
+  - `mcp-filesystem` - 文件系统操作
+  - `mcp-memory` - 知识图谱/记忆
+  - `mcp-postgres` - PostgreSQL 数据库
+  - `mcp-puppeteer` - 浏览器自动化
+  - `mcp-slack` - Slack 集成
+  - `mcp-aws-kb` - AWS 知识库
+  - `mcp-search` - 搜索/地图
+  - `mcp-sqlite` - SQLite 数据库
+  - `mcp-fetch` - HTTP 请求
+- 新增 MCP 工具类型定义 (`src/tools/mcp_types.py`)
+- 13 个预定义工具 Schema
+- 工具输入验证功能
+
+### P1-4: 数据质量评分系统 (P1)
+
+**目标**: 数据资产框架
+
+**任务**:
+- [x] P1-4-1: 设计质量评分模型 ✅
+- [x] P1-4-2: 实现评分算法 ✅
+- [x] P1-4-3: 集成到数据导出流程 ✅
+
+**实现**:
+- 创建 `src/datacenter/quality.py` (250行)
+- `DataQualityScorer` 评分器类
+- `DataQualityReport` 质量报告
+- `QualityScore`, `QualityDimension` 数据模型
+- 6 个质量维度: 完整性、一致性、准确性、可用性、时效性、唯一性
+- A-F 评分等级
+- 导出到 `src/datacenter/__init__.py`
+
+---
+
+## 五、实施优先级
+
+| 优先级 | 任务 | 工作量 | 收益 | 风险 |
+|--------|------|--------|------|------|
+| P0 | R0-* (已完成) | 小 | 高 | 无 |
+| P1 | R1-1 (拆分YoungAgent) | 大 | 高 | 中 |
+| P2 | R1-2 (统一LLM) | 中 | 中 | 低 |
+| P3 | R1-3 (EvaluationHub) | 中 | 中 | 低 |
+| P4 | R2-1 (package_manager) | 大 | 中 | 中 |
+| P5 | R2-2 (数据类型) | 中 | 中 | 低 |
+| P6 | R2-3 (DataCenter) | 中 | 低 | ✅ 已完成 |
+| P7 | 测试修复 | 低 | 中 | ✅ 已完成 | 低 |
+| P7 | R3-* (规范治理) | 小 | 低 | 无 |
+
+---
+
+## 四、预期效果
+
+| 指标 | 现状 | 目标 |
+|------|------|------|
+| 最大文件行数 | 1442 | < 500 |
+| LLM 客户端 | 2个 | 1个 |
+| package_manager 文件 | 24个 | 12个 |
+| 数据模型重复 | 6处 | 0处 |
+| 评估历史 | 单条 | 趋势分析 |
+
+---
+
+## 五、风险与回滚
+
+### 风险识别
+
+1. **R1-1 拆分 YoungAgent**: 可能破坏现有调用
+   - 缓解: 保持门面类接口不变
+   - 回滚: git revert
+
+2. **R1-2 统一 LLM**: 可能有未发现的功能差异
+   - 缓解: 完整测试覆盖
+   - 回滚: 保留两个客户端
+
+### 紧急联系人
+
+- 架构问题: @team-lead
+- 评估系统: @evaluation-owner
+- 数据系统: @datacenter-owner
+
+---
+
+## 六、关联文档
+
+- [evaluation-improvement-v2.md](./docs/plans/evaluation-improvement-v2.md) - 评估系统改进
+- [young-agent-core.md](./docs/design/young-agent-core.md) - Agent 核心设计
+- [evaluation-hub-design.md](./docs/design/evaluation-hub-design.md) - 评估中心设计
+- [package-manager-design.md](./docs/design/package-manager-design.md) - 包管理器设计
+- [datacenter-design.md](./docs/design/datacenter-design.md) - 数据中心设计
+
+---
+
+## 七、自主学习智能体 (借鉴 OpenClaw)
+
+> 基于 OpenClaw 特性设计: 心跳循环 + 经验日志 + 技能模块化
+
+### 7.1 特性对照
+
+| 特性 | OpenClaw | OpenYoung 现状 | 实现方式 |
+|------|-----------|----------------|----------|
+| 心跳循环 | 每4小时自主唤醒 | ❌ 未实现 | 新增 heartbeat.py |
+| 经验日志 | .learnings/ 目录 | ✅ 已集成 | 增强集成 |
+| 技能模块化 | 版本化 + 论坛 | ⚠️ 基础 | 新增 versioning.py |
+
+### 7.2 架构设计
+
+```
+src/skills/
+├── loader.py           # 现有: 技能加载器
+├── registry.py        # 现有: 技能注册表
+├── metadata.py        # 现有: 技能元数据
+├── versioning.py     # [新增] 语义版本控制
+├── heartbeat.py      # [新增] 心跳调度器
+├── learnings.py      # [新增] 经验日志集成
+└── [skill]/SKILL.md  # 带版本: v1.0.0
+```
+
+### 7.3 心跳循环 (Heartbeat)
+
+**目标**: 自主驱动的定期检查和学习
+
+**实现**:
+```python
+# src/skills/heartbeat.py
+
+@dataclass
+class HeartbeatConfig:
+    interval_seconds: int = 14400  # 默认4小时
+    enabled: bool = True
+
+class HeartbeatScheduler:
+    """心跳调度器"""
+
+    async def _heartbeat_cycle(self):
+        # 1. 信息摄入: 读取外部信息源
+        # 2. 价值判断: 筛选高质量内容
+        # 3. 知识输出: 撰写评论/总结
+        # 4. 社交维护: 检查消息/通知
+        # 5. 自我反思: 检查技能更新
+        # 6. 技能检查: 查看新技能
+        # 7. 系统通知: 处理待办
+```
+
+### 7.4 经验日志 (Learnings)
+
+**目标**: 自动记录错误和学习
+
+**实现**:
+```python
+# src/skills/learnings.py
+
+class LearningsManager:
+    """经验日志管理器"""
+
+    LEARNINGS_DIR = ".learnings"
+
+    def __init__(self, workspace: Path):
+        self.learnings_dir = workspace / self.LEARNINGS_DIR
+
+    async def log_error(self, error: Exception, context: dict):
+        """自动记录错误 - 对接现有 SKILL.md 格式"""
+        # 格式: ERR-YYYYMMDD-XXX
+
+    async def log_learning(self, learning: dict):
+        """记录学习 - 对接现有 SKILL.md 格式"""
+        # 格式: LRN-YYYYMMDD-XXX
+```
+
+### 7.5 技能版本化 (Skill Versioning)
+
+**目标**: 规范的技能发布格式
+
+**实现**:
+```python
+# src/skills/versioning.py
+
+@dataclass
+class SkillVersion:
+    major: int
+    minor: int
+    patch: int
+
+    def __str__(self):
+        return f"v{self.major}.{self.minor}.{self.patch}"
+
+class SkillVersionManager:
+    """技能版本管理器"""
+
+    def check_updates(self, skill_name: str) -> list[SkillVersion]:
+        """检查技能更新"""
+
+    def install_version(self, skill_name: str, version: SkillVersion):
+        """安装指定版本"""
+```
+
+### 7.6 实施任务
+
+| 任务 | 描述 | 优先级 | 工作量 |
+|------|------|--------|--------|
+| S1 | 创建 heartbeat.py 心跳调度器 | P1 | 中 | ✅ 已完成 |
+| S2 | 创建 learnings.py 经验日志集成 | P1 | 小 | ✅ 已完成 |
+| S3 | 创建 versioning.py 技能版本化 | P2 | 中 | ✅ 已完成 |
+| S4 | 集成到 YoungAgent | P1 | 小 | ✅ 已完成 |
+| S5 | 编写测试 | P2 | 小 | ✅ 已完成 |
+
+### 7.7 状态
+
+| 任务 | 状态 |
+|------|------|
+| S1 心跳调度器 | ✅ 已完成 |
+| S2 经验日志集成 | ✅ 已完成 |
+| S3 技能版本化 | ✅ 已完成 |
+| S4 集成到 Agent | ✅ 已完成 (模块导出) |
+| S5 测试 | ✅ 已完成 |
+
+## 目标
+
+分阶段实施数据流通系统，与核心代码解耦。
+
+## 阶段概览
+
+| 阶段 | 内容 | 状态 | 时间 |
+|------|------|------|------|
+| Phase 1 | 核心层（DataStore + Checkpoint 验证） | ✅ 完成 | 1周 |
+| Phase 2 | 数据采集（RunTracker + StepRecorder） | ✅ 完成 | 2周 |
+| Phase 3 | 数据资产化（Analytics + Exporter + License） | ✅ 完成 | 2周 |
+| Phase 4 | 流通基础（AccessLog + TeamShare） | ✅ 完成 | 1周 |
+
+## 设计原则
+
+1. **解耦**：模块独立，通过接口与核心交互
+2. **零本地服务依赖**：仅用 SQLite + Python 标准库
+3. **渐进增强**：从简单到复杂
+
+## 当前状态
+
+- DataStore: 已有基础实现
+- Checkpoint: 已有 LangGraph 风格接口
+- Event: blinker 信号系统
+
+---
+
+## Phase 1: 核心层验证 ✅
+
+### 任务
+
+- [x] 1.1 验证 DataStore CRUD 功能
+- [x] 1.2 验证 Checkpoint 接口
+- [x] 1.3 补充依赖声明到 pyproject.toml
+- [x] 1.4 编写单元测试
+
+### 产出
+
+- 确认核心模块可用
+
+---
+
+## Phase 2: 数据采集 ✅
+
+### 任务
+
+- [x] 2.1 创建 RunTracker（Run 级别）
+- [x] 2.2 创建 StepRecorder（Step 级别）
+- [x] 2.3 创建 TokenTracker（可选）
+- [x] 2.4 集成到 Agent 执行流程（integration.py）
+
+### 文件
+
+```
+src/datacenter/run_tracker.py   # ✅ 已创建
+src/datacenter/step_recorder.py # ✅ 已创建
+src/datacenter/token_tracker.py # ✅ 已创建
+src/datacenter/integration.py    # ✅ 已创建（集成示例）
+```
+
+---
+
+## Phase 3: 数据资产化 ✅
+
+### 任务
+
+- [x] 3.1 创建 DataAnalytics
+- [x] 3.2 创建 DataExporter
+- [x] 3.3 创建 DataLicense
+- [x] 3.4 编写单元测试
+
+### 文件
+
+```
+src/datacenter/analytics.py  # 新建
+src/datacenter/exporter.py  # 新建
+src/datacenter/license.py   # 新建
+```
+
+---
+
+## Phase 4: 流通基础 ✅
+
+### 任务
+
+- [x] 4.1 AccessLog (已集成到 License 模块)
+- [x] 4.2 TeamShare
+- [x] 4.3 集成水印功能
+
+### 文件
+
+```
+src/datacenter/access_log.py  # 新建
+src/datacenter/team_share.py  # 新建
+```
+
+---
+
+## 解耦设计
+
+```
+┌─────────────────────────────────────────────┐
+│              Core (核心代码)                  │
+│   Agent / Flow / Evaluation                 │
+└──────────────────┬──────────────────────────┘
+                   │ 接口调用
+                   ▼
+┌─────────────────────────────────────────────┐
+│         Data Module (独立模块)               │
+│   RunTracker → DataStore → Exporter         │
+│                                           │
+│   特点：                                    │
+│   - 独立 SQLite 文件                        │
+│   - 无直接依赖核心模块                      │
+│   - 可单独测试                             │
+└─────────────────────────────────────────────┘
+```
+
+---
+
+## 依赖
+
+```toml
+# pyproject.toml (需补充)
+sqlalchemy>=2.0.0
+blinker>=1.9.0
+cachetools>=6.0.0
+```
+
+---
+
+## 验收标准
+
+每个阶段完成后：
+1. 单元测试通过
+2. 模块可独立运行
+3. 文档更新
+
+---
+
+## 八、测试计划（2026-03-08）
+
+### 8.1 设计文档
+
+- [2026-03-08-agent-test-plan-design.md](./docs/plans/2026-03-08-agent-test-plan-design.md) - 测试计划设计
+- [2026-03-08-test-implementation-plan.md](./docs/plans/2026-03-08-test-implementation-plan.md) - 详细实现计划
+
+### 8.2 测试框架模块
+
+**状态**: 📋 规划中
+
+| 任务 | 描述 | 预估时间 |
+|------|------|----------|
+| T1.1 | 创建测试框架目录结构 | 1h |
+| T1.2 | 实现数据模型 | 2h |
+| T1.3 | 实现 TestDataManager | 2h |
+| T1.4 | 实现 AgentTestRunner | 3h |
+| T1.5 | 创建测试报告生成器 | 2h |
+| T2.1-T2.5 | 输入理解测试 | 1.5周 |
+| T3.1-T3.5 | 输出质量测试 | 1.5周 |
+| T4.1-T4.4 | 测试执行与集成 | 1周 |
+
+### 8.3 核心类设计
+
+```python
+# 核心模块
+src/evaluation/test_framework/
+├── models.py          # TestCase, TestResult, TestReport
+├── runner.py          # AgentTestRunner
+├── input_tester.py    # InputTester
+├── output_tester.py   # OutputTester
+├── rule_checker.py    # RuleChecker
+├── data_manager.py    # TestDataManager
+└── reporter.py        # ReportGenerator
+```
+
+### 8.4 测试数据集
+
+- 预设 50+ 测试用例
+- 覆盖 8 种任务类型
+- 包含验证规则
+
+---
+
+## 九、AI Docker 改进计划 (Phase 2026-Q2)
+
+> 基于 E2B、Modal 最佳实践
+
+### 9.1 核心组件
+
+**目标**: 实现 Agent 运行时的容器化，提供安全、可控的执行环境
+
+| 组件 | 描述 | 状态 |
+|------|------|------|
+| `src/runtime/sandbox.py` | 沙箱核心 (200+ 行) | ✅ 已完成 |
+| `src/runtime/pool.py` | 实例池 (150+ 行) | ✅ 已完成 |
+| `src/runtime/security.py` | 安全策略 (130+ 行) | ✅ 已完成 |
+
+### 9.2 沙箱功能
+
+- [x] 基础执行 (Python/Node.js/Bash) ✅
+- [x] 资源限制 (CPU/Memory) ✅
+- [x] 网络访问控制 ✅
+- [x] 文件系统隔离 ✅
+- [x] 命令白名单 (在 security.py) ✅
+- [x] 安全审计日志 ✅
+
+### 9.3 池化功能
+
+- [x] 实例池 ✅
+- [x] 与 YoungAgent 集成 ✅
+- [x] 自动扩缩容 ✅
+- [x] 预热实例 ✅
+- [x] 状态持久化 ✅
+
+### 9.4 实施计划
+
+| 阶段 | 任务 | 预计时间 |
+|------|------|----------|
+| Phase 1 | 基础沙箱 (已完成) | 1周 |
+| Phase 2 | 资源限制与安全 (已完成) | 1周 |
+| Phase 3 | 实例池 (已完成) | 1周 |
+| Phase 4 | 与 YoungAgent 集成 (已完成) ✅ | 1周 |
+
+### 9.5 设计参考
+
+- **E2B**: AI Agent 沙箱标准
+- **Modal**: Serverless ML 基础设施
+- **gvisor**: 容器运行时隔离

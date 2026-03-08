@@ -3,18 +3,21 @@ Enterprise - 企业级功能
 多租户支持、权限控制、审计日志
 """
 
-import sqlite3
-import json
 import hashlib
-from pathlib import Path
-from typing import Dict, List, Any, Optional
-from datetime import datetime, timedelta
+import json
+import sqlite3
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta
 from enum import Enum
+from pathlib import Path
+
+# 从 isolation 模块导入
+from .isolation import IsolationConfig, IsolationLevel, IsolationManager
 
 
 class Permission(str, Enum):
     """权限类型"""
+
     READ = "read"
     WRITE = "write"
     DELETE = "delete"
@@ -24,6 +27,7 @@ class Permission(str, Enum):
 
 class TenantStatus(str, Enum):
     """租户状态"""
+
     ACTIVE = "active"
     SUSPENDED = "suspended"
     ARCHIVED = "archived"
@@ -32,6 +36,7 @@ class TenantStatus(str, Enum):
 @dataclass
 class Tenant:
     """租户"""
+
     tenant_id: str
     name: str
     status: TenantStatus = TenantStatus.ACTIVE
@@ -53,25 +58,27 @@ class Tenant:
 @dataclass
 class User:
     """用户"""
+
     user_id: str
     tenant_id: str
     username: str
     email: str = ""
 
     # 权限
-    permissions: List[Permission] = field(default_factory=list)
+    permissions: list[Permission] = field(default_factory=list)
     role: str = "user"  # admin, user, guest
 
     # 状态
     is_active: bool = True
 
     created_at: datetime = field(default_factory=datetime.now)
-    last_login: Optional[datetime] = None
+    last_login: datetime | None = None
 
 
 @dataclass
 class AuditLog:
     """审计日志"""
+
     log_id: str
     tenant_id: str
     user_id: str
@@ -88,7 +95,7 @@ class AuditLog:
     # 上下文
     ip_address: str = ""
     user_agent: str = ""
-    metadata: Dict = field(default_factory=dict)
+    metadata: dict = field(default_factory=dict)
 
     created_at: datetime = field(default_factory=datetime.now)
 
@@ -179,27 +186,35 @@ class EnterpriseManager:
             name=name,
             max_agents=kwargs.get("max_agents", 10),
             max_users=kwargs.get("max_users", 100),
-            max_storage_mb=kwargs.get("max_storage_mb", 1024)
+            max_storage_mb=kwargs.get("max_storage_mb", 1024),
         )
 
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT INTO tenants (tenant_id, name, status, max_agents, max_users, max_storage_mb, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            tenant.tenant_id, tenant.name, tenant.status.value,
-            tenant.max_agents, tenant.max_users, tenant.max_storage_mb,
-            tenant.created_at.isoformat(), tenant.updated_at.isoformat()
-        ))
+        """,
+            (
+                tenant.tenant_id,
+                tenant.name,
+                tenant.status.value,
+                tenant.max_agents,
+                tenant.max_users,
+                tenant.max_storage_mb,
+                tenant.created_at.isoformat(),
+                tenant.updated_at.isoformat(),
+            ),
+        )
 
         conn.commit()
         conn.close()
 
         return tenant
 
-    def get_tenant(self, tenant_id: str) -> Optional[Tenant]:
+    def get_tenant(self, tenant_id: str) -> Tenant | None:
         """获取租户"""
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
@@ -223,7 +238,7 @@ class EnterpriseManager:
             user_count=row["user_count"],
             storage_used_mb=row["storage_used_mb"],
             created_at=datetime.fromisoformat(row["created_at"]),
-            updated_at=datetime.fromisoformat(row["updated_at"])
+            updated_at=datetime.fromisoformat(row["updated_at"]),
         )
 
     def update_tenant(self, tenant_id: str, **kwargs) -> bool:
@@ -246,16 +261,19 @@ class EnterpriseManager:
         params.append(datetime.now().isoformat())
         params.append(tenant_id)
 
-        cursor.execute(f"""
-            UPDATE tenants SET {', '.join(updates)} WHERE tenant_id = ?
-        """, params)
+        cursor.execute(
+            f"""
+            UPDATE tenants SET {", ".join(updates)} WHERE tenant_id = ?
+        """,
+            params,
+        )
 
         conn.commit()
         success = cursor.rowcount > 0
         conn.close()
         return success
 
-    def list_tenants(self, status: TenantStatus = None) -> List[Tenant]:
+    def list_tenants(self, status: TenantStatus = None) -> list[Tenant]:
         """列出租户"""
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
@@ -269,19 +287,22 @@ class EnterpriseManager:
         rows = cursor.fetchall()
         conn.close()
 
-        return [Tenant(
-            tenant_id=row["tenant_id"],
-            name=row["name"],
-            status=TenantStatus(row["status"]),
-            max_agents=row["max_agents"],
-            max_users=row["max_users"],
-            max_storage_mb=row["max_storage_mb"],
-            agent_count=row["agent_count"],
-            user_count=row["user_count"],
-            storage_used_mb=row["storage_used_mb"],
-            created_at=datetime.fromisoformat(row["created_at"]),
-            updated_at=datetime.fromisoformat(row["updated_at"])
-        ) for row in rows]
+        return [
+            Tenant(
+                tenant_id=row["tenant_id"],
+                name=row["name"],
+                status=TenantStatus(row["status"]),
+                max_agents=row["max_agents"],
+                max_users=row["max_users"],
+                max_storage_mb=row["max_storage_mb"],
+                agent_count=row["agent_count"],
+                user_count=row["user_count"],
+                storage_used_mb=row["storage_used_mb"],
+                created_at=datetime.fromisoformat(row["created_at"]),
+                updated_at=datetime.fromisoformat(row["updated_at"]),
+            )
+            for row in rows
+        ]
 
     # ========== 用户管理 ==========
 
@@ -293,7 +314,7 @@ class EnterpriseManager:
         email: str = "",
         password: str = None,
         role: str = "user",
-        permissions: List[Permission] = None
+        permissions: list[Permission] = None,
     ) -> User:
         """创建用户"""
         user = User(
@@ -302,7 +323,7 @@ class EnterpriseManager:
             username=username,
             email=email,
             role=role,
-            permissions=permissions or [Permission.READ]
+            permissions=permissions or [Permission.READ],
         )
 
         # 密码哈希
@@ -313,26 +334,38 @@ class EnterpriseManager:
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT INTO users (user_id, tenant_id, username, email, password_hash, permissions, role, is_active, created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            user.user_id, user.tenant_id, user.username, user.email,
-            password_hash, json.dumps([p.value for p in user.permissions]),
-            user.role, 1 if user.is_active else 0, user.created_at.isoformat()
-        ))
+        """,
+            (
+                user.user_id,
+                user.tenant_id,
+                user.username,
+                user.email,
+                password_hash,
+                json.dumps([p.value for p in user.permissions]),
+                user.role,
+                1 if user.is_active else 0,
+                user.created_at.isoformat(),
+            ),
+        )
 
         # 更新租户用户数
-        cursor.execute("""
+        cursor.execute(
+            """
             UPDATE tenants SET user_count = user_count + 1 WHERE tenant_id = ?
-        """, (tenant_id,))
+        """,
+            (tenant_id,),
+        )
 
         conn.commit()
         conn.close()
 
         return user
 
-    def authenticate(self, username: str, password: str, tenant_id: str = None) -> Optional[User]:
+    def authenticate(self, username: str, password: str, tenant_id: str = None) -> User | None:
         """验证用户"""
         password_hash = hashlib.sha256(password.encode()).hexdigest()
 
@@ -341,23 +374,32 @@ class EnterpriseManager:
         cursor = conn.cursor()
 
         if tenant_id:
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT * FROM users
                 WHERE username = ? AND password_hash = ? AND tenant_id = ?
-            """, (username, password_hash, tenant_id))
+            """,
+                (username, password_hash, tenant_id),
+            )
         else:
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT * FROM users
                 WHERE username = ? AND password_hash = ?
-            """, (username, password_hash))
+            """,
+                (username, password_hash),
+            )
 
         row = cursor.fetchone()
 
         # 更新最后登录
         if row:
-            cursor.execute("""
+            cursor.execute(
+                """
                 UPDATE users SET last_login = ? WHERE user_id = ?
-            """, (datetime.now().isoformat(), row["user_id"]))
+            """,
+                (datetime.now().isoformat(), row["user_id"]),
+            )
 
         conn.commit()
         conn.close()
@@ -373,7 +415,7 @@ class EnterpriseManager:
             permissions=[Permission(p) for p in json.loads(row["permissions"])],
             role=row["role"],
             is_active=bool(row["is_active"]),
-            last_login=datetime.fromisoformat(row["last_login"]) if row["last_login"] else None
+            last_login=datetime.fromisoformat(row["last_login"]) if row["last_login"] else None,
         )
 
     def check_permission(self, user: User, permission: Permission) -> bool:
@@ -386,9 +428,15 @@ class EnterpriseManager:
 
         # 角色权限
         role_permissions = {
-            "admin": [Permission.READ, Permission.WRITE, Permission.DELETE, Permission.ADMIN, Permission.EXECUTE],
+            "admin": [
+                Permission.READ,
+                Permission.WRITE,
+                Permission.DELETE,
+                Permission.ADMIN,
+                Permission.EXECUTE,
+            ],
             "user": [Permission.READ, Permission.WRITE, Permission.EXECUTE],
-            "guest": [Permission.READ]
+            "guest": [Permission.READ],
         }
 
         return permission in role_permissions.get(user.role, [])
@@ -404,7 +452,7 @@ class EnterpriseManager:
         resource_id: str = "",
         status: str = "success",
         error_message: str = "",
-        **kwargs
+        **kwargs,
     ):
         """记录审计日志"""
         import uuid
@@ -420,23 +468,34 @@ class EnterpriseManager:
             error_message=error_message,
             ip_address=kwargs.get("ip_address", ""),
             user_agent=kwargs.get("user_agent", ""),
-            metadata=kwargs.get("metadata", {})
+            metadata=kwargs.get("metadata", {}),
         )
 
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT INTO audit_logs (
                 log_id, tenant_id, user_id, action, resource_type, resource_id,
                 status, error_message, ip_address, user_agent, metadata, created_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            log.log_id, log.tenant_id, log.user_id, log.action,
-            log.resource_type, log.resource_id, log.status, log.error_message,
-            log.ip_address, log.user_agent, json.dumps(log.metadata),
-            log.created_at.isoformat()
-        ))
+        """,
+            (
+                log.log_id,
+                log.tenant_id,
+                log.user_id,
+                log.action,
+                log.resource_type,
+                log.resource_id,
+                log.status,
+                log.error_message,
+                log.ip_address,
+                log.user_agent,
+                json.dumps(log.metadata),
+                log.created_at.isoformat(),
+            ),
+        )
 
         conn.commit()
         conn.close()
@@ -451,8 +510,8 @@ class EnterpriseManager:
         resource_type: str = None,
         start_date: datetime = None,
         end_date: datetime = None,
-        limit: int = 100
-    ) -> List[AuditLog]:
+        limit: int = 100,
+    ) -> list[AuditLog]:
         """查询审计日志"""
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
@@ -506,13 +565,13 @@ class EnterpriseManager:
                 ip_address=row["ip_address"],
                 user_agent=row["user_agent"],
                 metadata=json.loads(row["metadata"]) if row["metadata"] else {},
-                created_at=datetime.fromisoformat(row["created_at"])
+                created_at=datetime.fromisoformat(row["created_at"]),
             )
             result.append(log)
 
         return result
 
-    def get_audit_stats(self, tenant_id: str = None, days: int = 30) -> Dict:
+    def get_audit_stats(self, tenant_id: str = None, days: int = 30) -> dict:
         """获取审计统计"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
@@ -531,29 +590,38 @@ class EnterpriseManager:
         total = cursor.fetchone()[0]
 
         # 按操作类型
-        cursor.execute(f"""
+        cursor.execute(
+            f"""
             SELECT action, COUNT(*) as count
             FROM audit_logs {base_where}
             GROUP BY action
-        """, params)
+        """,
+            params,
+        )
         by_action = {row[0]: row[1] for row in cursor.fetchall()}
 
         # 按状态
-        cursor.execute(f"""
+        cursor.execute(
+            f"""
             SELECT status, COUNT(*) as count
             FROM audit_logs {base_where}
             GROUP BY status
-        """, params)
+        """,
+            params,
+        )
         by_status = {row[0]: row[1] for row in cursor.fetchall()}
 
         # 按用户
-        cursor.execute(f"""
+        cursor.execute(
+            f"""
             SELECT user_id, COUNT(*) as count
             FROM audit_logs {base_where}
             GROUP BY user_id
             ORDER BY count DESC
             LIMIT 10
-        """, params)
+        """,
+            params,
+        )
         by_user = {row[0]: row[1] for row in cursor.fetchall()}
 
         conn.close()
@@ -563,11 +631,12 @@ class EnterpriseManager:
             "by_action": by_action,
             "by_status": by_status,
             "by_user": by_user,
-            "period_days": days
+            "period_days": days,
         }
 
 
 # ========== 便捷函数 ==========
+
 
 def get_enterprise_manager(data_dir: str = ".young") -> EnterpriseManager:
     """获取企业级管理器"""

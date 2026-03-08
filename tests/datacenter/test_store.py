@@ -1,12 +1,13 @@
 """DataStore 单元测试"""
-import pytest
-import sys
 import shutil
+import sys
 from pathlib import Path
+
+import pytest
 
 sys.path.insert(0, '.')
 
-from src.datacenter.store import DataStore, get_data_store, EntityType
+from src.datacenter.store import DataStore
 
 TEST_DIR = ".young/test_store_unit"
 

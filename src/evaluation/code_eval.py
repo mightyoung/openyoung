@@ -4,12 +4,9 @@ CodeEval - 代码正确性评估器
 """
 
 import asyncio
-import subprocess
 import tempfile
-from typing import Any, Dict, Optional
 from dataclasses import dataclass
-
-from .metrics import MetricDefinition, BUILTIN_METRICS
+from typing import Any
 
 
 @dataclass
@@ -40,10 +37,10 @@ class CodeEval:
     async def evaluate(
         self,
         code: str,
-        expected_output: Optional[str] = None,
-        test_cases: Optional[list] = None,
+        expected_output: str | None = None,
+        test_cases: list | None = None,
         language: str = "python",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """评估代码正确性
 
         Args:
@@ -95,7 +92,7 @@ class CodeEval:
 
         return results
 
-    async def _check_syntax(self, code: str, language: str) -> Dict[str, Any]:
+    async def _check_syntax(self, code: str, language: str) -> dict[str, Any]:
         """检查代码语法"""
         if language == "python":
             try:
@@ -193,7 +190,7 @@ class CodeEval:
         code: str,
         test_cases: list,
         language: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """运行测试用例"""
         if language != "python":
             return {"pass_rate": 0.0, "details": []}
@@ -239,7 +236,7 @@ expected = {repr(expected)}
             "details": details,
         }
 
-    def _calculate_score(self, results: Dict[str, Any]) -> float:
+    def _calculate_score(self, results: dict[str, Any]) -> float:
         """计算综合评分"""
         score = 0.0
         weights = {

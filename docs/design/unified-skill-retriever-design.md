@@ -41,22 +41,22 @@ class SkillMetadata:
     skill_id: str
     name: str
     description: str
-    
+
     # 来源信息
     source: SkillSource
     sources: Set[SkillSource] = field(default_factory=set)  # 多来源
-    
+
     # 版本信息
     version: Optional[str] = None
     versions: Dict[SkillSource, str] = field(default_factory=dict)
-    
+
     # 检索相关
     embedding: Optional[List[float]] = None  # 语义向量
     tags: List[str] = field(default_factory=list)
-    
+
     # 优先级
     priority: int = 100  # 越小越高
-    
+
     # 原始引用
     package_ref: Optional[str] = None  # Package Manager 引用
     capsule_ref: Optional[str] = None   # Capsule 引用
@@ -74,24 +74,24 @@ class RetrievalConfig:
     """检索配置"""
     # 检索模式
     mode: str = "hybrid"  # "package_only" | "evolved_only" | "hybrid"
-    
+
     # 语义检索配置
     semantic_enabled: bool = True
     semantic_top_k: int = 5
     semantic_threshold: float = 0.7
-    
+
     # 精确匹配配置
     exact_enabled: bool = True
     exact_weight: float = 1.0
-    
+
     # 标签匹配配置
     tag_enabled: bool = True
     tag_weight: float = 0.5
-    
+
     # 合并配置
     merge_strategy: str = "score_weighted"  # "score_weighted" | "priority_first" | "source_priority"
     final_top_k: int = 10
-    
+
     # 来源优先级 (越小越高)
     source_priority: Dict[SkillSource, int] = field(default_factory=lambda: {
         SkillSource.EVOLVED: 1,
@@ -102,14 +102,14 @@ class RetrievalConfig:
 
 class UnifiedSkillRetriever:
     """统一 Skill 检索器"""
-    
+
     def __init__(self, config: RetrievalConfig):
         self.config = config
         self.package_retriever = None  # Package Manager 检索器
         self.skillbank_retriever = None  # SkillBank 检索器
         self.unified_index: Dict[str, SkillMetadata] = {}
         self._initialized = False
-    
+
     async def initialize(
         self,
         package_skills: List[SkillMetadata],
@@ -123,52 +123,52 @@ class UnifiedSkillRetriever:
                 existing = self.unified_index[skill.skill_id]
                 existing.sources.add(skill.source)
                 existing.versions[skill.source] = skill.version
-                
+
                 # 取最新的版本
-                if skill.version and (not existing.version or 
+                if skill.version and (not existing.version or
                     self._compare_version(skill.version, existing.version) > 0):
                     existing.version = skill.version
             else:
                 self.unified_index[skill.skill_id] = skill
-        
+
         # 2. 预计算 (如果启用语义检索)
         if self.config.semantic_enabled:
             await self._build_semantic_index()
-        
+
         self._initialized = True
-    
+
     async def retrieve(self, query: str) -> List[RetrievalResult]:
         """统一检索入口"""
         if not self._initialized:
             raise RuntimeError("UnifiedSkillRetriever not initialized")
-        
+
         results: List[RetrievalResult] = []
-        
+
         # 1. 精确匹配 (Package Manager)
         if self.config.exact_enabled:
             exact_results = await self._exact_search(query)
             results.extend(exact_results)
-        
+
         # 2. 语义检索 (SkillBank)
         if self.config.semantic_enabled:
             semantic_results = await self._semantic_search(query)
             results.extend(semantic_results)
-        
+
         # 3. 标签匹配
         if self.config.tag_enabled:
             tag_results = await self._tag_search(query)
             results.extend(tag_results)
-        
+
         # 4. 合并与排序
         merged = self._merge_results(results)
-        
+
         return merged[:self.config.final_top_k]
-    
+
     async def _exact_search(self, query: str) -> List[RetrievalResult]:
         """精确匹配搜索"""
         results = []
         query_lower = query.lower()
-        
+
         for skill_id, skill in self.unified_index.items():
             # 名称精确匹配
             if query_lower in skill.name.lower():
@@ -186,22 +186,22 @@ class UnifiedSkillRetriever:
                     match_type="exact",
                     source=skill.source
                 ))
-        
+
         return results
-    
+
     async def _semantic_search(self, query: str) -> List[RetrievalResult]:
         """语义检索 (使用 Embedding API)"""
         # 1. 获取查询的 embedding
         query_embedding = await self._get_embedding(query)
-        
+
         # 2. 计算相似度
         results = []
         for skill_id, skill in self.unified_index.items():
             if skill.embedding is None:
                 continue
-            
+
             score = self._cosine_similarity(query_embedding, skill.embedding)
-            
+
             if score >= self.config.semantic_threshold:
                 results.append(RetrievalResult(
                     skill=skill,
@@ -209,16 +209,16 @@ class UnifiedSkillRetriever:
                     match_type="semantic",
                     source=skill.source
                 ))
-        
+
         # 3. 返回 top-k
         results.sort(key=lambda x: x.score, reverse=True)
         return results[:self.config.semantic_top_k]
-    
+
     async def _tag_search(self, query: str) -> List[RetrievalResult]:
         """标签搜索"""
         results = []
         query_tags = set(query.lower().split())
-        
+
         for skill_id, skill in self.unified_index.items():
             overlap = query_tags.intersection(set(t.lower() for t in skill.tags))
             if overlap:
@@ -229,9 +229,9 @@ class UnifiedSkillRetriever:
                     match_type="tag",
                     source=skill.source
                 ))
-        
+
         return results
-    
+
     def _merge_results(self, results: List[RetrievalResult]) -> List[RetrievalResult]:
         """合并检索结果"""
         # 1. 按 skill_id 分组
@@ -240,23 +240,23 @@ class UnifiedSkillRetriever:
             if r.skill.skill_id not in grouped:
                 grouped[r.skill.skill_id] = []
             grouped[r.skill.skill_id].append(r)
-        
+
         # 2. 合并每个 skill 的多结果
         merged: List[RetrievalResult] = []
         for skill_id, skill_results in grouped.items():
             # 合并分数 (取最高分)
             best_result = max(skill_results, key=lambda x: x.score)
-            
+
             # 更新 match_type
             match_types = set(r.match_type for r in skill_results)
             best_result.match_type = "+".join(sorted(match_types))
-            
+
             # 合并来源
             sources = set(r.source for r in skill_results)
             best_result.skill.sources = sources
-            
+
             merged.append(best_result)
-        
+
         # 3. 排序
         if self.config.merge_strategy == "score_weighted":
             merged.sort(key=lambda x: x.score, reverse=True)
@@ -267,24 +267,24 @@ class UnifiedSkillRetriever:
             ))
         else:
             merged.sort(key=lambda x: x.score, reverse=True)
-        
+
         return merged
-    
+
     async def _get_embedding(self, text: str) -> List[float]:
         """获取文本 embedding (调用线上 API)"""
         # 实现: 调用 OpenAI/Cohere Embedding API
         pass
-    
+
     async def _build_semantic_index(self):
         """构建语义索引"""
         for skill in self.unified_index.values():
             if skill.embedding is None and skill.description:
                 skill.embedding = await self._get_embedding(skill.description)
-    
+
     @staticmethod
     def _cosine_similarity(a: List[float], b: List[float]) -> float:
         return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
-    
+
     @staticmethod
     def _compare_version(v1: str, v2: str) -> int:
         """比较版本号"""
@@ -308,12 +308,12 @@ class UnifiedSkillRetriever:
 ```python
 class SkillSourceDetector:
     """Skill 来源检测器"""
-    
+
     @staticmethod
     def detect(skill_path: str) -> SkillSource:
         """检测 Skill 来源"""
         path = Path(skill_path)
-        
+
         # 检查路径模式
         if "/evolved/" in str(path):
             # 检查是 Agent 级还是全局
@@ -332,21 +332,21 @@ class SkillSourceDetector:
 ```python
 class ConflictResolver:
     """冲突解决器"""
-    
+
     @dataclass
     class Conflict:
         skill_id: str
         versions: Dict[SkillSource, str]
         resolution: str
         resolved_version: str
-    
+
     def resolve(
-        self, 
-        skill_id: str, 
+        self,
+        skill_id: str,
         versions: Dict[SkillSource, str]
     ) -> Conflict:
         """解决版本冲突"""
-        
+
         if len(versions) == 1:
             # 只有一个来源，无冲突
             source = list(versions.keys())[0]
@@ -356,7 +356,7 @@ class ConflictResolver:
                 resolution="single_source",
                 resolved_version=versions[source]
             )
-        
+
         # 多来源: 使用优先级
         # 优先级: EVOLVED > LOCAL > HYBRID > PACKAGE
         priority_order = [
@@ -365,7 +365,7 @@ class ConflictResolver:
             SkillSource.HYBRID,
             SkillSource.PACKAGE
         ]
-        
+
         for source in priority_order:
             if source in versions:
                 return Conflict(
@@ -374,7 +374,7 @@ class ConflictResolver:
                     resolution=f"priority_{source.value}",
                     resolved_version=versions[source]
                 )
-        
+
         # 不应到达这里
         raise ValueError(f"Unexpected conflict state for {skill_id}")
 ```
@@ -390,7 +390,7 @@ class ConflictResolver:
 retriever:
   # 检索模式
   mode: hybrid  # package_only | evolved_only | hybrid
-  
+
   # 语义检索
   semantic:
     enabled: true
@@ -399,22 +399,22 @@ retriever:
     api_key: ${OPENAI_API_KEY}
     top_k: 5
     threshold: 0.7
-    
+
   # 精确匹配
   exact:
     enabled: true
     weight: 1.0
-    
+
   # 标签匹配
   tag:
     enabled: true
     weight: 0.5
-    
+
   # 合并策略
   merge:
     strategy: score_weighted  # score_weighted | priority_first
     final_top_k: 10
-    
+
   # 来源优先级 (可选)
   source_priority:
     evolved: 1    # 进化技能最高优先级
@@ -431,23 +431,23 @@ skill:
   id: "@org/coding-skill"
   name: "Coding Skill"
   description: "Advanced coding capabilities"
-  
+
   # 多来源标注 (自动生成)
   sources:
     - package
     - evolved
-  
+
   # 版本信息
   versions:
     package: "1.0.0"
     evolved: "1.0.1-evolved"
-  
+
   # 当前活跃版本
   active_version: "1.0.1-evolved"
-  
+
   # 语义向量 (可选, 按需生成)
   embedding_cache: "./cache/embeddings/coding-skill.npy"
-  
+
   # 标签
   tags:
     - coding
@@ -509,20 +509,20 @@ skill:
 ```python
 class UnifiedSkillAPI:
     """统一 Skill API"""
-    
+
     def __init__(self, config: RetrievalConfig):
         self.retriever = UnifiedSkillRetriever(config)
-    
+
     async def search(self, query: str) -> List[RetrievalResult]:
         """搜索 Skill"""
         return await self.retriever.retrieve(query)
-    
+
     async def get(self, skill_id: str) -> Optional[SkillMetadata]:
         """获取指定 Skill"""
         return self.retriever.unified_index.get(skill_id)
-    
+
     async def list_by_source(
-        self, 
+        self,
         source: SkillSource
     ) -> List[SkillMetadata]:
         """按来源列出 Skill"""
@@ -530,7 +530,7 @@ class UnifiedSkillAPI:
             s for s in self.retriever.unified_index.values()
             if source in s.sources
         ]
-    
+
     async def rebuild_index(
         self,
         package_skills: List[SkillMetadata],
@@ -549,14 +549,14 @@ class UnifiedSkillAPI:
 ```python
 class PackageManagerIntegration:
     """Package Manager 集成"""
-    
+
     def __init__(self, package_manager):
         self.pm = package_manager
-    
+
     async def get_package_skills(self) -> List[SkillMetadata]:
         """获取 Package Manager 中的所有 Skill"""
         skills = []
-        
+
         for package in await self.pm.list_packages():
             if package.type == "skill":
                 skill = SkillMetadata(
@@ -569,7 +569,7 @@ class PackageManagerIntegration:
                     package_ref=package.name
                 )
                 skills.append(skill)
-        
+
         return skills
 ```
 
@@ -578,20 +578,20 @@ class PackageManagerIntegration:
 ```python
 class SkillBankIntegration:
     """SkillBank 集成"""
-    
+
     def __init__(self, skill_bank_path: str):
         self.path = Path(skill_bank_path)
-    
+
     async def get_evolved_skills(self) -> List[SkillMetadata]:
         """获取所有进化的 Skill"""
         skills = []
-        
+
         # 读取 evolved 目录
         evolved_dir = self.path / "evolved"
         if evolved_dir.exists():
             for skill_file in evolved_dir.rglob("*.yaml"):
                 skill_data = yaml.safe_load(skill_file.read_text())
-                
+
                 skill = SkillMetadata(
                     skill_id=skill_data["id"],
                     name=skill_data.get("name", ""),
@@ -601,7 +601,7 @@ class SkillBankIntegration:
                     tags=skill_data.get("tags", [])
                 )
                 skills.append(skill)
-        
+
         return skills
 ```
 

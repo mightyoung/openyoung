@@ -1,0 +1,60 @@
+metadata:
+  generated_at: '2026-03-09T00:26:01.900660'
+  generator: openyoung/1.0.0
+packages:
+  package_0:
+    checksum: ''
+    dependencies: []
+    source: local
+    version: 1.0.0
+  package_1:
+    checksum: ''
+    dependencies: []
+    source: local
+    version: 1.0.0
+  package_2:
+    checksum: ''
+    dependencies: []
+    source: local
+    version: 1.0.0
+  package_3:
+    checksum: ''
+    dependencies: []
+    source: local
+    version: 1.0.0
+  package_4:
+    checksum: ''
+    dependencies: []
+    source: local
+    version: 1.0.0
+  package_5:
+    checksum: ''
+    dependencies: []
+    source: local
+    version: 1.0.0
+  package_6:
+    checksum: ''
+    dependencies: []
+    source: local
+    version: 1.0.0
+  package_7:
+    checksum: ''
+    dependencies: []
+    source: local
+    version: 1.0.0
+  package_8:
+    checksum: ''
+    dependencies: []
+    source: local
+    version: 1.0.0
+  package_9:
+    checksum: ''
+    dependencies: []
+    source: local
+    version: 1.0.0
+  test_package:
+    checksum: ''
+    dependencies: []
+    source: local
+    version: 1.0.0
+version: '1.0'

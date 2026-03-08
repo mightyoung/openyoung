@@ -3,10 +3,10 @@ YoungAgent Core Types - 对标 OpenCode 架构
 版本: 1.0.0
 """
 
-from enum import Enum
+import os
 from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Any
-
+from enum import Enum
+from typing import Any
 
 # ============================================================================
 # 2.1 Agent Mode
@@ -35,6 +35,36 @@ class PermissionAction(Enum):
 
 
 # ============================================================================
+# 2.4 Execution Config (增强类型安全)
+# ============================================================================
+
+
+@dataclass
+class ExecutionConfig:
+    """执行配置 - 类型安全的执行参数"""
+
+    max_tool_calls: int = 10
+    timeout_seconds: int = 300
+    checkpoint_enabled: bool = True
+    retry_on_error: bool = True
+    max_retries: int = 3
+
+
+# ============================================================================
+# 2.5 Flow Skill Type
+# ============================================================================
+
+
+class FlowSkillType(Enum):
+    """Flow Skill 类型"""
+
+    DEVELOPMENT = "development"
+    RESEARCH = "research"
+    ANALYSIS = "analysis"
+    GENERAL = "general"
+
+
+# ============================================================================
 # 2.3 Agent Config
 # ============================================================================
 
@@ -44,7 +74,7 @@ class PermissionRule:
     """权限规则"""
 
     tool_pattern: str  # 工具名模式（支持通配符）
-    params_pattern: Optional[Dict[str, Any]] = None  # 参数模式
+    params_pattern: dict[str, Any] | None = None  # 参数模式
     action: PermissionAction = PermissionAction.ASK
 
 
@@ -53,7 +83,7 @@ class PermissionConfig:
     """权限配置"""
 
     _global: PermissionAction = PermissionAction.ASK
-    rules: List[PermissionRule] = field(default_factory=list)
+    rules: list[PermissionRule] = field(default_factory=list)
     confirm_message: str = "确认执行此操作?"
 
 
@@ -64,31 +94,37 @@ class AgentConfig:
     name: str
     mode: AgentMode = AgentMode.PRIMARY
 
-    # 模型配置
-    model: str = "gpt-4o"
+    # 模型配置 - 支持环境变量覆盖，默认使用 deepseek（免费额度多）
+    model: str = os.getenv("OPENYOUNG_MODEL", "deepseek-chat")
     temperature: float = 0.7
-    max_tokens: Optional[int] = None
+    max_tokens: int | None = None
 
     # 工具配置
-    tools: List[str] = field(default_factory=list)
+    tools: list[str] = field(default_factory=list)
 
     # 权限配置
     permission: PermissionConfig = field(default_factory=PermissionConfig)
 
-    # Flow Skill
-    flow_skill: Optional[Any] = None
+    # Flow Skill - 使用类型安全的 FlowSkillType
+    flow_skill: FlowSkillType | None = None
 
     # System Prompt
     system_prompt: str = "你是一个有帮助的AI助手。"
 
     # Skills - 参考 Anthropic SKILL.md 格式
-    skills: List[str] = field(default_factory=list)
+    skills: list[str] = field(default_factory=list)
+
+    # Always Skills - 自动加载的技能（不需用户触发）
+    always_skills: list[str] = field(default_factory=list)
 
     # SubAgents - 内置子代理配置
-    sub_agents: List[SubAgentConfig] = field(default_factory=list)
+    sub_agents: list["SubAgentConfig"] = field(default_factory=list)
 
     # 数据目录 - 存储数据中心、评估结果等
-    data_dir: Optional[str] = None
+    data_dir: str | None = None
+
+    # 执行配置 - 使用类型安全的 ExecutionConfig
+    execution: ExecutionConfig = field(default_factory=ExecutionConfig)
 
 
 # ============================================================================
@@ -121,7 +157,7 @@ class SubAgentConfig:
     description: str  # 必须：描述 SubAgent 用途
     model: str = "default"
     temperature: float = 0.7
-    instructions: Optional[str] = None
+    instructions: str | None = None
     hidden: bool = False
 
 
@@ -153,8 +189,9 @@ class Task:
     description: str
     input: str
     status: TaskStatus = TaskStatus.PENDING
-    subagent_type: Optional[SubAgentType] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    subagent_type: SubAgentType | None = None
+    custom_subagent: str | None = None  # 自定义 SubAgent 名称
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 # ============================================================================
@@ -168,8 +205,8 @@ class TaskDispatchParams:
 
     subagent_type: SubAgentType
     task_description: str
-    context: Dict[str, Any] = field(default_factory=dict)
-    session_id: Optional[str] = None
+    context: dict[str, Any] = field(default_factory=dict)
+    session_id: str | None = None
 
 
 # ============================================================================
@@ -197,8 +234,8 @@ class Message:
 
     role: MessageRole
     content: str
-    name: Optional[str] = None
-    tool_call_id: Optional[str] = None
+    name: str | None = None
+    tool_call_id: str | None = None
 
 
 # ============================================================================
@@ -212,4 +249,4 @@ class Tool:
 
     name: str
     description: str
-    input_schema: Dict[str, Any] = field(default_factory=dict)
+    input_schema: dict[str, Any] = field(default_factory=dict)
