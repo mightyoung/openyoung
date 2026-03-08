@@ -36,17 +36,23 @@ class AgentLoader:
         if agent_file.exists():
             return self._load_from_file(agent_file)
 
-        # 3. packages/ 目录 (agent-xxx/agent.yaml)
+        # 3. packages/ 目录 (agent-xxx/agent.yaml 或 xxx/agent.yaml)
         packages_dir = Path("packages")
         if packages_dir.exists():
             for item in packages_dir.iterdir():
                 if item.is_dir():
-                    # 支持 agent-xxx 或 xxx 两种命名
-                    expected = f"agent-{name}"
-                    if item.name == expected or item.name == name:
-                        yaml_file = item / "agent.yaml"
-                        if yaml_file.exists():
+                    yaml_file = item / "agent.yaml"
+                    if yaml_file.exists():
+                        # 检查是否匹配: agent-role -> role, role -> role
+                        if item.name == f"agent-{name}" or item.name == name:
                             return self._load_from_file(yaml_file)
+
+        # 4. subagents/ 目录
+        subagents_dir = Path("subagents")
+        if subagents_dir.exists():
+            agent_file = subagents_dir / name / "agent.yaml"
+            if agent_file.exists():
+                return self._load_from_file(agent_file)
 
         if name == "default":
             return self._get_default_config()
@@ -72,8 +78,18 @@ class AgentLoader:
         )
 
     def _parse_config(self, config: dict) -> AgentConfig:
-        """解析完整配置 - 参考 OpenCode 架构"""
-        model_config = config.get("model", {})
+        """解析完整配置 - 支持两种 model 格式: 字符串或字典"""
+        # 处理 model 字段 - 可能是字符串或字典
+        model_value = config.get("model", "deepseek-chat")
+        if isinstance(model_value, str):
+            # 简单格式: model: "deepseek-chat"
+            model_name = model_value
+            model_config = {}
+        else:
+            # 复杂格式: model: { name: "...", temperature: 0.7 }
+            model_name = model_value.get("name", model_value.get("model", "deepseek-chat"))
+            model_config = model_value
+
         permission_config = config.get("permission", {})
         execution_config = config.get("execution", {})
 
@@ -91,7 +107,7 @@ class AgentLoader:
         return AgentConfig(
             name=config.get("name", "unknown"),
             mode=AgentMode.PRIMARY,
-            model=model_config.get("name", model_config.get("model", "deepseek-chat")),
+            model=model_name,
             temperature=model_config.get("temperature", 0.7),
             max_tokens=model_config.get("max_tokens"),
             tools=config.get("tools", []),
