@@ -4,24 +4,26 @@ Version Manager - Agent 版本管理
 """
 
 import re
-from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, field
 from datetime import datetime
+from pathlib import Path
 
 
 class VersionError(Exception):
     """版本相关错误"""
+
     pass
 
 
 @dataclass
 class AgentVersion:
     """单个版本"""
-    version: str            # 版本号 (如 "1.2.0")
-    changelog: str          # 变更日志
-    released_at: str        # 发布时间
-    compatible_with: str     # 兼容版本
-    breaking_changes: List[str] = field(default_factory=list)
+
+    version: str  # 版本号 (如 "1.2.0")
+    changelog: str  # 变更日志
+    released_at: str  # 发布时间
+    compatible_with: str  # 兼容版本
+    breaking_changes: list[str] = field(default_factory=list)
 
     # 解析后的版本组件
     major: int = 0
@@ -38,11 +40,12 @@ class AgentVersion:
 @dataclass
 class VersionHistory:
     """版本历史"""
+
     agent_name: str
     current_version: str = "0.0.0"
-    versions: List[AgentVersion] = field(default_factory=list)
+    versions: list[AgentVersion] = field(default_factory=list)
 
-    def get_latest(self, level: str = "patch") -> Optional[AgentVersion]:
+    def get_latest(self, level: str = "patch") -> AgentVersion | None:
         """获取最新版本
 
         Args:
@@ -56,9 +59,7 @@ class VersionHistory:
 
         # 按版本号排序
         sorted_versions = sorted(
-            self.versions,
-            key=lambda v: (v.major, v.minor, v.patch),
-            reverse=True
+            self.versions, key=lambda v: (v.major, v.minor, v.patch), reverse=True
         )
 
         return sorted_versions[0]
@@ -83,7 +84,7 @@ class VersionHistory:
         return v1[0] == v2[0]
 
 
-def parse_semver(version: str) -> Optional[tuple]:
+def parse_semver(version: str) -> tuple | None:
     """解析语义版本号
 
     Args:
@@ -92,7 +93,7 @@ def parse_semver(version: str) -> Optional[tuple]:
     Returns:
         (major, minor, patch) 或 None
     """
-    pattern = r'^(\d+)\.(\d+)\.(\d+)$'
+    pattern = r"^(\d+)\.(\d+)\.(\d+)$"
     match = re.match(pattern, version.strip())
     if match:
         return (int(match.group(1)), int(match.group(2)), int(match.group(3)))
@@ -128,7 +129,6 @@ class VersionManager:
     """版本管理器"""
 
     def __init__(self, storage_path: str = ".young/versions"):
-        import os
         from pathlib import Path
 
         self.storage_path = Path(storage_path)
@@ -161,18 +161,20 @@ class VersionManager:
 
             versions = []
             for v in data.get("versions", []):
-                versions.append(AgentVersion(
-                    version=v["version"],
-                    changelog=v.get("changelog", ""),
-                    released_at=v.get("released_at", ""),
-                    compatible_with=v.get("compatible_with", ""),
-                    breaking_changes=v.get("breaking_changes", [])
-                ))
+                versions.append(
+                    AgentVersion(
+                        version=v["version"],
+                        changelog=v.get("changelog", ""),
+                        released_at=v.get("released_at", ""),
+                        compatible_with=v.get("compatible_with", ""),
+                        breaking_changes=v.get("breaking_changes", []),
+                    )
+                )
 
             return VersionHistory(
                 agent_name=agent_name,
                 current_version=data.get("current_version", "0.0.0"),
-                versions=versions
+                versions=versions,
             )
         except Exception:
             return VersionHistory(agent_name=agent_name)
@@ -196,10 +198,10 @@ class VersionManager:
                     "changelog": v.changelog,
                     "released_at": v.released_at,
                     "compatible_with": v.compatible_with,
-                    "breaking_changes": v.breaking_changes
+                    "breaking_changes": v.breaking_changes,
                 }
                 for v in history.versions
-            ]
+            ],
         }
 
         with open(version_file, "w") as f:
@@ -211,7 +213,7 @@ class VersionManager:
         version: str,
         changelog: str = "",
         compatible_with: str = "*",
-        breaking_changes: List[str] = None
+        breaking_changes: list[str] = None,
     ) -> AgentVersion:
         """注册新版本
 
@@ -243,7 +245,7 @@ class VersionManager:
             changelog=changelog,
             released_at=datetime.now().isoformat(),
             compatible_with=compatible_with,
-            breaking_changes=breaking_changes or []
+            breaking_changes=breaking_changes or [],
         )
 
         # 更新历史
@@ -255,7 +257,7 @@ class VersionManager:
 
         return new_version
 
-    def get_current_version(self, agent_name: str) -> Optional[str]:
+    def get_current_version(self, agent_name: str) -> str | None:
         """获取当前版本
 
         Args:
@@ -267,7 +269,7 @@ class VersionManager:
         history = self.get_history(agent_name)
         return history.current_version
 
-    def list_versions(self, agent_name: str, limit: int = 10) -> List[AgentVersion]:
+    def list_versions(self, agent_name: str, limit: int = 10) -> list[AgentVersion]:
         """列出版本历史
 
         Args:
@@ -280,15 +282,11 @@ class VersionManager:
         history = self.get_history(agent_name)
 
         # 按发布时间倒序
-        sorted_versions = sorted(
-            history.versions,
-            key=lambda v: v.released_at,
-            reverse=True
-        )
+        sorted_versions = sorted(history.versions, key=lambda v: v.released_at, reverse=True)
 
         return sorted_versions[:limit]
 
-    def check_update_available(self, agent_name: str, current_version: str) -> Optional[str]:
+    def check_update_available(self, agent_name: str, current_version: str) -> str | None:
         """检查是否有可用更新
 
         Args:
@@ -311,18 +309,19 @@ class VersionManager:
 
 # ========== 便捷函数 ==========
 
+
 def get_version_manager() -> VersionManager:
     """获取版本管理器实例"""
     return VersionManager()
 
 
-async def get_agent_version(agent_name: str) -> Optional[str]:
+async def get_agent_version(agent_name: str) -> str | None:
     """获取 Agent 当前版本"""
     manager = get_version_manager()
     return manager.get_current_version(agent_name)
 
 
-async def list_agent_versions(agent_name: str, limit: int = 10) -> List[AgentVersion]:
+async def list_agent_versions(agent_name: str, limit: int = 10) -> list[AgentVersion]:
     """列出 Agent 版本历史"""
     manager = get_version_manager()
     return manager.list_versions(agent_name, limit)
