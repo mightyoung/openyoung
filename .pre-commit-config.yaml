@@ -18,9 +18,9 @@ repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.5
     hooks:
-      # Run ruff linter
+      # Run ruff linter (report only, don't fix in CI)
       - id: ruff
-        args: [--fix]
+        args: []  # Remove --fix to avoid CI failures
       # Run ruff formatter
       - id: ruff-format
 
