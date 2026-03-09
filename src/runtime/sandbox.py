@@ -7,10 +7,13 @@ Sandbox - AI Agent 沙箱
 - 网络访问控制
 - 文件系统隔离
 - 命令白名单
+- 提示注入检测
+- 敏感信息扫描
 """
 
 import asyncio
 import json
+import logging
 import os
 import resource
 import shutil
@@ -59,6 +62,24 @@ class SandboxConfig:
     # 安全
     isolation_level: str = "process"
 
+    # 安全检测配置
+    enable_prompt_detection: bool = True
+    enable_secret_detection: bool = True
+    prompt_block_threshold: float = 0.8
+    secret_action: str = "warn"  # warn, block, redact
+
+
+# 安全检测结果
+@dataclass
+class SecurityCheckResult:
+    """安全检查结果"""
+
+    passed: bool
+    blocked: bool
+    warning: bool
+    message: str
+    details: dict = field(default_factory=dict)
+
 
 @dataclass
 class ExecutionResult:
@@ -83,6 +104,33 @@ class SandboxInstance:
         self.is_active = True
         self._process: Optional[asyncio.subprocess.Process] = None
 
+        # 安全检测器（延迟初始化）
+        self._prompt_detector = None
+        self._secret_scanner = None
+        self._firewall = None
+        self._logger = logging.getLogger(f"sandbox.{sandbox_id}")
+
+    def _init_security_detectors(self) -> None:
+        """初始化安全检测器"""
+        if self._prompt_detector is None:
+            try:
+                from src.runtime.security import (
+                    PromptInjector,
+                    SecretScanner,
+                    Firewall,
+                    FirewallConfig,
+                )
+
+                self._prompt_detector = PromptInjector(
+                    block_threshold=self.config.prompt_block_threshold
+                )
+                self._secret_scanner = SecretScanner(redact=True)
+                self._firewall = Firewall(
+                    FirewallConfig(allowed_domains=self.config.allowed_domains)
+                )
+            except ImportError as e:
+                self._logger.warning(f"Security detectors not available: {e}")
+
     async def initialize(self) -> None:
         """初始化沙箱"""
         # 创建工作目录
@@ -91,6 +139,9 @@ class SandboxInstance:
         # 设置环境变量
         if self.config.environment:
             os.environ.update(self.config.environment)
+
+        # 初始化安全检测器
+        self._init_security_detectors()
 
     async def execute(
         self,
@@ -101,15 +152,34 @@ class SandboxInstance:
         if not self.working_dir:
             await self.initialize()
 
+        # 安全检测
+        security_result = await self._check_security(code)
+        if security_result.blocked:
+            return ExecutionResult(
+                output="",
+                error=security_result.message,
+                exit_code=1,
+                duration_ms=0,
+                metadata={"security_check": security_result.details},
+            )
+
+        if security_result.warning:
+            self._logger.warning(f"Security warning: {security_result.message}")
+
         start_time = time.time()
+
+        # 收集安全检测元数据
+        security_metadata = {"security_check": security_result.details}
+        if security_result.warning:
+            security_metadata["security_warning"] = security_result.message
 
         try:
             if language == "python":
-                return await self._execute_python(code, start_time)
+                result = await self._execute_python(code, start_time)
             elif language == "nodejs":
-                return await self._execute_nodejs(code, start_time)
+                result = await self._execute_nodejs(code, start_time)
             elif language == "bash":
-                return await self._execute_bash(code, start_time)
+                result = await self._execute_bash(code, start_time)
             else:
                 return ExecutionResult(
                     output="",
@@ -117,6 +187,11 @@ class SandboxInstance:
                     exit_code=1,
                     duration_ms=int((time.time() - start_time) * 1000),
                 )
+
+            # 合并安全元数据
+            if security_result.warning:
+                result.metadata.update(security_metadata)
+            return result
         except asyncio.TimeoutError:
             return ExecutionResult(
                 output="",
@@ -131,6 +206,74 @@ class SandboxInstance:
                 exit_code=1,
                 duration_ms=int((time.time() - start_time) * 1000),
             )
+
+    async def _check_security(self, code: str) -> SecurityCheckResult:
+        """执行安全检测
+
+        Args:
+            code: 待检测的代码
+
+        Returns:
+            SecurityCheckResult: 安全检查结果
+        """
+        # 确保检测器已初始化
+        self._init_security_detectors()
+
+        # 提示注入检测
+        if self.config.enable_prompt_detection and self._prompt_detector:
+            prompt_result = self._prompt_detector.detect(code)
+            if prompt_result.is_malicious:
+                return SecurityCheckResult(
+                    passed=False,
+                    blocked=True,
+                    warning=False,
+                    message=f"Blocked: prompt injection detected ({', '.join(prompt_result.matched_patterns)})",
+                    details={
+                        "type": "prompt_injection",
+                        "confidence": prompt_result.confidence,
+                        "patterns": prompt_result.matched_patterns,
+                    },
+                )
+
+        # 敏感信息检测
+        if self.config.enable_secret_detection and self._secret_scanner:
+            secret_result = self._secret_scanner.scan(code)
+            if secret_result.has_secrets:
+                # 检查是否有高风险敏感信息
+                if self._secret_scanner.is_high_risk(secret_result):
+                    if self.config.secret_action == "block":
+                        return SecurityCheckResult(
+                            passed=False,
+                            blocked=True,
+                            warning=False,
+                            message=f"Blocked: high-risk secrets detected ({len(secret_result.secrets_found)} found)",
+                            details={
+                                "type": "high_risk_secrets",
+                                "secrets": [
+                                    s.type.value for s in secret_result.secrets_found
+                                ],
+                            },
+                        )
+
+                # 否则发出警告
+                return SecurityCheckResult(
+                    passed=True,
+                    blocked=False,
+                    warning=True,
+                    message=f"Warning: secrets detected ({len(secret_result.secrets_found)} found)",
+                    details={
+                        "type": "secrets_detected",
+                        "secrets": [s.type.value for s in secret_result.secrets_found],
+                    },
+                )
+
+        return SecurityCheckResult(
+            passed=True,
+            blocked=False,
+            warning=False,
+            message="Security check passed",
+            details={},
+        )
 
     async def _execute_python(
         self,

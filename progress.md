@@ -1,6 +1,72 @@
 # Progress
 
 ## Session Log
+- 2026-03-09T23:50:00: Phase 3 Rust 服务部署完成
+  - Rust 服务编译成功
+  - gRPC 服务启动成功 (port 50051)
+  - Python 客户端测试通过
+  - 测试结果: 全部通过
+- 2026-03-09T23:40:00: Phase 3 Rust 服务框架完成
+  - 创建 proto 接口定义 (rust/ironclaw-sandbox/proto/security.proto)
+  - 创建 Rust Cargo 配置
+  - 创建 Python 客户端 (security_client.py)
+  - 支持降级到本地 Python 实现
+- 2026-03-09T23:30:00: DangerousCodeDetector 完成
+  - 实现危险代码检测 (eval, exec, 文件操作等)
+  - 支持危险等级: critical/high/medium/low/safe
+  - 支持自定义阻止模式
+  - 15 个测试用例全部通过
+- 2026-03-09T23:25:00: Phase 2.1 Vault 完成
+  - 实现凭据保险库，支持加密存储
+  - 支持访问控制、过期时间、最大使用次数
+  - 13 个测试用例全部通过
+- 2026-03-09T23:15:00: Phase 2.4 Policy Engine 完成
+  - 实现 PolicyEngine, Policy, PolicyRule
+  - 支持预建策略: strict, standard, permissive
+  - 16 个测试用例全部通过
+- 2026-03-09T23:05:00: Phase 2.3 Rate Limiter 完成
+  - 实现 TokenBucket 算法
+  - 实现 RateLimiter 类支持全局和按key限流
+  - 11 个测试用例全部通过
+- 2026-03-09T22:55:00: Phase 1.2 真实样本验证完成
+  - Prompt注入检测: 100% 检测率, 0% 误报率
+  - 敏感信息扫描: 100% 检测率, 0% 误报率 (修复 AWS/Anthropic 模式)
+  - 全部 90 个安全测试通过
+- 2026-03-09T22:45:00: Phase 1.1 白名单能力完成
+  - SecurityConfig: 支持 DetectionMode (blocklist/allowlist/hybrid)
+  - PromptInjector: 支持自定义 allowed_patterns 和 blocked_patterns
+  - 创建 test_whitelist.py: 10 个白名单测试用例
+  - 修复: custom_blocklist 未触发阻止的问题
+  - 全部 90 个安全测试通过
+- 2026-03-09T22:20:00: Phase 1.0 测试覆盖完成
+  - 创建 56 个安全测试用例
+  - 测试 PromptInjector: 核心功能、误报、Unicode、边界
+  - 测试 SecretScanner: 核心功能、脱敏、熵检测、高风险
+  - 测试 Firewall: 规则、IP 检测、域名清理
+  - 真实攻击样本库: 14 个 prompt + 7 个 secrets
+  - 修复发现的问题: 置信度调整、大小写修复
+- 2026-03-09T22:10:00: Phase 1 专家审视修复
+  - 修复 PromptInjector 误报: system: 只匹配行首
+  - 添加 Unicode 混淆检测: iɡɴᴏʀᴇ 等变体
+  - 添加熵检测: 减少 SecretScanner 假阳性
+  - 验证通过: Sandbox 集成正常
+- 2026-03-09T21:50:00: Phase 1 Complete: Python 原生安全层实现
+  - 创建 `src/runtime/security/` 模块
+  - 实现 `PromptInjector` - 提示注入检测器
+  - 实现 `SecretScanner` - 敏感信息扫描器
+  - 实现 `Firewall` - 网络防火墙
+  - 集成到 `Sandbox` - 安全检测已启用
+- 2026-03-09T22:01:34.478341: 你好！很高兴见到你！😊 有什么我可以帮助你的吗？无论是回答问题、聊天还是其他任何事情，我都很乐意为你提供帮助！...
+- 2026-03-09T18:07:56.178756: 我将使用Deep Research技能来获取知乎热榜信息，然后创建一个爬取脚本来获取详细信息。
+
+首先，让我使用Deep Research技能了解知乎热榜的结构：
+
+```python
+# 使用Dee...
+- 2026-03-09T17:46:15.636815: 1 + 1 = 2
+
+这是一个基本的数学加法运算。...
+- 2026-03-09T17:45:17.640115: 1 + 1 = 2...
 - 2026-03-09T17:26:11.600961: 1+1等于2。...
 - 2026-03-09T17:24:30.237253: Hello! 👋 How can I help you today?...
 - 2026-03-09T15:45:26.939402: 你好！我是你的AI助手，很高兴为你服务。

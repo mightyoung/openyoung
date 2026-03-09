@@ -1,0 +1,108 @@
+syntax = "proto3";
+
+package ironclaw;
+
+// 安全检测服务
+service SecurityService {
+    // 提示注入检测
+    rpc DetectPromptInjection(PromptInjectionRequest) returns (PromptInjectionResponse);
+
+    // 敏感信息扫描
+    rpc ScanSecrets(SecretScanRequest) returns (SecretScanResponse);
+
+    // 危险代码检测
+    rpc DetectDangerousCode(DangerousCodeRequest) returns (DangerousCodeResponse);
+
+    // 防火墙检查
+    rpc CheckFirewall(FirewallRequest) returns (FirewallResponse);
+
+    // 批量检测
+    rpc BatchCheck(BatchCheckRequest) returns (BatchCheckResponse);
+}
+
+// ========== Prompt Injection ==========
+
+message PromptInjectionRequest {
+    string content = 1;
+    double threshold = 2;
+    repeated string allowed_patterns = 3;
+    repeated string blocked_patterns = 4;
+}
+
+message PromptInjectionResponse {
+    bool is_malicious = 1;
+    string severity = 2;
+    repeated string matched_patterns = 3;
+    double confidence = 4;
+    string sanitized_content = 5;
+}
+
+// ========== Secret Scanning ==========
+
+message SecretScanRequest {
+    string content = 1;
+    bool redact = 2;
+    bool check_entropy = 3;
+}
+
+message SecretScanResponse {
+    bool has_secrets = 1;
+    repeated SecretMatch secrets_found = 2;
+    string redacted_content = 3;
+}
+
+message SecretMatch {
+    string type = 1;
+    int32 start = 2;
+    int32 end = 3;
+    string snippet = 4;
+}
+
+// ========== Dangerous Code Detection ==========
+
+message DangerousCodeRequest {
+    string code = 1;
+    string language = 2;
+    string block_threshold = 3;
+}
+
+message DangerousCodeResponse {
+    bool is_safe = 1;
+    string level = 2;
+    repeated string warnings = 3;
+    repeated DangerousPattern detected_patterns = 4;
+}
+
+message DangerousPattern {
+    string name = 1;
+    string level = 2;
+    string message = 3;
+}
+
+// ========== Firewall ==========
+
+message FirewallRequest {
+    string domain = 1;
+    string ip = 2;
+    string url = 3;
+}
+
+message FirewallResponse {
+    bool allowed = 1;
+    string action = 2;
+    string reason = 3;
+}
+
+// ========== Batch Check ==========
+
+message BatchCheckRequest {
+    repeated PromptInjectionRequest prompt_requests = 1;
+    repeated SecretScanRequest secret_requests = 2;
+    repeated DangerousCodeRequest code_requests = 3;
+}
+
+message BatchCheckResponse {
+    repeated PromptInjectionResponse prompt_responses = 1;
+    repeated SecretScanResponse secret_responses = 2;
+    repeated DangerousCodeResponse code_responses = 3;
+}

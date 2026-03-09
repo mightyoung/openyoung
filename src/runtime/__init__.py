@@ -26,12 +26,26 @@ from .sandbox import (
     SandboxType,
     create_sandbox,
 )
-from .security import (
+# Import from old security_basic.py for backward compatibility
+from .security_basic import (
     IsolationLevel,
     SecurityManager,
-    SecurityPolicy,
+    SecurityPolicy as OldSecurityPolicy,
     create_security_manager,
 )
+
+# Import from new security package
+from .security import (
+    PromptInjector,
+    SecretScanner,
+    Firewall,
+    SecurityConfig,
+    RateLimiter,
+    PolicyEngine,
+    Vault,
+    DangerousCodeDetector,
+)
+from .security_client import SecurityServiceClient, create_security_client
 
 __all__ = [
     # Sandbox
@@ -44,11 +58,23 @@ __all__ = [
     "SandboxPool",
     "PoolConfig",
     "create_pool",
-    # Security
+    # Security (backward compatible)
     "SecurityManager",
-    "SecurityPolicy",
+    "OldSecurityPolicy",
     "IsolationLevel",
     "create_security_manager",
+    # Security (new)
+    "PromptInjector",
+    "SecretScanner",
+    "Firewall",
+    "SecurityConfig",
+    "RateLimiter",
+    "PolicyEngine",
+    "Vault",
+    "DangerousCodeDetector",
+    # Security Client
+    "SecurityServiceClient",
+    "create_security_client",
     # Audit
     "AuditLogger",
     "AuditEvent",
