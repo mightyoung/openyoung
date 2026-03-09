@@ -1056,11 +1056,11 @@ def eval_run(task: str, agent: str, metrics: str, output: str, format: str):
                 output_data["details"] = eval_result.details
             click.echo(json.dumps(output_data, indent=2, ensure_ascii=False))
         else:
-            click.echo(f"\n=== Evaluation Results ===")
+            click.echo("\n=== Evaluation Results ===")
             click.echo(f"Task: {task}")
             click.echo(f"Agent: {agent}")
             click.echo(f"Score: {score:.2f}")
-            click.echo(f"\nActual Result:")
+            click.echo("\nActual Result:")
             click.echo(actual_result[:500] + "..." if len(actual_result) > 500 else actual_result)
 
         # Save to file if specified
