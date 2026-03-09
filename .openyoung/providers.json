@@ -22,7 +22,7 @@
       "moonshot-v1-128k",
       "kimi-k2.5"
     ],
-    "enabled": true
+    "enabled": false
   },
   "qwen": {
     "name": "qwen",
@@ -35,7 +35,7 @@
       "qwen-max",
       "qwen-max-longcontext"
     ],
-    "enabled": true
+    "enabled": false
   },
   "glm": {
     "name": "glm",
@@ -48,7 +48,7 @@
       "glm-4-flash",
       "glm-4.7"
     ],
-    "enabled": true
+    "enabled": false
   },
   "openai": {
     "name": "openai",
@@ -60,6 +60,6 @@
       "gpt-4-turbo",
       "gpt-3.5-turbo"
     ],
-    "enabled": true
+    "enabled": false
   }
 }
