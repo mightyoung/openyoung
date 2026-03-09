@@ -96,12 +96,27 @@ openyoung agent version-add agent-coder 1.0.0 --changelog "Initial release"
 |---------|-------------|
 | `openyoung run <task>` | Run agent with task description |
 | `openyoung agent list` | List available agents |
+| `openyoung agent info <agent>` | Show agent details |
 | `openyoung agent search <query>` | Semantic search agents |
 | `openyoung agent compare <a> <b>` | Compare two agents |
 | `openyoung agent evaluate <agent>` | Quality evaluation |
 | `openyoung agent intent <query>` | Intent analysis |
-| `openyoung agent stats` | Usage statistics |
-| `openyoung agent versions <agent>` | Version history |
+| `openyoung eval list` | List evaluation metrics |
+| `openyoung eval trend <agent>` | Show evaluation trend |
+| `openyoung eval run <task>` | Run evaluation on a task |
+| `openyoung eval server` | Start eval API server |
+| `openyoung data runs` | List run records |
+| `openyoung data list` | List run records (alias) |
+| `openyoung memory list` | List memories |
+| `openyoung memory search <query>` | Search memories |
+| `openyoung mcp servers` | List MCP servers |
+| `openyoung skills list` | List skills |
+| `openyoung config list` | List configuration |
+| `openyoung llm list` | List LLM providers |
+| `openyoung package list` | List packages |
+| `openyoung source list` | List sources |
+| `openyoung channel list` | List channels |
+| `openyoung templates list` | List templates |
 | `openyoung import github <repo>` | Import from GitHub |
 | `openyoung --help` | Show help |
 
@@ -274,12 +289,27 @@ openyoung agent version-add agent-coder 1.0.0 --changelog "初始版本"
 |------|------|
 | `openyoung run <任务>` | 使用任务描述运行 agent |
 | `openyoung agent list` | 列出可用 agents |
+| `openyoung agent info <agent>` | 显示 agent 详情 |
 | `openyoung agent search <查询>` | 语义搜索 agents |
 | `openyoung agent compare <a> <b>` | 对比两个 agents |
 | `openyoung agent evaluate <agent>` | 质量评估 |
 | `openyoung agent intent <查询>` | 意图分析 |
-| `openyoung agent stats` | 使用统计 |
-| `openyoung agent versions <agent>` | 版本历史 |
+| `openyoung eval list` | 列出评估指标 |
+| `openyoung eval trend <agent>` | 显示评估趋势 |
+| `openyoung eval run <任务>` | 运行任务评估 |
+| `openyoung eval server` | 启动评估 API 服务器 |
+| `openyoung data runs` | 列出运行记录 |
+| `openyoung data list` | 列出运行记录（别名） |
+| `openyoung memory list` | 列出记忆 |
+| `openyoung memory search <查询>` | 搜索记忆 |
+| `openyoung mcp servers` | 列出 MCP 服务器 |
+| `openyoung skills list` | 列出技能 |
+| `openyoung config list` | 列出配置 |
+| `openyoung llm list` | 列出 LLM 提供商 |
+| `openyoung package list` | 列出包 |
+| `openyoung source list` | 列出数据源 |
+| `openyoung channel list` | 列出通道 |
+| `openyoung templates list` | 列出模板 |
 | `openyoung import github <仓库>` | 从 GitHub 导入 |
 | `openyoung --help` | 显示帮助 |
 
