@@ -60,35 +60,39 @@ class TaskExecutor:
         Returns:
             执行结果字符串
         """
-        # ========== FlowSkill 智能路由 ==========
-        if self._flow_skill:
-            try:
-                should_delegate = await self._flow_skill.should_delegate(
-                    task.description, {}
-                )
-                if should_delegate:
-                    subagent_type = await self._flow_skill.get_subagent_type(
-                        task.description
+        try:
+            # ========== FlowSkill 智能路由 ==========
+            if self._flow_skill:
+                try:
+                    should_delegate = await self._flow_skill.should_delegate(
+                        task.description, {}
                     )
-                    if subagent_type and subagent_type != "general":
-                        print(f"[FlowSkill] Delegating to subagent: {subagent_type}")
-                        task.subagent_type = subagent_type
-                        return await self._delegate_to_subagent(task)
-            except Exception as e:
-                # 使用异常处理器
-                context = ExceptionContext(
-                    function="execute",
-                    additional_data={"task": task.description[:50]},
-                )
-                self._exception_handler.handle_exception(e, context, reraise=False)
-                print(f"[FlowSkill] Smart routing error: {e}")
+                    if should_delegate:
+                        subagent_type = await self._flow_skill.get_subagent_type(
+                            task.description
+                        )
+                        if subagent_type and subagent_type != "general":
+                            print(f"[FlowSkill] Delegating to subagent: {subagent_type}")
+                            task.subagent_type = subagent_type
+                            return await self._delegate_to_subagent(task)
+                except Exception as e:
+                    # 使用异常处理器
+                    context = ExceptionContext(
+                        function="execute",
+                        additional_data={"task": task.description[:50]},
+                    )
+                    self._exception_handler.handle_exception(e, context, reraise=False)
+                    print(f"[FlowSkill] Smart routing error: {e}")
 
-        # 如果是 SubAgent 调用，委托给对应 SubAgent
-        if task.subagent_type:
-            return await self._delegate_to_subagent(task)
+            # 如果是 SubAgent 调用，委托给对应 SubAgent
+            if task.subagent_type:
+                return await self._delegate_to_subagent(task)
 
-        # 执行任务
-        return await self._execute_task(task)
+            # 执行任务
+            return await self._execute_task(task)
+        except Exception as e:
+            print(f"[ERROR] TaskExecutor.execute failed: {type(e).__name__}: {e}")
+            return f"Error: {type(e).__name__}: {e}"
 
     async def _delegate_to_subagent(self, task: Task) -> str:
         """委托给 SubAgent"""
@@ -189,6 +193,7 @@ class TaskExecutor:
             return "已达到最大工具调用次数"
         except Exception as e:
             # 统一异常处理
+            print(f"[ERROR] _execute_task failed: {type(e).__name__}: {e}")
             context = ExceptionContext(
                 function="_execute_task",
                 additional_data={"task": task.description[:50]},
@@ -196,7 +201,7 @@ class TaskExecutor:
             converted = self._exception_handler.handle_exception(
                 e, context, reraise=False
             )
-            return f"Error: {converted}"
+            return f"Error: {type(e).__name__}: {converted}"
 
     def set_history(self, history: list):
         """设置历史消息"""
