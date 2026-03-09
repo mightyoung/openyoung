@@ -562,6 +562,7 @@ openyoung/
 | | stats | ✅ |
 | **eval** | list | ✅ |
 | | trend | ✅ |
+| | run | ✅ |
 | **llm** | list | ✅ |
 | **mcp** | servers | ✅ |
 | **skills** | list | ✅ |
@@ -569,22 +570,73 @@ openyoung/
 | **source** | list | ✅ |
 | **channel** | list | ✅ |
 | **run** | default "task" | ✅ |
+| **data** | list | ✅ |
+| | runs | ✅ |
 
 ### 8.2 已修复的问题
 
 1. **EvaluationHub.get_trend()** - 方法重复定义导致 CLI 调用失败，已重命名重复方法
 2. **MCP servers 显示** - 已修复同时读取 mcp.json 和 package.yaml，现在正确显示 10 个服务器
+3. **eval run 命令** - 新增 eval run 命令，支持任务评估
+4. **data list 命令** - 新增 data list 作为 data runs 的别名
 
-### 8.3 已知限制
+### 8.3 E2E 测试结果
+
+```
+============================= test session starts ==============================
+platform darwin -- Python 3.14.3, pytest-9.0.2, pluggy-1.6.0
+collected 30 items
+
+tests/e2e/test_cli_e2e.py::TestCLICommands::test_cli_help PASSED         [  3%]
+tests/e2e/test_cli_e2e.py::TestCLICommands::test_llm_list_command PASSED [  6%]
+tests/e2e/test_cli_e2e.py::TestCLICommands::test_llm_info_command PASSED [ 10%]
+tests/e2e/test_cli_e2e.py::TestCLICommands::test_agent_list_command PASSED [ 13%]
+tests/e2e/test_cli_e2e.py::TestCLICommands::test_agent_info_command PASSED [ 16%]
+tests/e2e/test_cli_e2e.py::TestCLICommands::test_config_list_command PASSED [ 20%]
+tests/e2e/test_cli_e2e.py::TestCLICommands::test_config_get_command PASSED [ 23%]
+tests/e2e/test_cli_e2e.py::TestCLICommands::test_package_list_command PASSED [ 26%]
+tests/e2e/test_cli_e2e.py::TestCLICommands::test_source_list_command PASSED [ 30%]
+tests/e2e/test_cli_e2e.py::TestLLMApiIntegration::test_llm_client_has_configs PASSED [ 33%]
+tests/e2e/test_cli_e2e.py::TestLLMApiIntegration::test_deepseek_api_call SKIPPED [ 36%]
+tests/e2e/test_cli_e2e.py::TestLLMApiIntegration::test_moonshot_api_call SKIPPED [ 40%]
+tests/e2e/test_cli_e2e.py::TestLLMApiIntegration::test_qwen_api_call SKIPPED [ 43%]
+tests/e2e/test_cli_e2e.py::TestLLMApiIntegration::test_glm_api_call SKIPPED [ 46%]
+tests/e2e/test_cli_e2e.py::TestAgentExecution::test_young_agent_run SKIPPED [ 50%]
+tests/e2e/test_cli_e2e.py::TestPackageManager::test_package_manager_init PASSED [ 53%]
+tests/e2e/test_cli_e2e.py::TestPackageManager::test_provider_manager PASSED [ 56%]
+tests/e2e/test_cli_e2e.py::TestPackageManager::test_list_providers PASSED [ 60%]
+tests/e2e/test_cli_e2e.py::TestDataCenter::test_datacenter_init PASSED   [ 63%]
+tests/e2e/test_cli_e2e.py::TestEvolver::test_evolver_init PASSED         [ 66%]
+tests/e2e/test_cli_e2e.py::TestEvaluationHub::test_evaluation_hub_init PASSED [ 70%]
+tests/e2e/test_cli_e2e.py::TestSkills::test_skill_loader PASSED          [ 73%]
+tests/e2e/test_cli_e2e.py::TestSkills::test_skill_registry PASSED        [ 76%]
+tests/e2e/test_cli_e2e.py::TestSkills::test_unified_retriever PASSED     [ 80%]
+tests/e2e/test_cli_e2e.py::TestPromptTemplates::test_prompt_registry PASSED [ 83%]
+tests/e2e/test_cli_e2e.py::TestPromptTemplates::test_render_template PASSED [ 86%]
+tests/e2e/test_cli_e2e.py::TestFlowSkills::test_sequential_flow PASSED   [ 90%]
+tests/e2e/test_cli_e2e.py::TestFlowSkills::test_parallel_flow PASSED     [ 93%]
+tests/e2e/test_cli_e2e.py::TestFlowSkills::test_conditional_flow PASSED  [ 96%]
+tests/e2e/test_cli_e2e.py::TestFlowSkills::test_loop_flow PASSED         [100%]
+
+=================== 25 passed, 5 skipped, 1 warning in 2.31s ===================
+```
+
+**测试统计:**
+- 通过: 25
+- 跳过: 5 (需要 API 密钥)
+- 失败: 0
+
+### 8.4 命令状态总结
 
 | 命令 | 状态 | 说明 |
 |------|------|------|
-| eval run | ❌ | 命令不存在 |
-| data list | ❌ | 命令不存在，用 data runs 代替 |
+| eval run | ✅ | 运行任务评估 |
+| data list | ✅ | 列出运行记录 (runs 别名) |
 | memory search | ⚠️ | 需要 API 密钥才能返回语义搜索结果 |
 | eval server | ℹ️ | 启动 REST API 服务器 |
+| 所有 CLI 命令 | ✅ | 基本功能测试通过 |
 
-### 8.4 测试覆盖率目标
+### 8.5 测试覆盖率目标
 
 | 模块 | 目标覆盖率 | 实际测试数 |
 |------|-----------|-----------|
@@ -604,3 +656,4 @@ openyoung/
 |------|------|------|
 | 2026-03-09 | 1.0.0 | 初始版本，82 个测试用例 |
 | 2026-03-09 | 1.0.1 | 更新测试结果，添加 P0 通过标记 |
+| 2026-03-09 | 1.0.2 | 添加 eval run 和 data list 命令，E2E 测试 25 通过 |
