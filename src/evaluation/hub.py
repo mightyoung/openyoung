@@ -666,7 +666,7 @@ class EvaluationHub:
         """清空评估结果"""
         self._results.clear()
 
-    def get_trend(self, limit: int = 10) -> dict:
+    def get_results_trend(self, limit: int = 10) -> dict:
         """获取评估趋势数据
 
         Args:
