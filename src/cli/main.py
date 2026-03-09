@@ -999,9 +999,13 @@ def eval_trend(agent_name: str, metric: str):
 @eval.command("run")
 @click.argument("task")
 @click.option("--agent", "-a", default="default", help="Agent to use")
-@click.option("--metrics", "-m", default="task_completion", help="Evaluation metrics (comma-separated)")
+@click.option(
+    "--metrics", "-m", default="task_completion", help="Evaluation metrics (comma-separated)"
+)
 @click.option("--output", "-o", default=None, help="Output file for results")
-@click.option("--format", "-f", default="text", type=click.Choice(["text", "json"]), help="Output format")
+@click.option(
+    "--format", "-f", default="text", type=click.Choice(["text", "json"]), help="Output format"
+)
 def eval_run(task: str, agent: str, metrics: str, output: str, format: str):
     """Run evaluation on a task
 
@@ -1041,13 +1045,14 @@ def eval_run(task: str, agent: str, metrics: str, output: str, format: str):
         # Display results
         if format == "json":
             import json
+
             output_data = {
                 "task": task,
                 "agent": agent,
                 "score": score,
                 "actual_result": actual_result,
             }
-            if eval_result and hasattr(eval_result, 'details'):
+            if eval_result and hasattr(eval_result, "details"):
                 output_data["details"] = eval_result.details
             click.echo(json.dumps(output_data, indent=2, ensure_ascii=False))
         else:
@@ -1061,6 +1066,7 @@ def eval_run(task: str, agent: str, metrics: str, output: str, format: str):
         # Save to file if specified
         if output:
             import json
+
             Path(output).parent.mkdir(parents=True, exist_ok=True)
             output_data = {
                 "task": task,
@@ -1068,7 +1074,7 @@ def eval_run(task: str, agent: str, metrics: str, output: str, format: str):
                 "score": score,
                 "actual_result": actual_result,
             }
-            if eval_result and hasattr(eval_result, 'details'):
+            if eval_result and hasattr(eval_result, "details"):
                 output_data["details"] = eval_result.details
             with open(output, "w", encoding="utf-8") as f:
                 json.dump(output_data, f, indent=2, ensure_ascii=False)
