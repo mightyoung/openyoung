@@ -1049,9 +1049,50 @@ openyoung eval history
 
 # 查看评估详情
 openyoung eval info <eval_id>
+
+# 列出评估指标
+openyoung eval list
+
+# 查看评估趋势
+openyoung eval trend <agent_name> --metric <metric>
+
+# 运行评估任务
+openyoung eval run "任务描述" --agent <agent> --metrics <metrics>
+
+# 启动评估 API 服务器
+openyoung eval server
 ```
 
-### 15.14 初始化
+### 15.14 数据管理
+
+```bash
+# 列出运行记录
+openyoung data runs
+openyoung data list  # 别名
+
+# 查看统计
+openyoung data stats
+
+# 查看步骤
+openyoung data steps <run_id>
+
+# 查看仪表盘
+openyoung data dashboard
+
+# 导出数据
+openyoung data export --output <dir>
+
+# 许可证管理
+openyoung data license --list
+
+# 团队管理
+openyoung data team --list
+
+# 访问日志
+openyoung data access
+```
+
+### 15.15 初始化
 
 ```bash
 # 初始化配置
@@ -1059,6 +1100,29 @@ openyoung init
 
 # 强制重新初始化
 openyoung init --force
+```
+
+### 15.16 Skills 管理
+
+```bash
+# 列出可用 Skills
+openyoung skills list
+
+# 创建 Skill
+openyoung skills create <name>
+```
+
+### 15.17 MCP Servers
+
+```bash
+# 列出 MCP 服务器
+openyoung mcp servers
+
+# 启动 MCP 服务器
+openyoung mcp start <server>
+
+# 停止 MCP 服务器
+openyoung mcp stop <server>
 ```
 
 ---
