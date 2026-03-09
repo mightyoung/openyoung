@@ -56,9 +56,9 @@ except ImportError:
 # MCP 集成
 try:
     from .mcp import (
-        MCPServerManager,
-        MCPServerConfig,
         MCPLoader,
+        MCPServerConfig,
+        MCPServerManager,
     )
 except ImportError:
     MCPServerManager = None
@@ -91,7 +91,7 @@ except ImportError:
 
 # IO
 try:
-    from .io import AgentIO, AgentExporter, AgentImporter
+    from .io import AgentExporter, AgentImporter, AgentIO
 except ImportError:
     AgentIO = None
     AgentExporter = None
@@ -117,7 +117,7 @@ except ImportError:
 
 # 依赖
 try:
-    from .dependency import DependencyResolver, DependencyInstaller
+    from .dependency import DependencyInstaller, DependencyResolver
 except ImportError:
     DependencyResolver = None
     DependencyInstaller = None

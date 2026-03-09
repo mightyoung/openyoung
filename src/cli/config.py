@@ -5,6 +5,7 @@ Config Command - config 子命令
 """
 
 import json
+
 import click
 
 from .context import CLIContext
@@ -68,7 +69,7 @@ def config_set(obj, key, value):
     if ctx.save_config(config):
         click.echo(f"✅ Set {key} = {parsed_value}")
     else:
-        click.echo(f"❌ Failed to save configuration", err=True)
+        click.echo("❌ Failed to save configuration", err=True)
 
 
 @config_group.command("unset")
@@ -88,7 +89,7 @@ def config_unset(obj, key):
         if ctx.save_config(config):
             click.echo(f"✅ Removed {key}")
         else:
-            click.echo(f"❌ Failed to save configuration", err=True)
+            click.echo("❌ Failed to save configuration", err=True)
     else:
         click.echo(f"Key not found: {key}")
 
@@ -133,7 +134,7 @@ def config_reset(obj):
     if ctx.save_config({}):
         click.echo("✅ Configuration reset to defaults")
     else:
-        click.echo(f"❌ Failed to reset configuration", err=True)
+        click.echo("❌ Failed to reset configuration", err=True)
 
 
 def _parse_value(value: str):

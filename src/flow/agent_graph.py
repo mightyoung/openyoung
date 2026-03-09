@@ -19,11 +19,13 @@ from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from src.flow.langgraph_adapter import (
-    AgentState as BaseAgentState,
-    FlowNode,
-    FlowEdge,
-    NodeType,
     LANGGRAPH_AVAILABLE,
+    FlowEdge,
+    FlowNode,
+    NodeType,
+)
+from src.flow.langgraph_adapter import (
+    AgentState as BaseAgentState,
 )
 
 logger = logging.getLogger(__name__)
@@ -262,7 +264,7 @@ class AgentGraphBuilder:
         if not LANGGRAPH_AVAILABLE:
             raise RuntimeError("LangGraph not available. Install langgraph package.")
 
-        from langgraph.graph import StateGraph, END
+        from langgraph.graph import END, StateGraph
 
         # 创建状态图
         self._graph = StateGraph(AgentGraphState)

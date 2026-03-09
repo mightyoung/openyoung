@@ -1,8 +1,0 @@
-[package]
-name = "chat2"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
-chrono = "0.4"
-rand = "0.8"

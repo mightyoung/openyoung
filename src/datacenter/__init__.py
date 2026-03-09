@@ -56,6 +56,16 @@ from .license import (
     verify_watermark,
 )
 
+# Quality Scoring
+from .quality import (
+    DataQualityReport,
+    DataQualityScorer,
+    QualityDimension,
+    QualityScore,
+    create_scorer,
+    score_data_resource,
+)
+
 # Run Tracking
 from .run_tracker import RunRecord, RunTracker, get_run_tracker
 
@@ -73,16 +83,6 @@ from .token_tracker import TokenRecord, TokenTracker, get_token_tracker
 
 # Unified Store
 from .unified_store import UnifiedStore, get_unified_store
-
-# Quality Scoring
-from .quality import (
-    DataQualityReport,
-    DataQualityScorer,
-    QualityDimension,
-    QualityScore,
-    create_scorer,
-    score_data_resource,
-)
 
 __all__ = [
     # Original

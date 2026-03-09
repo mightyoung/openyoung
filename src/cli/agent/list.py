@@ -3,6 +3,7 @@ Agent List Command - agent list 子命令
 """
 
 import click
+
 from src.hub.registry import AgentRegistry
 
 

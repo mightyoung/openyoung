@@ -13,8 +13,8 @@ from pydantic import ValidationError
 
 # 导入配置模型
 from src.cli.config_models import (
-    AppConfig,
     AgentConfigModel,
+    AppConfig,
     LLMConfig,
 )
 

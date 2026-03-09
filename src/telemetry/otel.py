@@ -22,28 +22,29 @@ logger = logging.getLogger(__name__)
 
 # OpenTelemetry 依赖检查
 try:
-    from opentelemetry import trace
+    # Metrics support
+    from opentelemetry import metrics, trace
+    from opentelemetry.context import Context
+    from opentelemetry.sdk.metrics import MeterProvider
+    from opentelemetry.sdk.metrics.export import (
+        ConsoleMetricExporter,
+        PeriodicExportingMetricReader,
+    )
+    from opentelemetry.sdk.resources import Resource
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
-    from opentelemetry.sdk.resources import Resource
     from opentelemetry.trace import SpanKind, Status, StatusCode
     from opentelemetry.trace.propagation import set_span_in_context
-    from opentelemetry.context import Context
-
-    # Metrics support
-    from opentelemetry import metrics
-    from opentelemetry.sdk.metrics import MeterProvider
-    from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader, ConsoleMetricExporter
 
     # OTLP exporter
     try:
-        from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
         from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
+        from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
         OTLP_AVAILABLE = True
     except ImportError:
         try:
-            from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
             from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
+            from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
             OTLP_AVAILABLE = True
         except ImportError:
             OTLP_AVAILABLE = False
@@ -391,7 +392,7 @@ class MetricsCollector:
     - Flow 步骤统计
     """
 
-    _instance: Optional["MetricsCollector"] = None
+    _instance: Optional[MetricsCollector] = None
     _counters: Dict[str, Any] = {}
     _histograms: Dict[str, Any] = {}
 

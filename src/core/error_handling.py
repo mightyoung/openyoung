@@ -5,7 +5,7 @@ Error Handling Utilities
 """
 
 from dataclasses import dataclass
-from typing import TypeVar, Generic, Callable
+from typing import Callable, Generic, TypeVar
 
 T = TypeVar('T')
 E = TypeVar('E')

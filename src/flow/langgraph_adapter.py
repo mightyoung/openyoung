@@ -21,10 +21,10 @@ logger = logging.getLogger(__name__)
 
 # LangGraph 依赖检查
 try:
-    from langgraph.graph import StateGraph, END
-    from langgraph.prebuilt import create_react_agent
-    from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
+    from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
     from langchain_core.tools import BaseTool
+    from langgraph.graph import END, StateGraph
+    from langgraph.prebuilt import create_react_agent
     LANGGRAPH_AVAILABLE = True
 except ImportError:
     LANGGRAPH_AVAILABLE = False
@@ -76,17 +76,17 @@ class StateGraphConverter:
         self.state_schema = state_schema or AgentState
         self._initialized = False
 
-    def add_node(self, node: FlowNode) -> "StateGraphConverter":
+    def add_node(self, node: FlowNode) -> StateGraphConverter:
         """添加节点"""
         self.nodes[node.id] = node
         return self
 
-    def add_edge(self, edge: FlowEdge) -> "StateGraphConverter":
+    def add_edge(self, edge: FlowEdge) -> StateGraphConverter:
         """添加边"""
         self.edges.append(edge)
         return self
 
-    def build(self) -> "StateGraphConverter":
+    def build(self) -> StateGraphConverter:
         """构建 StateGraph"""
         if not LANGGRAPH_AVAILABLE:
             raise RuntimeError("LangGraph not available")
@@ -149,7 +149,7 @@ class ReActAgentFactory:
         self.agent = create_react_agent(llm, tools, state_modifier=state_modifier)
         return self.agent
 
-    def run(self, input_data: Union[str, Dict, List[BaseMessage]]) -> Dict[str, Any]:
+    def run(self, input_data: str | Dict | List[BaseMessage]) -> Dict[str, Any]:
         """运行 Agent"""
         if not self.agent:
             raise RuntimeError("Agent not created. Call create_react_agent first.")
@@ -234,7 +234,7 @@ class LangGraphAdapter:
     def run_agent(
         self,
         agent: Any,
-        input_data: Union[str, Dict, List[BaseMessage]]
+        input_data: str | Dict | List[BaseMessage]
     ) -> Dict[str, Any]:
         """运行 Agent
 

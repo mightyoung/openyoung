@@ -11,12 +11,12 @@ from datetime import datetime
 from typing import Any, Optional
 
 from .models import (
+    EvaluationDimension,
     TestCase,
     TestReport,
     TestResult,
     TestSuite,
     TestType,
-    EvaluationDimension,
 )
 
 

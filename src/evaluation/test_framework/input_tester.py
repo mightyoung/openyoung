@@ -15,10 +15,10 @@ from datetime import datetime
 from typing import Any, Optional
 
 from .models import (
+    EvaluationDimension,
     TestCase,
     TestResult,
     TestType,
-    EvaluationDimension,
 )
 
 

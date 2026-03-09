@@ -14,10 +14,10 @@ from .dispatcher import TaskDispatcher
 
 # Mixins - 可组合的 Agent 功能
 from .mixins import (
-    AgentToolsMixin,
-    AgentMemoryMixin,
-    AgentHooksMixin,
     AgentExceptionMixin,
+    AgentHooksMixin,
+    AgentMemoryMixin,
+    AgentToolsMixin,
 )
 
 # Protocol definitions for dependency injection

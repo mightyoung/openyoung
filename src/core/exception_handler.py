@@ -10,11 +10,11 @@ Exception Handler - 统一异常处理
 参考 Python 最佳实践 (Raymond Hettinger)
 """
 
+import traceback
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import Any, Callable, Optional
-import traceback
 
 
 class ErrorSeverity(Enum):
@@ -214,16 +214,16 @@ class ExceptionHandler:
         """
         # 避免循环导入
         from src.core.exceptions import (
-            OpenYoungError,
             AgentError,
-            ExecutionError,
-            PermissionDeniedError,
             AgentTimeoutError,
-            DataNotFoundError,
-            ConfigValidationError,
-            NetworkError,
             APITimeoutError,
+            ConfigValidationError,
+            DataNotFoundError,
             EvaluationError,
+            ExecutionError,
+            NetworkError,
+            OpenYoungError,
+            PermissionDeniedError,
         )
 
         # 如果已经是统一异常，直接返回
@@ -352,25 +352,25 @@ def handle_exceptions(
 
 # 向后兼容导入
 from src.core.exceptions import (
-    OpenYoungError,
     AgentError,
-    AgentNotFoundError,
     AgentExecutionError,
+    AgentNotFoundError,
     AgentTimeoutError,
-    ExecutionError,
-    ToolExecutionError,
-    PermissionDeniedError,
-    EvaluationError,
-    EvaluationTimeoutError,
+    APIResponseError,
+    APITimeoutError,
     ConfigError,
     ConfigNotFoundError,
     ConfigValidationError,
     DataError,
     DataNotFoundError,
     DataValidationError,
+    EvaluationError,
+    EvaluationTimeoutError,
+    ExecutionError,
     NetworkError,
-    APITimeoutError,
-    APIResponseError,
+    OpenYoungError,
+    PermissionDeniedError,
+    ToolExecutionError,
 )
 
 __all__ = [

@@ -19,8 +19,8 @@ from .heartbeat import (
     get_heartbeat_scheduler,
 )
 from .learnings import (
-    LearningsManager,
     LearningEntry,
+    LearningsManager,
     LearningType,
     Priority,
     get_learnings_manager,

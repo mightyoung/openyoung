@@ -24,7 +24,11 @@ service-account.json
 *.secret
 secrets.yaml
 secrets.yml
-
+.claude
+.claude-flow
+.gitnexus
+.swarm
+.github
 # -----------------------------------------------------------------------------
 # Python / Python
 # -----------------------------------------------------------------------------

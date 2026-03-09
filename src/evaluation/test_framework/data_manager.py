@@ -10,8 +10,7 @@ Test Data Manager - 测试数据管理
 from dataclasses import dataclass
 from typing import Any, Optional
 
-from .models import TestCase, TestSuite, TaskType, Difficulty
-
+from .models import Difficulty, TaskType, TestCase, TestSuite
 
 # 预设测试数据集
 # 50+ 场景，覆盖主要任务类型

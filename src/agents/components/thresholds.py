@@ -4,7 +4,7 @@ Agent Thresholds - 评估维度阈值配置
 定义各评估维度的阈值和阻塞规则。
 """
 
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
 # ========== 阈值配置 ==========
 # 评估维度阈值配置

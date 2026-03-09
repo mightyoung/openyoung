@@ -183,6 +183,7 @@ def eval_server(host, port):
         openyoung eval server --host 0.0.0.0 --port 8000
     """
     import asyncio
+
     from src.evaluation.api import run_server
 
     click.echo(f"Starting EvalHub server on {host}:{port}")
@@ -197,7 +198,7 @@ def eval_dashboard(port):
     Example:
         openyoung eval dashboard --port 8050
     """
-    click.echo(f"\n📊 Evaluation Dashboard")
+    click.echo("\n📊 Evaluation Dashboard")
     click.echo("=" * 40)
     click.echo(f"Port: {port}")
     click.echo("\n⚠️  Dashboard feature coming soon!")

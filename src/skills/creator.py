@@ -357,7 +357,7 @@ class SkillCreator:
             "",
             f"- **Category**: {template.category.value}",
             f"- **Trigger**: {template.trigger.value}: `{template.trigger_value}`",
-            f"- **Version**: 1.0.0",
+            "- **Version**: 1.0.0",
             "",
             "## Actions",
             "",

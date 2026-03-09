@@ -5,13 +5,14 @@ Test CLI Commands - test 子命令
 """
 
 import asyncio
+
 import click
 
 from src.evaluation.test_framework import (
     AgentTestRunner,
-    RunnerConfig,
     InputTester,
     OutputTester,
+    RunnerConfig,
     TestDataManager,
 )
 
@@ -181,12 +182,12 @@ def _display_report(report, verbose=False):
     click.echo(f"Duration: {report.duration_ms}ms")
 
     # Scores
-    click.echo(f"\nScores:")
+    click.echo("\nScores:")
     click.echo(f"  Input Understanding: {report.input_understanding_score:.2f}")
     click.echo(f"  Output Quality: {report.output_quality_score:.2f}")
 
     if verbose and report.results:
-        click.echo(f"\nDetailed Results:")
+        click.echo("\nDetailed Results:")
         for result in report.results[:10]:  # Show first 10
             status = "✅" if result.passed else "❌"
             click.echo(f"  {status} {result.test_id}: {result.score:.2f}")

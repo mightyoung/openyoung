@@ -3,6 +3,7 @@ Telemetry Package - 可观测性系统
 """
 
 from .otel import (
+    OPENTELEMETRY_AVAILABLE,
     AgentTelemetry,
     FlowTelemetry,
     LLMTelemetry,
@@ -15,7 +16,6 @@ from .otel import (
     record_exception,
     trace_span,
     traced,
-    OPENTELEMETRY_AVAILABLE,
 )
 
 __all__ = [

@@ -336,21 +336,21 @@ class LearningsManager:
             f"\n**标题**: {entry.title}",
             f"\n**类型**: {entry.type.value}",
             f"\n**标签**: {tags_str}",
-            f"\n**描述**:",
+            "\n**描述**:",
             f"\n{entry.description}",
         ]
 
         if entry.context:
-            lines.append(f"\n**上下文**:")
+            lines.append("\n**上下文**:")
             for key, value in entry.context.items():
                 lines.append(f"- {key}: `{value}`")
 
         if entry.solution:
-            lines.append(f"\n**解决方案**:")
+            lines.append("\n**解决方案**:")
             lines.append(f"\n{entry.solution}")
 
         if entry.resolved:
-            lines.append(f"\n**状态**: ✅ 已解决")
+            lines.append("\n**状态**: ✅ 已解决")
 
         lines.append("\n---\n")
 

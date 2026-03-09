@@ -159,7 +159,7 @@ def skill_info(skill_name):
             click.echo(f"Tags: {', '.join(metadata.get('tags', []))}")
 
         if metadata.get("commands"):
-            click.echo(f"\nCommands:")
+            click.echo("\nCommands:")
             for cmd in metadata.get("commands", []):
                 click.echo(f"  • {cmd}")
 
