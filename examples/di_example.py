@@ -14,7 +14,6 @@ sys.path.insert(0, str(project_root))
 from dataclasses import dataclass, field
 from typing import Any
 
-
 # ========== Mock Implementations ==========
 
 
@@ -27,6 +26,7 @@ class MockLLMClient:
 
     async def chat(self, messages: Any, **kwargs: Any) -> Any:
         self.call_count += 1
+
         # Return mock response
         class MockResponse:
             content = self.response
