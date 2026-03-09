@@ -996,6 +996,87 @@ def eval_trend(agent_name: str, metric: str):
     click.echo(f"Latest score: {trend['latest']:.2f}")
 
 
+@eval.command("run")
+@click.argument("task")
+@click.option("--agent", "-a", default="default", help="Agent to use")
+@click.option("--metrics", "-m", default="task_completion", help="Evaluation metrics (comma-separated)")
+@click.option("--output", "-o", default=None, help="Output file for results")
+@click.option("--format", "-f", default="text", type=click.Choice(["text", "json"]), help="Output format")
+def eval_run(task: str, agent: str, metrics: str, output: str, format: str):
+    """Run evaluation on a task
+
+    Example:
+        openyoung eval run "写一个排序算法" --agent default --metrics task_completion
+    """
+    import asyncio
+
+    async def run_eval():
+        # First, run the task with the agent to get actual result
+        click.echo(f"Running task with agent: {agent}...")
+
+        # Create runner and load agent
+        runner = AgentRunner()
+        agent_instance = runner.load_agent(agent)
+
+        if not agent_instance:
+            click.echo(f"Error: Agent '{agent}' not found", err=True)
+            return
+
+        # Run task
+        actual_result = await agent_instance.run(task)
+
+        # Evaluate using LLMJudge
+        hub = EvaluationHub()
+        eval_result = await hub.evaluate(
+            metric="task_completion",
+            input_data={
+                "task": task,
+                "actual_result": actual_result,
+            },
+            evaluator_type="llm_judge",
+        )
+
+        score = eval_result.score if eval_result else 0.0
+
+        # Display results
+        if format == "json":
+            import json
+            output_data = {
+                "task": task,
+                "agent": agent,
+                "score": score,
+                "actual_result": actual_result,
+            }
+            if eval_result and hasattr(eval_result, 'details'):
+                output_data["details"] = eval_result.details
+            click.echo(json.dumps(output_data, indent=2, ensure_ascii=False))
+        else:
+            click.echo(f"\n=== Evaluation Results ===")
+            click.echo(f"Task: {task}")
+            click.echo(f"Agent: {agent}")
+            click.echo(f"Score: {score:.2f}")
+            click.echo(f"\nActual Result:")
+            click.echo(actual_result[:500] + "..." if len(actual_result) > 500 else actual_result)
+
+        # Save to file if specified
+        if output:
+            import json
+            Path(output).parent.mkdir(parents=True, exist_ok=True)
+            output_data = {
+                "task": task,
+                "agent": agent,
+                "score": score,
+                "actual_result": actual_result,
+            }
+            if eval_result and hasattr(eval_result, 'details'):
+                output_data["details"] = eval_result.details
+            with open(output, "w", encoding="utf-8") as f:
+                json.dump(output_data, f, indent=2, ensure_ascii=False)
+            click.echo(f"\nResults saved to: {output}")
+
+    asyncio.run(run_eval())
+
+
 @eval.command("server")
 @click.option("--host", default="0.0.0.0", help="Server host")
 @click.option("--port", default=8000, help="Server port")
@@ -2089,6 +2170,18 @@ def data_stats(agent: str, days: int):
 @click.option("--limit", "-l", default=10, type=int, help="Limit results")
 def data_runs(agent: str, status: str, limit: int):
     """List recent runs"""
+    from src.datacenter import RunTracker
+
+    tracker = RunTracker()
+    runs = tracker.list_runs(agent_id=agent, status=status, limit=limit)
+
+
+@data.command("list")
+@click.option("--agent", "-a", default=None, help="Filter by agent")
+@click.option("--status", "-s", default=None, help="Filter by status")
+@click.option("--limit", "-l", default=10, type=int, help="Limit results")
+def data_list(agent: str, status: str, limit: int):
+    """List recent runs (alias for 'runs')"""
     from src.datacenter import RunTracker
 
     tracker = RunTracker()
