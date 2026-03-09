@@ -33,28 +33,21 @@ class BaseLLMProvider(ABC):
         model: str,
         temperature: float = 0.7,
         max_tokens: int | None = None,
-        **kwargs
+        **kwargs,
     ) -> LLMResponse:
         """发送聊天请求"""
         pass
 
     @abstractmethod
     async def chat_with_thinking(
-        self,
-        messages: list[Message],
-        model: str,
-        thinking_budget: int | None = None,
-        **kwargs
+        self, messages: list[Message], model: str, thinking_budget: int | None = None, **kwargs
     ) -> LLMResponse:
         """发送带 thinking 的请求"""
         pass
 
     @abstractmethod
     async def stream_chat(
-        self,
-        messages: list[Message],
-        model: str,
-        **kwargs
+        self, messages: list[Message], model: str, **kwargs
     ) -> AsyncIterator[str]:
         """流式聊天"""
         pass
@@ -81,7 +74,7 @@ class OpenAIProvider(BaseLLMProvider):
         model: str,
         temperature: float = 0.7,
         max_tokens: int | None = None,
-        **kwargs
+        **kwargs,
     ) -> LLMResponse:
         import httpx
 
@@ -91,10 +84,13 @@ class OpenAIProvider(BaseLLMProvider):
         payload = {
             "model": model,
             "messages": [{"role": m.role, "content": m.content} for m in messages],
-            **self._filter_unsupported_params(model, {
-                "temperature": temperature,
-                "max_tokens": max_tokens,
-            })
+            **self._filter_unsupported_params(
+                model,
+                {
+                    "temperature": temperature,
+                    "max_tokens": max_tokens,
+                },
+            ),
         }
 
         # 添加工具调用
@@ -107,10 +103,7 @@ class OpenAIProvider(BaseLLMProvider):
 
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                f"{base}/chat/completions",
-                json=payload,
-                headers=headers,
-                timeout=60.0
+                f"{base}/chat/completions", json=payload, headers=headers, timeout=60.0
             )
             response.raise_for_status()
             data = response.json()
@@ -127,20 +120,13 @@ class OpenAIProvider(BaseLLMProvider):
         )
 
     async def chat_with_thinking(
-        self,
-        messages: list[Message],
-        model: str,
-        thinking_budget: int | None = None,
-        **kwargs
+        self, messages: list[Message], model: str, thinking_budget: int | None = None, **kwargs
     ) -> LLMResponse:
         # o1/o3 系列通过模型名启用 thinking，无需额外参数
         return await self.chat(messages, model, **kwargs)
 
     async def stream_chat(
-        self,
-        messages: list[Message],
-        model: str,
-        **kwargs
+        self, messages: list[Message], model: str, **kwargs
     ) -> AsyncIterator[str]:
         import httpx
 
@@ -155,11 +141,7 @@ class OpenAIProvider(BaseLLMProvider):
 
         async with httpx.AsyncClient() as client:
             async with client.stream(
-                "POST",
-                f"{base}/chat/completions",
-                json=payload,
-                headers=headers,
-                timeout=60.0
+                "POST", f"{base}/chat/completions", json=payload, headers=headers, timeout=60.0
             ) as response:
                 async for line in response.aiter_lines():
                     if line.startswith("data: "):
@@ -180,7 +162,7 @@ class AnthropicProvider(BaseLLMProvider):
         model: str,
         temperature: float = 0.7,
         max_tokens: int | None = None,
-        **kwargs
+        **kwargs,
     ) -> LLMResponse:
         import httpx
 
@@ -214,10 +196,7 @@ class AnthropicProvider(BaseLLMProvider):
 
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                f"{base}/v1/messages",
-                json=payload,
-                headers=headers,
-                timeout=60.0
+                f"{base}/v1/messages", json=payload, headers=headers, timeout=60.0
             )
             response.raise_for_status()
             data = response.json()
@@ -244,20 +223,15 @@ class AnthropicProvider(BaseLLMProvider):
         )
 
     async def chat_with_thinking(
-        self,
-        messages: list[Message],
-        model: str,
-        thinking_budget: int | None = None,
-        **kwargs
+        self, messages: list[Message], model: str, thinking_budget: int | None = None, **kwargs
     ) -> LLMResponse:
         thinking = {"type": "enabled", "budget": thinking_budget or 1024}
-        return await self.chat(messages, model, thinking=thinking, thinking_budget=thinking_budget, **kwargs)
+        return await self.chat(
+            messages, model, thinking=thinking, thinking_budget=thinking_budget, **kwargs
+        )
 
     async def stream_chat(
-        self,
-        messages: list[Message],
-        model: str,
-        **kwargs
+        self, messages: list[Message], model: str, **kwargs
     ) -> AsyncIterator[str]:
         # Anthropic 支持流式但实现较复杂，暂时返回空
         response = await self.chat(messages, model, **kwargs)
@@ -273,7 +247,7 @@ class DeepSeekProvider(BaseLLMProvider):
         model: str = "deepseek-chat",
         temperature: float = 0.7,
         max_tokens: int | None = None,
-        **kwargs
+        **kwargs,
     ) -> LLMResponse:
         import httpx
 
@@ -283,10 +257,13 @@ class DeepSeekProvider(BaseLLMProvider):
         payload = {
             "model": model,
             "messages": [{"role": m.role, "content": m.content} for m in messages],
-            **self._filter_unsupported_params(model, {
-                "temperature": temperature,
-                "max_tokens": max_tokens,
-            })
+            **self._filter_unsupported_params(
+                model,
+                {
+                    "temperature": temperature,
+                    "max_tokens": max_tokens,
+                },
+            ),
         }
 
         # deepseek-reasoner 需要 extra_body
@@ -300,10 +277,7 @@ class DeepSeekProvider(BaseLLMProvider):
 
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                f"{base}/chat/completions",
-                json=payload,
-                headers=headers,
-                timeout=60.0
+                f"{base}/chat/completions", json=payload, headers=headers, timeout=60.0
             )
             response.raise_for_status()
             data = response.json()
@@ -323,15 +297,14 @@ class DeepSeekProvider(BaseLLMProvider):
         messages: list[Message],
         model: str = "deepseek-reasoner",
         thinking_budget: int | None = None,
-        **kwargs
+        **kwargs,
     ) -> LLMResponse:
-        return await self.chat(messages, model, thinking=True, thinking_budget=thinking_budget, **kwargs)
+        return await self.chat(
+            messages, model, thinking=True, thinking_budget=thinking_budget, **kwargs
+        )
 
     async def stream_chat(
-        self,
-        messages: list[Message],
-        model: str,
-        **kwargs
+        self, messages: list[Message], model: str, **kwargs
     ) -> AsyncIterator[str]:
         # 类似 OpenAI 的流式实现
         import httpx
@@ -347,11 +320,7 @@ class DeepSeekProvider(BaseLLMProvider):
 
         async with httpx.AsyncClient() as client:
             async with client.stream(
-                "POST",
-                f"{base}/chat/completions",
-                json=payload,
-                headers=headers,
-                timeout=60.0
+                "POST", f"{base}/chat/completions", json=payload, headers=headers, timeout=60.0
             ) as response:
                 async for line in response.aiter_lines():
                     if line.startswith("data: "):

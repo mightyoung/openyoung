@@ -250,6 +250,7 @@ class YoungAgent:
         if not self._harness_injected:
             try:
                 from src.harness import Harness
+
                 self._harness = Harness()
             except Exception as e:
                 print(f"[Warning] Harness init failed: {e}")
@@ -258,6 +259,7 @@ class YoungAgent:
         if not self._datacenter_injected:
             try:
                 from src.datacenter.datacenter import DataCenter
+
                 self._datacenter = DataCenter()
             except Exception as e:
                 print(f"[Warning] DataCenter init failed: {e}")
@@ -316,7 +318,7 @@ class YoungAgent:
         execution_config = getattr(config, "execution", None)
         if execution_config is None:
             execution_config = {}
-        elif hasattr(execution_config, 'max_tool_calls'):  # 新类型: ExecutionConfig
+        elif hasattr(execution_config, "max_tool_calls"):  # 新类型: ExecutionConfig
             self._max_tool_calls = execution_config.max_tool_calls
             self._timeout_seconds = execution_config.timeout_seconds
             self._checkpoint_enabled = execution_config.checkpoint_enabled
@@ -335,6 +337,7 @@ class YoungAgent:
         if self._llm is None:
             try:
                 from src.llm.client_adapter import LLMClient
+
                 self._llm = LLMClient()
             except Exception as e:
                 print(f"[Warning] LLM client init failed: {e}")
@@ -455,7 +458,9 @@ class YoungAgent:
                         skill_config = yaml.safe_load(f)
                     entry = skill_config.get("entry", "SKILL.md")
                     content_file = skill_dir / entry
-                    content = content_file.read_text(encoding="utf-8") if content_file.exists() else ""
+                    content = (
+                        content_file.read_text(encoding="utf-8") if content_file.exists() else ""
+                    )
                     self._loaded_skills[skill_name] = {
                         "config": skill_config,
                         "content": content,
@@ -659,8 +664,7 @@ class YoungAgent:
             if enabled and OPENTELEMETRY_AVAILABLE:
                 service_name = f"openyoung-{self.config.name}"
                 self._telemetry_enabled = init_telemetry(
-                    service_name=service_name,
-                    enable_console=False
+                    service_name=service_name, enable_console=False
                 )
         except Exception:
             # 遥测初始化失败不影响主流程
@@ -752,7 +756,9 @@ class YoungAgent:
         self._sandbox = AISandbox(config)
         self._tool_executor.set_sandbox(self._sandbox)
 
-        print(f"[YoungAgent] Sandbox enabled: memory={max_memory_mb}MB, timeout={max_execution_time_seconds}s")
+        print(
+            f"[YoungAgent] Sandbox enabled: memory={max_memory_mb}MB, timeout={max_execution_time_seconds}s"
+        )
 
     def enable_sandbox_pool(
         self,
@@ -932,7 +938,9 @@ class YoungAgent:
                 eval_plan = await self._eval_planner.generate_plan(user_input)
                 print(f"[EvalPlanner] Generated plan for task type: {eval_plan.task_type}")
                 print(f"[EvalPlanner] Success criteria: {len(eval_plan.success_criteria)} items")
-                print(f"[EvalPlanner] Validation methods: {len(eval_plan.validation_methods)} items")
+                print(
+                    f"[EvalPlanner] Validation methods: {len(eval_plan.validation_methods)} items"
+                )
             except Exception as e:
                 print(f"[EvalPlanner] Failed to generate plan: {e}")
 

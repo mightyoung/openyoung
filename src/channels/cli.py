@@ -40,11 +40,7 @@ class CLIChannel(BaseChannel):
         print("[CLI] Channel disconnected")
         return True
 
-    async def send_message(
-        self,
-        message: ChannelMessage,
-        reply_to: str | None = None
-    ) -> bool:
+    async def send_message(self, message: ChannelMessage, reply_to: str | None = None) -> bool:
         """发送消息到 CLI"""
         if not self._connected:
             return False
@@ -53,20 +49,12 @@ class CLIChannel(BaseChannel):
         print(f"\n[Assistant]: {message.content}\n")
         return True
 
-    async def send_markdown(
-        self,
-        message: ChannelMessage,
-        reply_to: str | None = None
-    ) -> bool:
+    async def send_markdown(self, message: ChannelMessage, reply_to: str | None = None) -> bool:
         """发送 Markdown 消息"""
         # CLI 不支持 Markdown，直接发送纯文本
         return await self.send_message(message, reply_to)
 
-    async def send_image(
-        self,
-        message: ChannelMessage,
-        image_url: str
-    ) -> bool:
+    async def send_image(self, message: ChannelMessage, image_url: str) -> bool:
         """发送图片消息"""
         # CLI 不支持图片
         print(f"[CLI] Image not supported: {image_url}")
@@ -76,11 +64,8 @@ class CLIChannel(BaseChannel):
         """读取用户输入"""
         try:
             content = await asyncio.wait_for(
-                asyncio.get_event_loop().run_in_executor(
-                    None,
-                    lambda: input("\n[You]: ")
-                ),
-                timeout=self.config.get("timeout", 300)
+                asyncio.get_event_loop().run_in_executor(None, lambda: input("\n[You]: ")),
+                timeout=self.config.get("timeout", 300),
             )
 
             if content.strip():
@@ -124,11 +109,7 @@ class REPLChannel(CLIChannel):
         super().__init__(config)
         self._history: list = []
 
-    async def send_message(
-        self,
-        message: ChannelMessage,
-        reply_to: str | None = None
-    ) -> bool:
+    async def send_message(self, message: ChannelMessage, reply_to: str | None = None) -> bool:
         """发送消息并记录历史"""
         result = await super().send_message(message, reply_to)
         if result:

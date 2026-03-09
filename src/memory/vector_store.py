@@ -25,12 +25,19 @@ class VectorStore:
         """初始化存储"""
         try:
             from src.datacenter.sqlite_storage import EmbeddingClient, SQLiteStorage
+
             self._storage = SQLiteStorage(self.db_path)
             self._embedding_client = EmbeddingClient()
         except Exception as e:
             print(f"[VectorStore] Init warning: {e}")
 
-    def add(self, content: str, namespace: str = "default", tags: list[str] = None, importance: float = 0.5) -> bool:
+    def add(
+        self,
+        content: str,
+        namespace: str = "default",
+        tags: list[str] = None,
+        importance: float = 0.5,
+    ) -> bool:
         """添加文本到向量存储"""
         if not self._storage or not self._embedding_client:
             return False
@@ -51,7 +58,9 @@ class VectorStore:
             print(f"[VectorStore] Add error: {e}")
         return False
 
-    def search(self, query: str, namespace: str = "default", limit: int = 5, threshold: float = 0.0) -> list[dict[str, Any]]:
+    def search(
+        self, query: str, namespace: str = "default", limit: int = 5, threshold: float = 0.0
+    ) -> list[dict[str, Any]]:
         """语义搜索"""
         if not self._storage or not self._embedding_client:
             return []
@@ -86,6 +95,7 @@ class VectorStore:
         # 尝试从数据库查询命名空间
         try:
             import sqlite3
+
             conn = sqlite3.connect(self.db_path)
             cursor = conn.execute("SELECT DISTINCT namespace FROM memory")
             namespaces = [row[0] for row in cursor.fetchall()]

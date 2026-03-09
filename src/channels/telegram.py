@@ -59,11 +59,7 @@ class TelegramChannel(BaseChannel):
         print("[Telegram] Disconnected")
         return True
 
-    async def send_message(
-        self,
-        message: ChannelMessage,
-        reply_to: str | None = None
-    ) -> bool:
+    async def send_message(self, message: ChannelMessage, reply_to: str | None = None) -> bool:
         """发送消息到 Telegram"""
         if not self._connected:
             return False
@@ -83,11 +79,7 @@ class TelegramChannel(BaseChannel):
             print(f"[Telegram] Send failed: {e}")
             return False
 
-    async def send_markdown(
-        self,
-        message: ChannelMessage,
-        reply_to: str | None = None
-    ) -> bool:
+    async def send_markdown(self, message: ChannelMessage, reply_to: str | None = None) -> bool:
         """发送 Markdown 消息"""
         if not self._connected:
             return False
@@ -107,11 +99,7 @@ class TelegramChannel(BaseChannel):
             print(f"[Telegram] Send markdown failed: {e}")
             return False
 
-    async def send_image(
-        self,
-        message: ChannelMessage,
-        image_url: str
-    ) -> bool:
+    async def send_image(self, message: ChannelMessage, image_url: str) -> bool:
         """发送图片消息"""
         if not self._connected:
             return False

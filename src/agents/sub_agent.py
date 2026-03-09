@@ -66,21 +66,26 @@ class SubAgent:
             # 5. 执行工具
             for tool_call in tool_calls:
                 result = await self._execute_tool(tool_call)
-                messages.append({
-                    "role": "tool",
-                    "content": result,
-                    "tool_call_id": tool_call.get("id", "unknown")
-                })
+                messages.append(
+                    {
+                        "role": "tool",
+                        "content": result,
+                        "tool_call_id": tool_call.get("id", "unknown"),
+                    }
+                )
 
         # 达到最大迭代次数
         return f"[SubAgent {self.name}] Max iterations reached. Last response: {messages[-1].get('content', '')[:200]}"
 
     def _build_system_prompt(self, task: Task, context: dict) -> str:
         """构建系统提示"""
-        base_prompt = self.instructions or f"""你是一个 {self.type} 类型的 SubAgent。
+        base_prompt = (
+            self.instructions
+            or f"""你是一个 {self.type} 类型的 SubAgent。
 你的职责是：{self.description}
 
 可用工具：read, write, edit, glob, grep, bash"""
+        )
 
         # 添加上下文信息
         if context.get("parent_summary"):
@@ -97,6 +102,7 @@ class SubAgent:
             # 尝试创建新的 LLM 客户端
             try:
                 from src.llm.client_adapter import LLMClient
+
                 self._llm = LLMClient()
             except Exception as e:
                 return f"[SubAgent {self.name}] LLM not available: {e}"
@@ -127,16 +133,20 @@ class SubAgent:
                     if self._tool_executor:
                         result = await self._tool_executor.execute(tool_name, arguments)
                         tool_result = result.result if result.success else f"Error: {result.error}"
-                        messages.append({
-                            "role": "assistant",
-                            "content": content,
-                            "tool_calls": [tool_call],
-                        })
-                        messages.append({
-                            "role": "tool",
-                            "tool_call_id": tool_call.get("id", "unknown"),
-                            "content": tool_result,
-                        })
+                        messages.append(
+                            {
+                                "role": "assistant",
+                                "content": content,
+                                "tool_calls": [tool_call],
+                            }
+                        )
+                        messages.append(
+                            {
+                                "role": "tool",
+                                "tool_call_id": tool_call.get("id", "unknown"),
+                                "content": tool_result,
+                            }
+                        )
                         print(f"[SubAgent {self.name}] Tool result: {tool_result[:100]}...")
 
                 # 再次调用 LLM 处理工具结果
@@ -156,7 +166,7 @@ class SubAgent:
         # 尝试解析 JSON 格式的工具调用
         try:
             # 匹配 [TOOL_CALL] ... [/TOOL_CALL] 格式
-            pattern = r'\[TOOL_CALL\](.*?)\[/TOOL_CALL\]'
+            pattern = r"\[TOOL_CALL\](.*?)\[/TOOL_CALL\]"
             matches = re.findall(pattern, response, re.DOTALL)
             for match in matches:
                 try:

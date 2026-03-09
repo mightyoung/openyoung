@@ -40,11 +40,13 @@ try:
     try:
         from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
         from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+
         OTLP_AVAILABLE = True
     except ImportError:
         try:
             from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
             from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+
             OTLP_AVAILABLE = True
         except ImportError:
             OTLP_AVAILABLE = False
@@ -54,11 +56,13 @@ try:
     # Prometheus exporter
     try:
         from opentelemetry.exporter.prometheus import PrometheusExporter
+
         PROMETHEUS_AVAILABLE = True
     except ImportError:
         try:
             # Fallback for older versions
             from opentelemetry.sdk.metrics.export import PrometheusExporter as PrometheusExporter
+
             PROMETHEUS_AVAILABLE = True
         except ImportError:
             PROMETHEUS_AVAILABLE = False
@@ -83,6 +87,7 @@ except ImportError:
 
 class SpanStatus(Enum):
     """Span 状态"""
+
     OK = "ok"
     ERROR = "error"
     UNSET = "unset"
@@ -91,6 +96,7 @@ class SpanStatus(Enum):
 @dataclass
 class TelemetryConfig:
     """遥测配置"""
+
     service_name: str = "openyoung"
     enable_console_export: bool = True
     enable_metrics: bool = True
@@ -135,10 +141,9 @@ class OpenTelemetryConfig:
 
         try:
             # 创建资源
-            resource = Resource.create({
-                "service.name": self.config.service_name,
-                **self.config.resource_attributes
-            })
+            resource = Resource.create(
+                {"service.name": self.config.service_name, **self.config.resource_attributes}
+            )
 
             # ========== 1. 初始化 Tracing ==========
             self._init_tracing(resource)
@@ -164,16 +169,14 @@ class OpenTelemetryConfig:
 
         # Console exporter
         if self.config.enable_console_export:
-            self._provider.add_span_processor(
-                BatchSpanProcessor(ConsoleSpanExporter())
-            )
+            self._provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
 
         # OTLP exporter
         if self.config.enable_otlp_export and OTLP_AVAILABLE and OTLPSpanExporter:
             try:
                 otlp_exporter = OTLPSpanExporter(
                     endpoint=self.config.otlp_endpoint,
-                    insecure=True if "http" in self.config.otlp_endpoint else False
+                    insecure=True if "http" in self.config.otlp_endpoint else False,
                 )
                 self._provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
                 logger.info(f"OTLP tracing enabled: {self.config.otlp_endpoint}")
@@ -200,13 +203,14 @@ class OpenTelemetryConfig:
             if self.config.enable_otlp_export and OTLP_AVAILABLE and OTLPMetricExporter:
                 try:
                     otlp_metric_exporter = OTLPMetricExporter(
-                        endpoint=self.config.otlp_endpoint,
-                        insecure=True
+                        endpoint=self.config.otlp_endpoint, insecure=True
                     )
-                    readers.append(PeriodicExportingMetricReader(
-                        otlp_metric_exporter,
-                        export_interval_millis=self.config.metrics_export_interval * 1000
-                    ))
+                    readers.append(
+                        PeriodicExportingMetricReader(
+                            otlp_metric_exporter,
+                            export_interval_millis=self.config.metrics_export_interval * 1000,
+                        )
+                    )
                     logger.info(f"OTLP metrics enabled: {self.config.otlp_endpoint}")
                 except Exception as e:
                     logger.warning(f"Failed to setup OTLP metrics: {e}")
@@ -215,8 +219,7 @@ class OpenTelemetryConfig:
             if self.config.enable_prometheus_export and PROMETHEUS_AVAILABLE and PrometheusExporter:
                 try:
                     prometheus_exporter = PrometheusExporter(
-                        port=self.config.prometheus_port,
-                        prefix=self.config.service_name
+                        port=self.config.prometheus_port, prefix=self.config.service_name
                     )
                     readers.append(prometheus_exporter)
                     logger.info(f"Prometheus metrics enabled: port={self.config.prometheus_port}")
@@ -225,10 +228,7 @@ class OpenTelemetryConfig:
 
             # 创建 meter provider
             if readers:
-                self._meter_provider = MeterProvider(
-                    resource=resource,
-                    metric_readers=readers
-                )
+                self._meter_provider = MeterProvider(resource=resource, metric_readers=readers)
                 metrics.set_meter_provider(self._meter_provider)
                 self._meter = metrics.get_meter(__name__)
                 logger.info(f"Meter initialized with {len(readers)} readers")
@@ -265,11 +265,7 @@ _default_config: Optional[TelemetryConfig] = None
 _default_otel: Optional[OpenTelemetryConfig] = None
 
 
-def init_telemetry(
-    service_name: str = "openyoung",
-    enable_console: bool = True,
-    **kwargs
-) -> bool:
+def init_telemetry(service_name: str = "openyoung", enable_console: bool = True, **kwargs) -> bool:
     """初始化遥测系统
 
     Args:
@@ -283,9 +279,7 @@ def init_telemetry(
     global _default_config, _default_otel
 
     _default_config = TelemetryConfig(
-        service_name=service_name,
-        enable_console_export=enable_console,
-        **kwargs
+        service_name=service_name, enable_console_export=enable_console, **kwargs
     )
     _default_otel = OpenTelemetryConfig(_default_config)
     success = _default_otel.initialize()
@@ -311,9 +305,7 @@ def get_tracer():
 
 @contextmanager
 def trace_span(
-    name: str,
-    attributes: Optional[Dict[str, Any]] = None,
-    kind: Any = None
+    name: str, attributes: Optional[Dict[str, Any]] = None, kind: Any = None
 ) -> Generator[Any, None, None]:
     """创建追踪 span
 
@@ -337,11 +329,7 @@ def trace_span(
     # 确定 span 类型
     span_kind = kind or SpanKind.INTERNAL
 
-    with tracer.start_as_current_span(
-        name,
-        kind=span_kind,
-        attributes=attributes or {}
-    ) as span:
+    with tracer.start_as_current_span(name, kind=span_kind, attributes=attributes or {}) as span:
         try:
             yield span
         except Exception as e:
@@ -418,56 +406,45 @@ class MetricsCollector:
             # 创建 counters
             self._counters = {
                 "llm_calls_total": meter.create_counter(
-                    "llm_calls_total",
-                    description="Total number of LLM calls"
+                    "llm_calls_total", description="Total number of LLM calls"
                 ),
                 "llm_errors_total": meter.create_counter(
-                    "llm_errors_total",
-                    description="Total number of LLM errors"
+                    "llm_errors_total", description="Total number of LLM errors"
                 ),
                 "agent_executions_total": meter.create_counter(
-                    "agent_executions_total",
-                    description="Total number of agent executions"
+                    "agent_executions_total", description="Total number of agent executions"
                 ),
                 "agent_success_total": meter.create_counter(
-                    "agent_success_total",
-                    description="Total number of successful agent executions"
+                    "agent_success_total", description="Total number of successful agent executions"
                 ),
                 "agent_errors_total": meter.create_counter(
-                    "agent_errors_total",
-                    description="Total number of agent errors"
+                    "agent_errors_total", description="Total number of agent errors"
                 ),
                 "tool_usage_total": meter.create_counter(
-                    "tool_usage_total",
-                    description="Total number of tool usages"
+                    "tool_usage_total", description="Total number of tool usages"
                 ),
                 "flow_steps_total": meter.create_counter(
-                    "flow_steps_total",
-                    description="Total number of flow steps"
+                    "flow_steps_total", description="Total number of flow steps"
                 ),
             }
 
             # 创建 histograms
             self._histograms = {
                 "llm_duration_ms": meter.create_histogram(
-                    "llm_duration_ms",
-                    description="LLM call duration in milliseconds",
-                    unit="ms"
+                    "llm_duration_ms", description="LLM call duration in milliseconds", unit="ms"
                 ),
                 "llm_tokens_total": meter.create_histogram(
-                    "llm_tokens_total",
-                    description="Total tokens per LLM call",
-                    unit="tokens"
+                    "llm_tokens_total", description="Total tokens per LLM call", unit="tokens"
                 ),
                 "agent_duration_ms": meter.create_histogram(
                     "agent_duration_ms",
                     description="Agent execution duration in milliseconds",
-                    unit="ms"
+                    unit="ms",
                 ),
                 "flow_step_duration_ms": meter.create_histogram(
                     "flow_step_duration_ms",
                     description="Flow step duration in milliseconds",
-                    unit="ms"
+                    unit="ms",
                 ),
             }
 
@@ -485,7 +462,7 @@ class MetricsCollector:
         prompt_tokens: int,
         completion_tokens: int,
         duration_ms: float,
-        error: Optional[str] = None
+        error: Optional[str] = None,
     ):
         """记录 LLM 调用
 
@@ -511,11 +488,7 @@ class MetricsCollector:
         self._histograms["llm_tokens_total"].record(total_tokens, {"model": model})
 
     def record_agent_execution(
-        self,
-        agent_name: str,
-        duration_ms: float,
-        success: bool,
-        tools_count: int = 0
+        self, agent_name: str, duration_ms: float, success: bool, tools_count: int = 0
     ):
         """记录 Agent 执行
 
@@ -537,8 +510,7 @@ class MetricsCollector:
 
         # 记录 histogram
         self._histograms["agent_duration_ms"].record(
-            duration_ms,
-            {"agent_name": agent_name, "success": str(success)}
+            duration_ms, {"agent_name": agent_name, "success": str(success)}
         )
 
     def record_tool_usage(self, tool_name: str):
@@ -552,13 +524,7 @@ class MetricsCollector:
 
         self._counters["tool_usage_total"].add(1, {"tool_name": tool_name})
 
-    def record_flow_step(
-        self,
-        flow_name: str,
-        step_name: str,
-        duration_ms: float,
-        success: bool
-    ):
+    def record_flow_step(self, flow_name: str, step_name: str, duration_ms: float, success: bool):
         """记录 Flow 步骤
 
         Args:
@@ -570,14 +536,10 @@ class MetricsCollector:
         if not self._initialized:
             return
 
-        self._counters["flow_steps_total"].add(1, {
-            "flow_name": flow_name,
-            "step_name": step_name
-        })
+        self._counters["flow_steps_total"].add(1, {"flow_name": flow_name, "step_name": step_name})
 
         self._histograms["flow_step_duration_ms"].record(
-            duration_ms,
-            {"flow_name": flow_name, "step_name": step_name, "success": str(success)}
+            duration_ms, {"flow_name": flow_name, "step_name": step_name, "success": str(success)}
         )
 
 
@@ -602,7 +564,7 @@ class LLMTelemetry:
         prompt_tokens: int,
         completion_tokens: int,
         duration_ms: float,
-        error: Optional[str] = None
+        error: Optional[str] = None,
     ):
         """追踪 LLM 调用
 
@@ -625,7 +587,7 @@ class LLMTelemetry:
                     "duration_ms": duration_ms,
                     "error": error or "",
                 },
-                kind=SpanKind.CLIENT
+                kind=SpanKind.CLIENT,
             ) as span:
                 if error and span:
                     span.set_status(Status(StatusCode.ERROR, error))
@@ -650,7 +612,7 @@ class AgentTelemetry:
         duration_ms: float,
         success: bool,
         tools_used: Optional[List[str]] = None,
-        error: Optional[str] = None
+        error: Optional[str] = None,
     ):
         """追踪 Agent 执行
 
@@ -676,7 +638,7 @@ class AgentTelemetry:
                     "tools_used": ",".join(tools_used),
                     "error": error or "",
                 },
-                kind=SpanKind.SERVER
+                kind=SpanKind.SERVER,
             ) as span:
                 if error and span:
                     span.set_status(Status(StatusCode.ERROR, error))
@@ -703,7 +665,7 @@ class FlowTelemetry:
         step_name: str,
         duration_ms: float,
         success: bool,
-        error: Optional[str] = None
+        error: Optional[str] = None,
     ):
         """追踪 Flow 步骤
 
@@ -725,7 +687,7 @@ class FlowTelemetry:
                     "success": success,
                     "error": error or "",
                 },
-                kind=SpanKind.INTERNAL
+                kind=SpanKind.INTERNAL,
             ) as span:
                 if error and span:
                     span.set_status(Status(StatusCode.ERROR, error))
@@ -733,9 +695,7 @@ class FlowTelemetry:
         # 记录指标
         if OPENTELEMETRY_AVAILABLE:
             try:
-                get_metrics_collector().record_flow_step(
-                    flow_name, step_name, duration_ms, success
-                )
+                get_metrics_collector().record_flow_step(flow_name, step_name, duration_ms, success)
             except Exception as e:
                 logger.debug(f"Failed to record metrics: {e}")
 

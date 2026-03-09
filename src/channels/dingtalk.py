@@ -59,11 +59,7 @@ class DingTalkChannel(BaseChannel):
         print("[DingTalk] Disconnected")
         return True
 
-    async def send_message(
-        self,
-        message: ChannelMessage,
-        reply_to: str | None = None
-    ) -> bool:
+    async def send_message(self, message: ChannelMessage, reply_to: str | None = None) -> bool:
         """发送文本消息到钉钉"""
         if not self._connected:
             return False
@@ -72,12 +68,7 @@ class DingTalkChannel(BaseChannel):
             import aiohttp
 
             # 构建消息体 (钉钉 Markdown 格式)
-            msg_body = {
-                "msgtype": "text",
-                "text": {
-                    "content": message.content
-                }
-            }
+            msg_body = {"msgtype": "text", "text": {"content": message.content}}
 
             async with aiohttp.ClientSession() as session:
                 # 如果有签名密钥，使用签名
@@ -99,11 +90,7 @@ class DingTalkChannel(BaseChannel):
             print(f"[DingTalk] Send error: {e}")
             return False
 
-    async def send_markdown(
-        self,
-        message: ChannelMessage,
-        reply_to: str | None = None
-    ) -> bool:
+    async def send_markdown(self, message: ChannelMessage, reply_to: str | None = None) -> bool:
         """发送 Markdown 消息"""
         if not self._connected:
             return False
@@ -114,10 +101,7 @@ class DingTalkChannel(BaseChannel):
             # 钉钉 Markdown 格式
             msg_body = {
                 "msgtype": "markdown",
-                "markdown": {
-                    "title": "OpenYoung",
-                    "text": message.content
-                }
+                "markdown": {"title": "OpenYoung", "text": message.content},
             }
 
             async with aiohttp.ClientSession() as session:
@@ -134,11 +118,7 @@ class DingTalkChannel(BaseChannel):
             print(f"[DingTalk] Markdown send error: {e}")
             return False
 
-    async def send_image(
-        self,
-        message: ChannelMessage,
-        image_url: str
-    ) -> bool:
+    async def send_image(self, message: ChannelMessage, image_url: str) -> bool:
         """发送图片消息 (需要图片 ID)"""
         if not self._connected:
             return False
@@ -157,14 +137,14 @@ class DingTalkChannel(BaseChannel):
         import time
 
         timestamp = str(round(time.time() * 1000))
-        secret_enc = self._secret.encode('utf-8')
-        string_to_sign = f'{timestamp}\n{self._secret}'
-        string_to_sign_enc = string_to_sign.encode('utf-8')
+        secret_enc = self._secret.encode("utf-8")
+        string_to_sign = f"{timestamp}\n{self._secret}"
+        string_to_sign_enc = string_to_sign.encode("utf-8")
         hmac_code = hmac.new(secret_enc, string_to_sign_enc, digestmod=hashlib.sha256).digest()
         sign = urllib.parse.quote_plus(base64.b64encode(hmac_code))
 
         # 解析原始 URL，去除签名参数
-        base_url = self._webhook_url.split('&sign=')[0]
+        base_url = self._webhook_url.split("&sign=")[0]
 
         return base_url, timestamp, sign
 
@@ -197,10 +177,10 @@ class DingTalkCallbackChannel(DingTalkChannel):
         import hmac
 
         hmac_code = hmac.new(
-            self._callback_token.encode('utf-8'),
-            string_to_sign.encode('utf-8'),
-            digestmod=hashlib.sha256
+            self._callback_token.encode("utf-8"),
+            string_to_sign.encode("utf-8"),
+            digestmod=hashlib.sha256,
         ).digest()
-        expected_sign = base64.b64encode(hmac_code).decode('utf-8')
+        expected_sign = base64.b64encode(hmac_code).decode("utf-8")
 
         return signature == expected_sign

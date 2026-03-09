@@ -27,9 +27,11 @@ def list_agents(all, badges, stats, format):
 
     if format == "json":
         import json
+
         click.echo(json.dumps(agents, indent=2, default=str))
     elif format == "yaml":
         import yaml
+
         click.echo(yaml.dump(agents, default_flow_style=False))
     else:
         # Table format

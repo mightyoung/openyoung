@@ -43,10 +43,8 @@ MCP_TOOL_SCHEMAS: dict[str, MCPToolSchema] = {
         category=MCPToolCategory.FILESYSTEM,
         input_schema={
             "type": "object",
-            "properties": {
-                "path": {"type": "string", "description": "Path to the file"}
-            },
-            "required": ["path"]
+            "properties": {"path": {"type": "string", "description": "Path to the file"}},
+            "required": ["path"],
         },
         output_schema={"type": "string"},
     ),
@@ -58,9 +56,9 @@ MCP_TOOL_SCHEMAS: dict[str, MCPToolSchema] = {
             "type": "object",
             "properties": {
                 "path": {"type": "string", "description": "Path to the file"},
-                "content": {"type": "string", "description": "Content to write"}
+                "content": {"type": "string", "description": "Content to write"},
             },
-            "required": ["path", "content"]
+            "required": ["path", "content"],
         },
     ),
     "filesystem_list_directory": MCPToolSchema(
@@ -69,10 +67,8 @@ MCP_TOOL_SCHEMAS: dict[str, MCPToolSchema] = {
         category=MCPToolCategory.FILESYSTEM,
         input_schema={
             "type": "object",
-            "properties": {
-                "path": {"type": "string", "description": "Directory path"}
-            },
-            "required": ["path"]
+            "properties": {"path": {"type": "string", "description": "Directory path"}},
+            "required": ["path"],
         },
     ),
     # Database
@@ -84,9 +80,9 @@ MCP_TOOL_SCHEMAS: dict[str, MCPToolSchema] = {
             "type": "object",
             "properties": {
                 "query": {"type": "string", "description": "SQL query"},
-                "params": {"type": "array", "description": "Query parameters"}
+                "params": {"type": "array", "description": "Query parameters"},
             },
-            "required": ["query"]
+            "required": ["query"],
         },
     ),
     "sqlite_query": MCPToolSchema(
@@ -97,9 +93,9 @@ MCP_TOOL_SCHEMAS: dict[str, MCPToolSchema] = {
             "type": "object",
             "properties": {
                 "query": {"type": "string", "description": "SQL query"},
-                "params": {"type": "array", "description": "Query parameters"}
+                "params": {"type": "array", "description": "Query parameters"},
             },
-            "required": ["query"]
+            "required": ["query"],
         },
     ),
     # Network
@@ -112,9 +108,9 @@ MCP_TOOL_SCHEMAS: dict[str, MCPToolSchema] = {
             "properties": {
                 "url": {"type": "string", "description": "URL to fetch"},
                 "method": {"type": "string", "description": "HTTP method"},
-                "headers": {"type": "object", "description": "HTTP headers"}
+                "headers": {"type": "object", "description": "HTTP headers"},
             },
-            "required": ["url"]
+            "required": ["url"],
         },
     ),
     # Browser
@@ -124,10 +120,8 @@ MCP_TOOL_SCHEMAS: dict[str, MCPToolSchema] = {
         category=MCPToolCategory.BROWSER,
         input_schema={
             "type": "object",
-            "properties": {
-                "url": {"type": "string", "description": "URL to navigate to"}
-            },
-            "required": ["url"]
+            "properties": {"url": {"type": "string", "description": "URL to navigate to"}},
+            "required": ["url"],
         },
     ),
     "puppeteer_click": MCPToolSchema(
@@ -136,10 +130,8 @@ MCP_TOOL_SCHEMAS: dict[str, MCPToolSchema] = {
         category=MCPToolCategory.BROWSER,
         input_schema={
             "type": "object",
-            "properties": {
-                "selector": {"type": "string", "description": "CSS selector"}
-            },
-            "required": ["selector"]
+            "properties": {"selector": {"type": "string", "description": "CSS selector"}},
+            "required": ["selector"],
         },
     ),
     # Messaging
@@ -151,9 +143,9 @@ MCP_TOOL_SCHEMAS: dict[str, MCPToolSchema] = {
             "type": "object",
             "properties": {
                 "channel": {"type": "string", "description": "Slack channel"},
-                "text": {"type": "string", "description": "Message text"}
+                "text": {"type": "string", "description": "Message text"},
             },
-            "required": ["channel", "text"]
+            "required": ["channel", "text"],
         },
     ),
     # GitHub
@@ -166,9 +158,9 @@ MCP_TOOL_SCHEMAS: dict[str, MCPToolSchema] = {
             "properties": {
                 "owner": {"type": "string", "description": "Repository owner"},
                 "repo": {"type": "string", "description": "Repository name"},
-                "issue_number": {"type": "integer", "description": "Issue number"}
+                "issue_number": {"type": "integer", "description": "Issue number"},
             },
-            "required": ["owner", "repo", "issue_number"]
+            "required": ["owner", "repo", "issue_number"],
         },
     ),
     "github_create_issue": MCPToolSchema(
@@ -181,9 +173,9 @@ MCP_TOOL_SCHEMAS: dict[str, MCPToolSchema] = {
                 "owner": {"type": "string", "description": "Repository owner"},
                 "repo": {"type": "string", "description": "Repository name"},
                 "title": {"type": "string", "description": "Issue title"},
-                "body": {"type": "string", "description": "Issue body"}
+                "body": {"type": "string", "description": "Issue body"},
             },
-            "required": ["owner", "repo", "title"]
+            "required": ["owner", "repo", "title"],
         },
     ),
     # Memory
@@ -195,9 +187,9 @@ MCP_TOOL_SCHEMAS: dict[str, MCPToolSchema] = {
             "type": "object",
             "properties": {
                 "query": {"type": "string", "description": "Search query"},
-                "limit": {"type": "integer", "description": "Max results"}
+                "limit": {"type": "integer", "description": "Max results"},
             },
-            "required": ["query"]
+            "required": ["query"],
         },
     ),
     "memory_store": MCPToolSchema(
@@ -209,9 +201,9 @@ MCP_TOOL_SCHEMAS: dict[str, MCPToolSchema] = {
             "properties": {
                 "key": {"type": "string", "description": "Memory key"},
                 "value": {"type": "string", "description": "Memory value"},
-                "namespace": {"type": "string", "description": "Namespace"}
+                "namespace": {"type": "string", "description": "Namespace"},
             },
-            "required": ["key", "value"]
+            "required": ["key", "value"],
         },
     ),
 }

@@ -263,7 +263,9 @@ class LearningsManager:
         entries = await self._read_entries(self.ERRORS_FILE, 100)
         return [e for e in entries if not e.resolved]
 
-    async def search(self, query: str, file_type: LearningType | None = None) -> list[LearningEntry]:
+    async def search(
+        self, query: str, file_type: LearningType | None = None
+    ) -> list[LearningEntry]:
         """搜索学习记录
 
         Args:
@@ -286,7 +288,10 @@ class LearningsManager:
         for filename in files:
             entries = await self._read_entries(filename, 100)
             for entry in entries:
-                if query.lower() in entry.title.lower() or query.lower() in entry.description.lower():
+                if (
+                    query.lower() in entry.title.lower()
+                    or query.lower() in entry.description.lower()
+                ):
                     results.append(entry)
 
         return results
@@ -427,7 +432,9 @@ class LearningsManager:
                     solution = ""
                 elif line.startswith("**状态**:"):
                     resolved = "已解决" in line
-                elif description and line and not line.startswith("#") and not line.startswith("**"):
+                elif (
+                    description and line and not line.startswith("#") and not line.startswith("**")
+                ):
                     description += line + "\n"
 
             return LearningEntry(

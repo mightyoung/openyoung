@@ -23,6 +23,7 @@ from typing import Any
 
 class SpanKind(Enum):
     """Span 类型"""
+
     INTERNAL = "internal"
     LLM = "llm"
     TOOL = "tool"
@@ -31,6 +32,7 @@ class SpanKind(Enum):
 
 class SpanStatus(Enum):
     """Span 状态"""
+
     OK = "ok"
     ERROR = "error"
     UNSET = "unset"
@@ -39,6 +41,7 @@ class SpanStatus(Enum):
 @dataclass
 class Span:
     """Tracing Span"""
+
     name: str
     span_id: str = field(default_factory=lambda: uuid.uuid4().hex[:16])
     parent_id: str | None = None
@@ -71,11 +74,13 @@ class Span:
 
     def add_event(self, name: str, attributes: dict[str, Any] = None):
         """添加事件"""
-        self.events.append({
-            "name": name,
-            "timestamp": time.time(),
-            "attributes": attributes or {},
-        })
+        self.events.append(
+            {
+                "name": name,
+                "timestamp": time.time(),
+                "attributes": attributes or {},
+            }
+        )
 
     def to_dict(self) -> dict[str, Any]:
         """转换为字典"""
@@ -156,10 +161,13 @@ class Tracer:
         """记录异常"""
         if self._current_span:
             self._current_span.end(SpanStatus.ERROR, str(exception))
-            self._current_span.add_event("exception", {
-                "type": type(exception).__name__,
-                "message": str(exception),
-            })
+            self._current_span.add_event(
+                "exception",
+                {
+                    "type": type(exception).__name__,
+                    "message": str(exception),
+                },
+            )
 
     def get_spans(self) -> list[Span]:
         """获取所有 Spans"""

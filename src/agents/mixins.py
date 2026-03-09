@@ -60,6 +60,7 @@ class AgentToolsMixin:
 
         func = self._tools[name]
         import asyncio
+
         if asyncio.iscoroutinefunction(func):
             return await func(**kwargs)
         return func(**kwargs)
@@ -175,6 +176,7 @@ class AgentHooksMixin:
         for handler in self._hooks.get(event, []):
             try:
                 import asyncio
+
                 if asyncio.iscoroutinefunction(handler):
                     result = await handler(context)
                 else:
@@ -229,7 +231,11 @@ class AgentExceptionMixin:
 
         # 默认实现
         try:
-            return await func(*args, **kwargs) if asyncio.iscoroutinefunction(func) else func(*args, **kwargs)
+            return (
+                await func(*args, **kwargs)
+                if asyncio.iscoroutinefunction(func)
+                else func(*args, **kwargs)
+            )
         except Exception:
             return default
 

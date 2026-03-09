@@ -15,6 +15,7 @@ from typing import Any
 @dataclass
 class MCPServerConfig:
     """MCP Server 配置"""
+
     name: str
     command: str
     args: list[str] = None
@@ -26,6 +27,7 @@ class MCPServerConfig:
 @dataclass
 class MCPConnectionResult:
     """MCP 连接检测结果"""
+
     mcp_name: str
     is_connected: bool
     needs_start: bool
@@ -170,11 +172,8 @@ class MCPServerManager:
                 "params": {
                     "protocolVersion": "2024-11-05",
                     "capabilities": {},
-                    "clientInfo": {
-                        "name": "openyoung",
-                        "version": "1.0.0"
-                    }
-                }
+                    "clientInfo": {"name": "openyoung", "version": "1.0.0"},
+                },
             }
 
             # 通过 stdio 发送请求检测
@@ -324,7 +323,9 @@ class AgentMCPLoader:
 
         # 统计结果
         connected = [r.mcp_name for r in mcp_results.values() if r.is_connected]
-        skipped = [r.mcp_name for r in mcp_results.values() if not r.is_connected and not r.start_success]
+        skipped = [
+            r.mcp_name for r in mcp_results.values() if not r.is_connected and not r.start_success
+        ]
 
         if skipped:
             print(f"[MCP] {len(skipped)} MCP(s) skipped due to connection failure: {skipped}")
@@ -375,13 +376,17 @@ class AgentMCPLoader:
         self.manager.stop_all_servers()
 
 
-def load_agent_with_mcps(agent_config: dict[str, Any], packages_dir: str = "packages") -> dict[str, Any]:
+def load_agent_with_mcps(
+    agent_config: dict[str, Any], packages_dir: str = "packages"
+) -> dict[str, Any]:
     """CLI 入口 - 加载 Agent 并先决启动 MCP (智能跳过模式)"""
     loader = AgentMCPLoader(packages_dir)
     return loader.load_agent_with_mcps(agent_config)
 
 
-def load_agent_with_mcps_strict(agent_config: dict[str, Any], packages_dir: str = "packages") -> dict[str, Any]:
+def load_agent_with_mcps_strict(
+    agent_config: dict[str, Any], packages_dir: str = "packages"
+) -> dict[str, Any]:
     """CLI 入口 - 加载 Agent 并先决启动 MCP (严格模式)"""
     loader = AgentMCPLoader(packages_dir)
     return loader.load_agent_with_mcps_strict(agent_config)

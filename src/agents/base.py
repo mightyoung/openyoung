@@ -20,6 +20,7 @@ from typing import Any, Optional
 
 class AgentState(Enum):
     """Agent 状态"""
+
     IDLE = "idle"
     PLANNING = "planning"
     EXECUTING = "executing"
@@ -32,6 +33,7 @@ class AgentState(Enum):
 @dataclass
 class AgentConfig:
     """Agent 配置"""
+
     name: str
     model: str = "claude-3-5-sonnet-20241022"
     max_iterations: int = 100
@@ -44,6 +46,7 @@ class AgentConfig:
 @dataclass
 class AgentContext:
     """Agent 运行时上下文"""
+
     task: str = ""
     state: AgentState = AgentState.IDLE
     start_time: Optional[datetime] = None
@@ -64,6 +67,7 @@ class AgentContext:
 @dataclass
 class AgentResult:
     """Agent 执行结果"""
+
     success: bool
     output: str
     state: AgentState
@@ -193,11 +197,7 @@ class BaseAgent(ABC):
             # 4. 学习
             if feedback.get("should_learn", False):
                 self.context.state = AgentState.LEARNING
-                await self.learn({
-                    "task": task,
-                    "result": output,
-                    "feedback": feedback
-                })
+                await self.learn({"task": task, "result": output, "feedback": feedback})
 
             self.context.state = AgentState.FINISHED
             self.context.end_time = datetime.now()
@@ -209,7 +209,7 @@ class BaseAgent(ABC):
                 duration_ms=self.context.duration_ms,
                 iterations=self.context.iterations,
                 tools_used=self.context.tools_used.copy(),
-                metadata=feedback
+                metadata=feedback,
             )
 
         except Exception as e:
@@ -223,7 +223,7 @@ class BaseAgent(ABC):
                 state=self.context.state,
                 duration_ms=self.context.duration_ms,
                 iterations=self.context.iterations,
-                error=str(e)
+                error=str(e),
             )
 
     # === 工具管理 ===
@@ -263,6 +263,7 @@ class BaseAgent(ABC):
 
         # 支持异步和同步函数
         import asyncio
+
         if asyncio.iscoroutinefunction(func):
             return await func(**kwargs)
         else:
@@ -431,12 +432,10 @@ class SimpleAgent(BaseAgent):
 
 请只输出步骤列表，每行一个步骤，不要有其他内容。"""
 
-        response = await self._llm_client.chat([
-            {"role": "user", "content": prompt}
-        ])
+        response = await self._llm_client.chat([{"role": "user", "content": prompt}])
 
-        content = response.content if hasattr(response, 'content') else str(response)
-        steps = [s.strip() for s in content.split('\n') if s.strip()]
+        content = response.content if hasattr(response, "content") else str(response)
+        steps = [s.strip() for s in content.split("\n") if s.strip()]
         return steps if steps else [task]
 
     async def execute(self, plan: list[str]) -> str:
@@ -452,7 +451,7 @@ class SimpleAgent(BaseAgent):
         for i, step in enumerate(plan):
             self.context.iterations += 1
             result = await self._execute_step(step)
-            results.append(f"Step {i+1}: {result}")
+            results.append(f"Step {i + 1}: {result}")
 
         return "\n\n".join(results)
 
@@ -469,11 +468,9 @@ class SimpleAgent(BaseAgent):
         if not self._llm_client:
             return f"Executed: {step}"
 
-        response = await self._llm_client.chat([
-            {"role": "user", "content": step}
-        ])
+        response = await self._llm_client.chat([{"role": "user", "content": step}])
 
-        return response.content if hasattr(response, 'content') else str(response)
+        return response.content if hasattr(response, "content") else str(response)
 
     async def reflect(self, result: str) -> dict[str, Any]:
         """评估结果质量
@@ -490,5 +487,5 @@ class SimpleAgent(BaseAgent):
         return {
             "score": 1.0 if success else 0.0,
             "should_learn": not success,
-            "feedback": "Task completed" if success else "Task failed"
+            "feedback": "Task completed" if success else "Task failed",
         }

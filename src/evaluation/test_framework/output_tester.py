@@ -59,9 +59,7 @@ class OutputTester:
         rule_score = 0.0
         if test_case.validation_rules:
             rule_score = await self.rule_checker.check(
-                test_case.task_description,
-                output,
-                test_case.validation_rules
+                test_case.task_description, output, test_case.validation_rules
             )
         else:
             # 默认：检查是否有输出
@@ -72,9 +70,7 @@ class OutputTester:
         if self.llm_judge and test_case.expected_output_sample:
             try:
                 llm_score = await self.llm_judge.evaluate(
-                    test_case.task_description,
-                    output,
-                    test_case.expected_output_sample
+                    test_case.task_description, output, test_case.expected_output_sample
                 )
             except Exception as e:
                 # LLM Judge 失败时使用规则分数
@@ -134,12 +130,7 @@ class RuleChecker:
             "output_not_contains": self._check_output_not_contains,
         }
 
-    async def check(
-        self,
-        task_description: str,
-        output: str,
-        rules: dict
-    ) -> float:
+    async def check(self, task_description: str, output: str, rules: dict) -> float:
         """执行规则检查
 
         Args:
@@ -163,21 +154,16 @@ class RuleChecker:
 
         return sum(results) / len(results) if results else 0.0
 
-    async def _check_file_exists(
-        self,
-        task: str,
-        output: str,
-        params: dict
-    ) -> float:
+    async def _check_file_exists(self, task: str, output: str, params: dict) -> float:
         """检查文件是否存在"""
         file_path = params.get("path")
 
         if not file_path:
             # 从输出中提取路径
             patterns = [
-                r'(?:保存|输出|写入|创建)\s+(.+\.(?:json|txt|csv|py|md))',
-                r'文件\s*[:：]\s*(.+\.(?:json|txt|csv|py|md))',
-                r'(.+\.(?:json|txt|csv|py|md))',
+                r"(?:保存|输出|写入|创建)\s+(.+\.(?:json|txt|csv|py|md))",
+                r"文件\s*[:：]\s*(.+\.(?:json|txt|csv|py|md))",
+                r"(.+\.(?:json|txt|csv|py|md))",
             ]
             for pattern in patterns:
                 match = re.search(pattern, output)
@@ -201,16 +187,11 @@ class RuleChecker:
         except Exception:
             return 0.0
 
-    async def _check_json_format(
-        self,
-        task: str,
-        output: str,
-        params: dict
-    ) -> float:
+    async def _check_json_format(self, task: str, output: str, params: dict) -> float:
         """检查 JSON 格式"""
         try:
             # 尝试从输出中提取 JSON
-            json_match = re.search(r'\{[\s\S]*\}|\[[\s\S]*\]', output)
+            json_match = re.search(r"\{[\s\S]*\}|\[[\s\S]*\]", output)
             if json_match:
                 json.loads(json_match.group())
                 return 1.0
@@ -218,12 +199,7 @@ class RuleChecker:
             pass
         return 0.0
 
-    async def _check_code_syntax(
-        self,
-        task: str,
-        output: str,
-        params: dict
-    ) -> float:
+    async def _check_code_syntax(self, task: str, output: str, params: dict) -> float:
         """检查代码语法（简化版）"""
         language = params.get("language", "python")
 
@@ -235,12 +211,7 @@ class RuleChecker:
         # 其他语言暂时返回 0.5
         return 0.5
 
-    async def _check_output_contains(
-        self,
-        task: str,
-        output: str,
-        params: dict
-    ) -> float:
+    async def _check_output_contains(self, task: str, output: str, params: dict) -> float:
         """检查输出是否包含关键内容"""
         required = params.get("required", [])
         if not required:
@@ -251,15 +222,10 @@ class RuleChecker:
 
         return found / len(required)
 
-    async def _check_output_length(
-        self,
-        task: str,
-        output: str,
-        params: dict
-    ) -> float:
+    async def _check_output_length(self, task: str, output: str, params: dict) -> float:
         """检查输出长度"""
         min_length = params.get("min", 0)
-        max_length = params.get("max", float('inf'))
+        max_length = params.get("max", float("inf"))
 
         length = len(output)
 
@@ -270,12 +236,7 @@ class RuleChecker:
 
         return 1.0
 
-    async def _check_output_not_contains(
-        self,
-        task: str,
-        output: str,
-        params: dict
-    ) -> float:
+    async def _check_output_not_contains(self, task: str, output: str, params: dict) -> float:
         """检查输出不包含禁止内容"""
         forbidden = params.get("forbidden", [])
         if not forbidden:

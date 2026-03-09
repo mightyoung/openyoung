@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 
 class ActionType(Enum):
     """动作类型"""
+
     LLM = "llm"  # 调用 LLM
     TOOL = "tool"  # 执行工具
     EVAL = "eval"  # 执行评估
@@ -42,6 +43,7 @@ class ActionType(Enum):
 @dataclass
 class AgentGraphState(BaseAgentState):
     """Agent 工作流状态"""
+
     current_action: ActionType = ActionType.LLM
     tool_name: Optional[str] = None
     tool_input: Optional[Dict[str, Any]] = None
@@ -132,12 +134,8 @@ class ToolNodeHandler(NodeHandler):
             state.result = result
             # 添加结果到消息
             from langchain_core.messages import ToolMessage
-            state.messages.append(
-                ToolMessage(
-                    content=str(result),
-                    tool_call_id=state.tool_name
-                )
-            )
+
+            state.messages.append(ToolMessage(content=str(result), tool_call_id=state.tool_name))
         except Exception as e:
             logger.error(f"Tool execution failed: {e}")
             state.result = {"error": str(e)}
@@ -290,7 +288,7 @@ class AgentGraphBuilder:
                 ActionType.TOOL.value: "tool",
                 ActionType.EVAL.value: "eval",
                 ActionType.END.value: END,
-            }
+            },
         )
 
         # 边 - 执行完成后回到决策
@@ -302,9 +300,7 @@ class AgentGraphBuilder:
 
     def _init_handlers(self):
         """初始化节点处理器"""
-        self._decision_handler = DecisionNodeHandler(
-            self.llm, self.tools, self.eval_plugins
-        )
+        self._decision_handler = DecisionNodeHandler(self.llm, self.tools, self.eval_plugins)
         self._tool_handler = ToolNodeHandler(self.tools)
         self._llm_handler = LLMNodeHandler(self.llm)
         self._eval_handler = EvalNodeHandler(self.eval_plugins)

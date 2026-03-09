@@ -67,7 +67,6 @@ PRESET_DATASET = {
             keywords=["合并", "有序", "列表"],
             validation_rules={"output_contains": {"required": ["def", "return"]}},
         ),
-
         # ========== 代码修复 (8 cases) ==========
         TestCase(
             id="code_fix_001",
@@ -96,7 +95,6 @@ PRESET_DATASET = {
             difficulty=Difficulty.MEDIUM,
             keywords=["空指针", "None", "修复"],
         ),
-
         # ========== 文本生成 (8 cases) ==========
         TestCase(
             id="text_gen_001",
@@ -135,7 +133,6 @@ PRESET_DATASET = {
             difficulty=Difficulty.EASY,
             keywords=["求职", "邮件"],
         ),
-
         # ========== 数据处理 (6 cases) ==========
         TestCase(
             id="data_001",
@@ -164,7 +161,6 @@ PRESET_DATASET = {
             difficulty=Difficulty.MEDIUM,
             keywords=["排序", "JSON"],
         ),
-
         # ========== 信息查询 (6 cases) ==========
         TestCase(
             id="query_001",
@@ -193,7 +189,6 @@ PRESET_DATASET = {
             difficulty=Difficulty.HARD,
             keywords=["GitHub", "Python", "项目"],
         ),
-
         # ========== 任务执行 (6 cases) ==========
         TestCase(
             id="exec_001",
@@ -213,7 +208,6 @@ PRESET_DATASET = {
             difficulty=Difficulty.EASY,
             keywords=["执行", "脚本"],
         ),
-
         # ========== 问题解答 (8 cases) ==========
         TestCase(
             id="qa_001",
@@ -302,7 +296,6 @@ PRESET_DATASET = {
             keywords=["斐波那契", "fibonacci"],
             validation_rules={"output_contains": {"required": ["def"]}},
         ),
-
         # ========== 代码修复 (5 cases) ==========
         TestCase(
             id="code_fix_004",
@@ -322,7 +315,6 @@ PRESET_DATASET = {
             difficulty=Difficulty.EASY,
             keywords=["除零", "ZeroDivision", "修复"],
         ),
-
         # ========== 代码审查 (3 cases) ==========
         TestCase(
             id="code_review_001",
@@ -342,7 +334,6 @@ PRESET_DATASET = {
             difficulty=Difficulty.HARD,
             keywords=["安全", "漏洞", "审查"],
         ),
-
         # ========== 文本生成 (5 cases) ==========
         TestCase(
             id="text_gen_005",
@@ -371,7 +362,6 @@ PRESET_DATASET = {
             difficulty=Difficulty.EASY,
             keywords=["产品", "描述", "文案"],
         ),
-
         # ========== 数据处理 (3 cases) ==========
         TestCase(
             id="data_004",
@@ -391,7 +381,6 @@ PRESET_DATASET = {
             difficulty=Difficulty.MEDIUM,
             keywords=["统计", "单词", "次数"],
         ),
-
         # ========== 信息查询 (4 cases) ==========
         TestCase(
             id="query_004",
@@ -411,7 +400,6 @@ PRESET_DATASET = {
             difficulty=Difficulty.MEDIUM,
             keywords=["React", "新特性", "搜索"],
         ),
-
         # ========== 任务执行 (3 cases) ==========
         TestCase(
             id="exec_003",
@@ -431,7 +419,6 @@ PRESET_DATASET = {
             difficulty=Difficulty.EASY,
             keywords=["启动", "Flask", "应用"],
         ),
-
         # ========== 问题解答 (5 cases) ==========
         TestCase(
             id="qa_005",
@@ -469,7 +456,6 @@ PRESET_DATASET = {
             difficulty=Difficulty.MEDIUM,
             keywords=["Git", "原理", "解释"],
         ),
-
         # ========== 补充到 50+ ==========
         TestCase(
             id="code_gen_011",
@@ -518,7 +504,6 @@ PRESET_DATASET = {
             difficulty=Difficulty.EASY,
             keywords=["合并", "字典"],
         ),
-
         # ========== Web 爬取 (10 cases) ==========
         TestCase(
             id="web_001",
@@ -530,7 +515,7 @@ PRESET_DATASET = {
             keywords=["小红书", "热榜", "爬取"],
             validation_rules={
                 "output_contains": {"required": ["title", "author", "likes"]},
-                "file_exists": {"path": "output/xiaohongshu/posts.json"}
+                "file_exists": {"path": "output/xiaohongshu/posts.json"},
             },
         ),
         TestCase(
@@ -665,11 +650,7 @@ class TestDataManager:
         """
         return self.datasets.get(name, self.datasets.get("default", []))
 
-    def load_suite(
-        self,
-        suite_name: str,
-        dataset_name: str = "default"
-    ) -> TestSuite:
+    def load_suite(self, suite_name: str, dataset_name: str = "default") -> TestSuite:
         """加载测试套件
 
         Args:
@@ -701,18 +682,14 @@ class TestDataManager:
         )
 
     def get_by_task_type(
-        self,
-        task_type: TaskType,
-        dataset_name: str = "default"
+        self, task_type: TaskType, dataset_name: str = "default"
     ) -> list[TestCase]:
         """按任务类型获取测试用例"""
         all_cases = self.load_dataset(dataset_name)
         return [tc for tc in all_cases if tc.task_type == task_type]
 
     def get_by_difficulty(
-        self,
-        difficulty: Difficulty,
-        dataset_name: str = "default"
+        self, difficulty: Difficulty, dataset_name: str = "default"
     ) -> list[TestCase]:
         """按难度获取测试用例"""
         all_cases = self.load_dataset(dataset_name)

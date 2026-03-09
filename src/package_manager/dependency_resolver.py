@@ -13,6 +13,7 @@ import yaml
 @dataclass
 class DependencyInfo:
     """依赖信息"""
+
     type: str  # "skill", "mcp", "hook"
     name: str
     source: str | None = None  # 来源路径或 URL
@@ -23,6 +24,7 @@ class DependencyInfo:
 @dataclass
 class AgentDependency:
     """Agent 依赖"""
+
     agent_name: str
     skills: list[DependencyInfo] = field(default_factory=list)
     mcps: list[DependencyInfo] = field(default_factory=list)
@@ -180,6 +182,7 @@ class DependencyResolver:
 
 
 # ========== 便捷函数 ==========
+
 
 def resolve_agent_dependencies(agent_path: str) -> tuple[AgentDependency, AgentDependency]:
     """解析 Agent 依赖，返回 (all, missing)

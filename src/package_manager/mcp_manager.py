@@ -15,6 +15,7 @@ from typing import Any
 @dataclass
 class MCPServerConfig:
     """MCP Server 配置"""
+
     name: str
     command: str
     args: list[str] = None
@@ -26,6 +27,7 @@ class MCPServerConfig:
 @dataclass
 class MCPConnectionResult:
     """MCP 连接检测结果"""
+
     mcp_name: str
     is_connected: bool
     needs_start: bool
@@ -68,12 +70,14 @@ class MCPServerManager:
                         args = server_config.get("args", [])
                         env = server_config.get("env", {})
 
-                        servers[name] = [MCPServerConfig(
-                            name=name,
-                            command=cmd,
-                            args=args,
-                            env=env,
-                        )]
+                        servers[name] = [
+                            MCPServerConfig(
+                                name=name,
+                                command=cmd,
+                                args=args,
+                                env=env,
+                            )
+                        ]
                 except Exception as e:
                     print(f"[Warning] Failed to parse mcp.json in {item.name}: {e}")
 
@@ -82,6 +86,7 @@ class MCPServerManager:
             if package_yaml.exists():
                 try:
                     import yaml
+
                     config = yaml.safe_load(package_yaml.read_text(encoding="utf-8"))
                     mcp_config = config.get("mcp", {})
 
@@ -100,11 +105,13 @@ class MCPServerManager:
                             args = mcp_config.get("args", [])
 
                         if cmd:  # 只添加有效的配置
-                            servers[server_name] = [MCPServerConfig(
-                                name=server_name,
-                                command=cmd,
-                                args=args,
-                            )]
+                            servers[server_name] = [
+                                MCPServerConfig(
+                                    name=server_name,
+                                    command=cmd,
+                                    args=args,
+                                )
+                            ]
                 except ImportError:
                     # 没有 yaml 库，跳过 package.yaml
                     pass
@@ -200,11 +207,8 @@ class MCPServerManager:
                 "params": {
                     "protocolVersion": "2024-11-05",
                     "capabilities": {},
-                    "clientInfo": {
-                        "name": "openyoung",
-                        "version": "1.0.0"
-                    }
-                }
+                    "clientInfo": {"name": "openyoung", "version": "1.0.0"},
+                },
             }
 
             # 通过 stdio 发送请求检测
@@ -343,7 +347,9 @@ class AgentMCPLoader:
 
         # 统计结果
         connected = [r.mcp_name for r in mcp_results.values() if r.is_connected]
-        skipped = [r.mcp_name for r in mcp_results.values() if not r.is_connected and not r.start_success]
+        skipped = [
+            r.mcp_name for r in mcp_results.values() if not r.is_connected and not r.start_success
+        ]
 
         if skipped:
             print(f"[MCP] {len(skipped)} MCP(s) skipped due to connection failure: {skipped}")
@@ -394,13 +400,17 @@ class AgentMCPLoader:
         self.manager.stop_all_servers()
 
 
-def load_agent_with_mcps(agent_config: dict[str, Any], packages_dir: str = "packages") -> dict[str, Any]:
+def load_agent_with_mcps(
+    agent_config: dict[str, Any], packages_dir: str = "packages"
+) -> dict[str, Any]:
     """CLI 入口 - 加载 Agent 并先决启动 MCP (智能跳过模式)"""
     loader = AgentMCPLoader(packages_dir)
     return loader.load_agent_with_mcps(agent_config)
 
 
-def load_agent_with_mcps_strict(agent_config: dict[str, Any], packages_dir: str = "packages") -> dict[str, Any]:
+def load_agent_with_mcps_strict(
+    agent_config: dict[str, Any], packages_dir: str = "packages"
+) -> dict[str, Any]:
     """CLI 入口 - 加载 Agent 并先决启动 MCP (严格模式)"""
     loader = AgentMCPLoader(packages_dir)
     return loader.load_agent_with_mcps_strict(agent_config)

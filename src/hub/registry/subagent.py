@@ -16,6 +16,7 @@ from src.package_manager.base_registry import BaseRegistry
 @dataclass
 class SubAgentBinding:
     """SubAgent 绑定配置"""
+
     name: str
     type: str = "general"
     description: str = ""
@@ -138,6 +139,7 @@ class SubAgentRegistry(BaseRegistry):
         agent_dir = self.subagents_dir / name
         if agent_dir.exists():
             import shutil
+
             shutil.rmtree(agent_dir)
             return True
         return False

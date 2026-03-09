@@ -15,11 +15,13 @@ from typing import Any
 # 保留此处的别名以保持向后兼容
 try:
     from src.core.types import MessageRole as CoreMessageRole
+
     MessageRole = CoreMessageRole
 except ImportError:
     # 如果导入失败，使用本地定义（向后兼容）
     class MessageRole(str, Enum):
         """消息角色"""
+
         USER = "user"
         ASSISTANT = "assistant"
         SYSTEM = "system"
@@ -29,6 +31,7 @@ except ImportError:
 @dataclass
 class ChannelMessage:
     """统一的消息格式"""
+
     id: str
     role: MessageRole
     content: str
@@ -43,6 +46,7 @@ class ChannelMessage:
 @dataclass
 class ChannelUser:
     """统一的用户格式"""
+
     id: str
     name: str
     platform: str
@@ -77,29 +81,17 @@ class BaseChannel(ABC):
         pass
 
     @abstractmethod
-    async def send_message(
-        self,
-        message: ChannelMessage,
-        reply_to: str | None = None
-    ) -> bool:
+    async def send_message(self, message: ChannelMessage, reply_to: str | None = None) -> bool:
         """发送消息"""
         pass
 
     @abstractmethod
-    async def send_markdown(
-        self,
-        message: ChannelMessage,
-        reply_to: str | None = None
-    ) -> bool:
+    async def send_markdown(self, message: ChannelMessage, reply_to: str | None = None) -> bool:
         """发送 Markdown 消息"""
         pass
 
     @abstractmethod
-    async def send_image(
-        self,
-        message: ChannelMessage,
-        image_url: str
-    ) -> bool:
+    async def send_image(self, message: ChannelMessage, image_url: str) -> bool:
         """发送图片消息"""
         pass
 
@@ -142,5 +134,5 @@ class ChannelConfig:
         return cls(
             platform=data.get("platform", ""),
             enabled=data.get("enabled", True),
-            **{k: v for k, v in data.items() if k not in ["platform", "enabled"]}
+            **{k: v for k, v in data.items() if k not in ["platform", "enabled"]},
         )

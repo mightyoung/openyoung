@@ -13,14 +13,16 @@ from src.hub.registry import AgentRegistry, AgentSpec
 
 class SearchMode(Enum):
     """搜索模式"""
-    KEYWORD = "keyword"      # 关键词匹配
+
+    KEYWORD = "keyword"  # 关键词匹配
     SEMANTIC = "semantic"  # 向量语义
-    HYBRID = "hybrid"      # 混合模式
+    HYBRID = "hybrid"  # 混合模式
 
 
 @dataclass
 class SearchResult:
     """搜索结果"""
+
     agents: list[AgentSpec]
     mode: SearchMode
     total: int
@@ -45,6 +47,7 @@ class AgentRetriever:
         # 初始化向量存储
         try:
             from src.memory.vector_store import VectorStore
+
             # 使用默认路径，让 VectorStore 使用自己的默认 db_path
             self._vector_store = VectorStore(vector_store_path)
         except Exception as e:
@@ -58,7 +61,7 @@ class AgentRetriever:
         query: str,
         mode: SearchMode = SearchMode.HYBRID,
         limit: int = 10,
-        filters: dict[str, Any] | None = None
+        filters: dict[str, Any] | None = None,
     ) -> SearchResult:
         """
         搜索 Agent
@@ -83,19 +86,9 @@ class AgentRetriever:
         else:  # HYBRID
             agents = self._hybrid_search(query, limit, filters)
 
-        return SearchResult(
-            agents=agents,
-            mode=mode,
-            total=len(agents),
-            query=query
-        )
+        return SearchResult(agents=agents, mode=mode, total=len(agents), query=query)
 
-    def _keyword_search(
-        self,
-        query: str,
-        limit: int,
-        filters: dict | None
-    ) -> list[AgentSpec]:
+    def _keyword_search(self, query: str, limit: int, filters: dict | None) -> list[AgentSpec]:
         """关键词匹配搜索"""
         query_lower = query.lower()
 
@@ -111,15 +104,10 @@ class AgentRetriever:
                     results.append(agent)
 
         # 按相关度排序
-        results.sort(key=lambda a: getattr(a, 'quality_score', 0), reverse=True)
+        results.sort(key=lambda a: getattr(a, "quality_score", 0), reverse=True)
         return results[:limit]
 
-    def _semantic_search(
-        self,
-        query: str,
-        limit: int,
-        filters: dict | None
-    ) -> list[AgentSpec]:
+    def _semantic_search(self, query: str, limit: int, filters: dict | None) -> list[AgentSpec]:
         """向量语义搜索（真正的语义匹配）"""
         if not self._vector_store:
             print("[AgentRetriever] VectorStore not available, falling back to keyword")
@@ -128,10 +116,7 @@ class AgentRetriever:
         try:
             # 1. 使用 VectorStore 搜索
             results = self._vector_store.search(
-                query=query,
-                namespace="agents",
-                limit=limit * 2,
-                threshold=0.0
+                query=query, namespace="agents", limit=limit * 2, threshold=0.0
             )
 
             if not results:
@@ -142,6 +127,7 @@ class AgentRetriever:
             agents = []
             for r in results:
                 import json
+
                 tags_str = r.get("tags", "[]")
                 # 解析 JSON 字符串
                 try:
@@ -165,12 +151,7 @@ class AgentRetriever:
             print(f"[AgentRetriever] Semantic search error: {e}")
             return self._keyword_search(query, limit, filters)
 
-    def _hybrid_search(
-        self,
-        query: str,
-        limit: int,
-        filters: dict | None
-    ) -> list[AgentSpec]:
+    def _hybrid_search(self, query: str, limit: int, filters: dict | None) -> list[AgentSpec]:
         """混合搜索：关键词 + 向量"""
         if not self._vector_store:
             # 向量存储不可用，回退到关键词
@@ -179,11 +160,11 @@ class AgentRetriever:
         try:
             # 1. 关键词搜索
             keyword_results = self._keyword_search(query, limit * 2, filters)
-            keyword_map = {a.name: getattr(a, 'quality_score', 0) for a in keyword_results}
+            keyword_map = {a.name: getattr(a, "quality_score", 0) for a in keyword_results}
 
             # 2. 语义搜索
             semantic_results = self._semantic_search(query, limit * 2, filters)
-            semantic_map = {a.name: getattr(a, 'quality_score', 0) for a in semantic_results}
+            semantic_map = {a.name: getattr(a, "quality_score", 0) for a in semantic_results}
 
             # 3. 获取所有候选
             all_names = set(keyword_map.keys()) | set(semantic_map.keys())
@@ -209,7 +190,7 @@ class AgentRetriever:
                     combined.append(agent)
 
             # 5. 排序返回
-            combined.sort(key=lambda a: getattr(a, 'quality_score', 0), reverse=True)
+            combined.sort(key=lambda a: getattr(a, "quality_score", 0), reverse=True)
             return combined[:limit]
 
         except Exception as e:
@@ -232,12 +213,12 @@ class AgentRetriever:
             return True
 
         if "tags" in filters:
-            agent_tags = getattr(agent, 'tags', [])
+            agent_tags = getattr(agent, "tags", [])
             if not agent_tags or not any(t in agent_tags for t in filters["tags"]):
                 return False
 
         if "tools" in filters:
-            if not hasattr(agent, 'tools') or not agent.tools:
+            if not hasattr(agent, "tools") or not agent.tools:
                 return False
             if not any(t in agent.tools for t in filters["tools"]):
                 return False
@@ -254,12 +235,12 @@ class AgentRetriever:
             score += 1.0
 
         # description 匹配
-        if hasattr(agent, 'description') and agent.description:
+        if hasattr(agent, "description") and agent.description:
             if query_lower in agent.description.lower():
                 score += 0.5
 
         # tags 匹配
-        if hasattr(agent, 'tags') and agent.tags:
+        if hasattr(agent, "tags") and agent.tags:
             for tag in agent.tags:
                 if query_lower in tag.lower():
                     score += 0.3
@@ -284,6 +265,7 @@ class AgentRetriever:
 
 
 # ========== 便捷函数 ==========
+
 
 def create_retriever(packages_dir: str = "packages") -> AgentRetriever:
     """创建 AgentRetriever 实例"""

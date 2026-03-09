@@ -393,7 +393,9 @@ class TaskCompletionEval:
             expected["file_count"] = len(found_files)
 
         # 模式2: 检查是否有 "完成" 或 "成功" 等关键词
-        if any(kw in task_description for kw in ["完成", "成功", "完成", "generate", "create", "save"]):
+        if any(
+            kw in task_description for kw in ["完成", "成功", "完成", "generate", "create", "save"]
+        ):
             expected["has_completion_keyword"] = True
 
         return expected if expected else None

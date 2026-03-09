@@ -29,6 +29,7 @@ class CLIContext:
     def load_config(self) -> dict:
         """加载配置"""
         import json
+
         if self.config_file.exists():
             try:
                 return json.loads(self.config_file.read_text())
@@ -39,6 +40,7 @@ class CLIContext:
     def save_config(self, config: dict) -> bool:
         """保存配置"""
         import json
+
         try:
             self.config_file.write_text(json.dumps(config, indent=2))
             return True

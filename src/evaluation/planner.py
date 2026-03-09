@@ -52,29 +52,22 @@ class EvalPlanner:
     # 任务类型识别模式
     TASK_PATTERNS = {
         "web_scraping": [
-            "爬", "抓取", "抓", "scrape", "crawl", "采集",
-            "热榜", "榜单", "排行榜", "top"
+            "爬",
+            "抓取",
+            "抓",
+            "scrape",
+            "crawl",
+            "采集",
+            "热榜",
+            "榜单",
+            "排行榜",
+            "top",
         ],
-        "coding": [
-            "写", "实现", "创建", "开发", "写代码",
-            "write", "implement", "create", "code"
-        ],
-        "analysis": [
-            "分析", "解析", "评估",
-            "analyze", "analysis", "parse"
-        ],
-        "research": [
-            "研究", "调查", "搜索",
-            "research", "investigate", "search"
-        ],
-        "refactor": [
-            "重构", "优化", "改进",
-            "refactor", "optimize", "improve"
-        ],
-        "debug": [
-            "调试", "修复", "错误",
-            "debug", "fix", "error", "bug"
-        ],
+        "coding": ["写", "实现", "创建", "开发", "写代码", "write", "implement", "create", "code"],
+        "analysis": ["分析", "解析", "评估", "analyze", "analysis", "parse"],
+        "research": ["研究", "调查", "搜索", "research", "investigate", "search"],
+        "refactor": ["重构", "优化", "改进", "refactor", "optimize", "improve"],
+        "debug": ["调试", "修复", "错误", "debug", "fix", "error", "bug"],
     }
 
     # 任务类型对应的成功标准模板
@@ -83,32 +76,12 @@ class EvalPlanner:
             "成功获取指定数量的数据",
             "数据包含所需字段",
             "数据保存到指定位置",
-            "输出格式正确"
+            "输出格式正确",
         ],
-        "coding": [
-            "代码无语法错误",
-            "代码功能正确",
-            "包含必要的测试",
-            "代码符合规范"
-        ],
-        "analysis": [
-            "分析结果完整",
-            "包含数据支持",
-            "结论清晰",
-            "输出格式正确"
-        ],
-        "research": [
-            "找到相关信息",
-            "信息准确可靠",
-            "来源可信",
-            "整理清晰"
-        ],
-        "general": [
-            "任务成功完成",
-            "输出结果正确",
-            "符合用户预期",
-            "无明显错误"
-        ],
+        "coding": ["代码无语法错误", "代码功能正确", "包含必要的测试", "代码符合规范"],
+        "analysis": ["分析结果完整", "包含数据支持", "结论清晰", "输出格式正确"],
+        "research": ["找到相关信息", "信息准确可靠", "来源可信", "整理清晰"],
+        "general": ["任务成功完成", "输出结果正确", "符合用户预期", "无明显错误"],
     }
 
     # 验证方法模板
@@ -118,14 +91,9 @@ class EvalPlanner:
             "验证数据格式(JSON/CSV)",
             "验证数据条目数量",
             "验证必需字段存在",
-            "检查数据是否为空"
+            "检查数据是否为空",
         ],
-        "coding": [
-            "运行代码无错误",
-            "输出结果正确",
-            "通过单元测试",
-            "符合编码规范"
-        ],
+        "coding": ["运行代码无错误", "输出结果正确", "通过单元测试", "符合编码规范"],
     }
 
     # 评估指标
@@ -133,7 +101,7 @@ class EvalPlanner:
         "completion_rate - 任务完成率",
         "accuracy - 结果准确性",
         "quality - 输出质量",
-        "efficiency - 执行效率"
+        "efficiency - 执行效率",
     ]
 
     def __init__(self):
@@ -168,9 +136,7 @@ class EvalPlanner:
         expected_outputs = self._parse_expected_outputs(task_description)
 
         # 6. 生成评估步骤
-        evaluation_steps = self._generate_evaluation_steps(
-            success_criteria, validation_methods
-        )
+        evaluation_steps = self._generate_evaluation_steps(success_criteria, validation_methods)
 
         # 7. 搜索最佳实践获取来源
         sources = await self.search_best_practices(task_description)
@@ -203,14 +169,10 @@ class EvalPlanner:
 
         return "general"
 
-    def _generate_success_criteria(
-        self, task_type: str, task_description: str
-    ) -> list[str]:
+    def _generate_success_criteria(self, task_type: str, task_description: str) -> list[str]:
         """生成成功标准"""
         # 获取任务类型对应的模板
-        base_criteria = self.SUCCESS_TEMPLATES.get(
-            task_type, self.SUCCESS_TEMPLATES["general"]
-        )
+        base_criteria = self.SUCCESS_TEMPLATES.get(task_type, self.SUCCESS_TEMPLATES["general"])
 
         # 根据任务描述进行定制
         custom_criteria = []
@@ -224,10 +186,14 @@ class EvalPlanner:
         if "csv" in task_description.lower():
             custom_criteria.append("输出为有效的CSV格式")
         # 只有在任务类型需要文件创建时才添加文件保存标准
-        if task_type in file_required_types and ("文件" in task_description or "file" in task_description.lower()):
+        if task_type in file_required_types and (
+            "文件" in task_description or "file" in task_description.lower()
+        ):
             custom_criteria.append("文件正确保存到指定位置")
         # 对于分析类任务，如果提到保存再添加
-        elif task_type in ["analysis", "research"] and ("保存到" in task_description or "save to" in task_description.lower()):
+        elif task_type in ["analysis", "research"] and (
+            "保存到" in task_description or "save to" in task_description.lower()
+        ):
             custom_criteria.append("文件正确保存到指定位置")
 
         # 提取数字要求
@@ -238,13 +204,9 @@ class EvalPlanner:
 
         return custom_criteria if custom_criteria else base_criteria
 
-    def _generate_validation_methods(
-        self, task_type: str, task_description: str
-    ) -> list[str]:
+    def _generate_validation_methods(self, task_type: str, task_description: str) -> list[str]:
         """生成验证方法"""
-        base_methods = self.VALIDATION_TEMPLATES.get(
-            task_type, []
-        )
+        base_methods = self.VALIDATION_TEMPLATES.get(task_type, [])
 
         custom_methods = []
 
@@ -262,30 +224,17 @@ class EvalPlanner:
             "web_scraping": [
                 "completeness - 数据完整性",
                 "accuracy - 数据准确性",
-                "freshness - 数据时效性"
+                "freshness - 数据时效性",
             ],
-            "coding": [
-                "correctness - 代码正确性",
-                "quality - 代码质量",
-                "testability - 可测试性"
-            ],
-            "analysis": [
-                "depth - 分析深度",
-                "accuracy - 分析准确性",
-                "clarity - 结果清晰度"
-            ],
+            "coding": ["correctness - 代码正确性", "quality - 代码质量", "testability - 可测试性"],
+            "analysis": ["depth - 分析深度", "accuracy - 分析准确性", "clarity - 结果清晰度"],
         }
 
         return task_metrics.get(task_type, self.DEFAULT_METRICS)
 
     def _parse_expected_outputs(self, task_description: str) -> dict[str, Any]:
         """解析预期输出"""
-        expected = {
-            "format": None,
-            "location": None,
-            "count": None,
-            "fields": []
-        }
+        expected = {"format": None, "location": None, "count": None, "fields": []}
 
         # 解析格式
         if "json" in task_description.lower():
@@ -311,7 +260,18 @@ class EvalPlanner:
                         break
 
         # 解析字段
-        field_keywords = ["标题", "作者", "内容", "评论", "点赞", "title", "author", "content", "comment", "like"]
+        field_keywords = [
+            "标题",
+            "作者",
+            "内容",
+            "评论",
+            "点赞",
+            "title",
+            "author",
+            "content",
+            "comment",
+            "like",
+        ]
         for keyword in field_keywords:
             if keyword in task_description:
                 expected["fields"].append(keyword)
@@ -340,7 +300,7 @@ class EvalPlanner:
         """获取参考来源"""
         return [
             f"EvalPlanner - {task_type} task templates",
-            "Best practices from evaluation frameworks"
+            "Best practices from evaluation frameworks",
         ]
 
     async def search_best_practices(self, task_description: str) -> list[str]:
@@ -352,6 +312,7 @@ class EvalPlanner:
         - 社区讨论
         """
         import subprocess
+
         sources = []
         task_type = self._analyze_task_type(task_description)
 
@@ -369,10 +330,19 @@ class EvalPlanner:
         # 2. 尝试使用 gh CLI 搜索相关评估框架
         try:
             result = subprocess.run(
-                ["gh", "search", "repos", f"{task_type}-evaluation", "--limit", "3", "--json", "fullName"],
+                [
+                    "gh",
+                    "search",
+                    "repos",
+                    f"{task_type}-evaluation",
+                    "--limit",
+                    "3",
+                    "--json",
+                    "fullName",
+                ],
                 capture_output=True,
                 text=True,
-                timeout=10
+                timeout=10,
             )
             if result.returncode == 0:
                 data = json.loads(result.stdout)

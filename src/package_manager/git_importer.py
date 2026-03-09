@@ -160,6 +160,7 @@ class GitLabImporter(GitImporter):
     def get_api_url(self, owner: str, repo: str) -> str:
         # URL 编码 owner/repo
         import urllib.parse
+
         encoded = urllib.parse.quote(f"{owner}/{repo}")
         return f"https://gitlab.com/api/v4/projects/{encoded}"
 
@@ -217,7 +218,9 @@ class GitImporterFactory:
         return None
 
     @classmethod
-    def from_url(cls, url: str, temp_dir: str = "/tmp/openyoung_imports") -> tuple[GitImporter, str, str, str] | None:
+    def from_url(
+        cls, url: str, temp_dir: str = "/tmp/openyoung_imports"
+    ) -> tuple[GitImporter, str, str, str] | None:
         """从 URL 自动识别并创建导入器
 
         Returns:

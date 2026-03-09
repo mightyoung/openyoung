@@ -11,6 +11,7 @@ from typing import Any
 @dataclass
 class ExecutionPattern:
     """执行模式"""
+
     task_type: str
     workflow: list[str]
     tools_used: list[str]
@@ -180,8 +181,5 @@ class ResultAnalyzer:
         return {
             "count": len(self.patterns),
             "types": type_counts,
-            "recent": [
-                {"type": p.task_type, "tools": p.tools_used}
-                for p in self.patterns[-5:]
-            ]
+            "recent": [{"type": p.task_type, "tools": p.tools_used} for p in self.patterns[-5:]],
         }

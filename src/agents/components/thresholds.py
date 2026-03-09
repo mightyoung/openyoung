@@ -60,11 +60,13 @@ def check_threshold_violations(judge_result: dict) -> List[dict]:
         if dimension in DIMENSION_THRESHOLDS:
             config = DIMENSION_THRESHOLDS[dimension]
             if score_value < config["threshold"]:
-                violations.append({
-                    "dimension": dimension,
-                    "score": score_value,
-                    "threshold": config["threshold"],
-                    "blocking": config["blocking"],
-                })
+                violations.append(
+                    {
+                        "dimension": dimension,
+                        "score": score_value,
+                        "threshold": config["threshold"],
+                        "blocking": config["blocking"],
+                    }
+                )
 
     return violations

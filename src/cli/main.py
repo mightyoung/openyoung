@@ -954,6 +954,8 @@ def eval_list():
     click.echo("Available Evaluation Metrics:")
     for m in metrics:
         click.echo(f"  • {m}")
+
+
 @click.argument("agent_name", default="default")
 @click.option("--limit", "-n", default=10, help="Number of records to show")
 def eval_history(agent_name: str, limit: int):
@@ -1539,9 +1541,7 @@ def import_github(
         if lazy:
             click.echo("[Mode] Lazy clone (fast, partial)")
 
-        result = import_github_enhanced(
-            github_url, agent_name=agent_name, validate=validate
-        )
+        result = import_github_enhanced(github_url, agent_name=agent_name, validate=validate)
 
         if "error" in result:
             click.echo(f"Error: {result['error']}", err=True)
@@ -1897,9 +1897,7 @@ def memory_stats():
     "--github", "-g", "github_url", default=None, help="GitHub URL to clone and analyze first"
 )
 @click.option("--sandbox", "-s", is_flag=True, help="Enable AI Docker sandbox execution")
-@click.option(
-    "--allow-network", "-n", is_flag=True, help="Allow network access in sandbox"
-)
+@click.option("--allow-network", "-n", is_flag=True, help="Allow network access in sandbox")
 @click.option("--max-memory", default=512, help="Max memory in MB for sandbox")
 @click.option("--max-time", default=300, help="Max execution time in seconds")
 def run_agent(
@@ -1998,7 +1996,9 @@ def run_agent(
                     max_execution_time_seconds=max_time,
                     allow_network=allow_network,
                 )
-                click.echo(f"[Sandbox] Enabled: max_memory={max_memory}MB, max_time={max_time}s, allow_network={allow_network}")
+                click.echo(
+                    f"[Sandbox] Enabled: max_memory={max_memory}MB, max_time={max_time}s, allow_network={allow_network}"
+                )
             except Exception as e:
                 click.echo(f"[Warning] Sandbox init failed: {e}", err=True)
 
@@ -2029,6 +2029,7 @@ def run_agent(
             # Track agent usage
             try:
                 from src.package_manager.registry import AgentRegistry
+
                 registry = AgentRegistry("packages")
                 registry.track_usage(agent_name)
             except Exception:
@@ -2278,10 +2279,12 @@ def main():
 
     # 注册 eval 命令组
     from src.cli.eval import eval_group
+
     cli.add_command(eval_group, name="eval")
 
     # 注册 test 命令组
     from src.cli.test import test_group
+
     cli.add_command(test_group, name="test")
 
     cli()

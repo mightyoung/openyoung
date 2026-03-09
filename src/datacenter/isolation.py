@@ -242,7 +242,9 @@ class IsolationManager:
         cursor.execute("SELECT COUNT(*) FROM isolation_data")
         total = cursor.fetchone()[0]
 
-        cursor.execute("SELECT isolation_level, COUNT(*) FROM isolation_data GROUP BY isolation_level")
+        cursor.execute(
+            "SELECT isolation_level, COUNT(*) FROM isolation_data GROUP BY isolation_level"
+        )
         by_level = {row[0]: row[1] for row in cursor.fetchall()}
 
         conn.close()

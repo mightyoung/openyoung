@@ -115,12 +115,14 @@ class DataExporter(BaseStorage):
             rows = cursor.fetchall()
             results = []
             for row in rows:
-                results.append({
-                    "agent_id": row["agent_id"],
-                    "first_run": row["first_run"],
-                    "total_runs": row["total_runs"],
-                    "success_runs": row["success_runs"]
-                })
+                results.append(
+                    {
+                        "agent_id": row["agent_id"],
+                        "first_run": row["first_run"],
+                        "total_runs": row["total_runs"],
+                        "success_runs": row["success_runs"],
+                    }
+                )
         finally:
             conn.close()
 
@@ -153,19 +155,16 @@ class DataExporter(BaseStorage):
 
                 if flat_data:
                     with open(output, "w", encoding="utf-8", newline="") as f:
-                        writer = csv.DictWriter(f, fieldnames=flat_data[0].keys(), extrasaction='ignore')
+                        writer = csv.DictWriter(
+                            f, fieldnames=flat_data[0].keys(), extrasaction="ignore"
+                        )
                         writer.writeheader()
                         writer.writerows(flat_data)
 
         print(f"Exported {len(results)} records to {output_path}")
         return True
 
-    def export_with_license(
-        self,
-        output_path: str,
-        data_type: str,
-        license: dict
-    ) -> bool:
+    def export_with_license(self, output_path: str, data_type: str, license: dict) -> bool:
         """带授权信息导出"""
         # 先导出数据
         if data_type == "runs":
@@ -187,7 +186,7 @@ class DataExporter(BaseStorage):
             "data_file": str(output_path),
             "data_type": data_type,
             "license": license,
-            "exported_at": datetime.now().isoformat()
+            "exported_at": datetime.now().isoformat(),
         }
 
         with open(license_path, "w", encoding="utf-8") as f:
@@ -219,10 +218,7 @@ class DataExporter(BaseStorage):
             exported["steps"] = str(steps_file)
 
         # 导出元数据
-        metadata = {
-            "exported_at": datetime.now().isoformat(),
-            "files": list(exported.keys())
-        }
+        metadata = {"exported_at": datetime.now().isoformat(), "files": list(exported.keys())}
         meta_file = output_path / "metadata.json"
         with open(meta_file, "w", encoding="utf-8") as f:
             json.dump(metadata, f, indent=2)
@@ -232,6 +228,7 @@ class DataExporter(BaseStorage):
 
 
 # ========== 便捷函数 ==========
+
 
 def get_data_exporter(data_dir: str = ".young") -> DataExporter:
     """获取数据导出器"""

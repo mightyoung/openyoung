@@ -12,17 +12,19 @@ import yaml
 
 class QualityDimension(Enum):
     """质量维度"""
-    COMPLETENESS = "completeness"    # 完整性
-    VALIDITY = "validity"             # 有效性
-    DEPENDENCIES = "dependencies"     # 依赖
-    DOCUMENTATION = "documentation"   # 文档
-    SECURITY = "security"             # 安全性
-    RUNTIME = "runtime"               # 运行时测试
+
+    COMPLETENESS = "completeness"  # 完整性
+    VALIDITY = "validity"  # 有效性
+    DEPENDENCIES = "dependencies"  # 依赖
+    DOCUMENTATION = "documentation"  # 文档
+    SECURITY = "security"  # 安全性
+    RUNTIME = "runtime"  # 运行时测试
 
 
 @dataclass
 class EvaluationResult:
     """评估结果"""
+
     dimension: QualityDimension
     score: float  # 0-1
     passed: bool
@@ -33,6 +35,7 @@ class EvaluationResult:
 @dataclass
 class AgentQualityReport:
     """Agent 质量报告"""
+
     agent_name: str
     overall_score: float
     dimensions: list[EvaluationResult]
@@ -111,7 +114,7 @@ class AgentEvaluator:
             overall_score=overall_score,
             dimensions=results,
             warnings=warnings,
-            passed=passed
+            passed=passed,
         )
 
     # ========== 各维度评估 ==========
@@ -131,8 +134,8 @@ class AgentEvaluator:
         # 检查推荐文件
         for rec_file in self.RECOMMENDED_FILES:
             # 目录检查
-            if rec_file.endswith('/'):
-                dir_name = rec_file.rstrip('/')
+            if rec_file.endswith("/"):
+                dir_name = rec_file.rstrip("/")
                 if (agent_path / dir_name).is_dir():
                     found.append(rec_file)
             elif (agent_path / rec_file).exists():
@@ -147,7 +150,7 @@ class AgentEvaluator:
             score=score,
             passed=passed,
             details=f"Found: {found}, Missing: {missing}",
-            suggestions=[f"Missing required: {m}" for m in missing] if missing else []
+            suggestions=[f"Missing required: {m}" for m in missing] if missing else [],
         )
 
     async def _evaluate_validity(self, agent_path: Path) -> EvaluationResult:
@@ -160,11 +163,11 @@ class AgentEvaluator:
                 score=0.0,
                 passed=False,
                 details="agent.yaml not found",
-                suggestions=["Create agent.yaml with valid configuration"]
+                suggestions=["Create agent.yaml with valid configuration"],
             )
 
         try:
-            with open(agent_yaml, encoding='utf-8') as f:
+            with open(agent_yaml, encoding="utf-8") as f:
                 config = yaml.safe_load(f)
 
             if not config:
@@ -173,7 +176,7 @@ class AgentEvaluator:
                     score=0.0,
                     passed=False,
                     details="agent.yaml is empty",
-                    suggestions=["Add configuration to agent.yaml"]
+                    suggestions=["Add configuration to agent.yaml"],
                 )
 
             # 检查必需字段
@@ -186,7 +189,7 @@ class AgentEvaluator:
                     score=0.5,
                     passed=False,
                     details=f"Missing fields: {missing_fields}",
-                    suggestions=[f"Add field: {f}" for f in missing_fields]
+                    suggestions=[f"Add field: {f}" for f in missing_fields],
                 )
 
             # 检查配置合理性
@@ -210,7 +213,7 @@ class AgentEvaluator:
                 score=score,
                 passed=len(issues) == 0,
                 details=f"Config valid, issues: {issues}" if issues else "Config valid",
-                suggestions=issues
+                suggestions=issues,
             )
 
         except yaml.YAMLError as e:
@@ -219,7 +222,7 @@ class AgentEvaluator:
                 score=0.0,
                 passed=False,
                 details=f"YAML parse error: {e}",
-                suggestions=["Fix YAML syntax errors"]
+                suggestions=["Fix YAML syntax errors"],
             )
         except Exception as e:
             return EvaluationResult(
@@ -227,7 +230,7 @@ class AgentEvaluator:
                 score=0.0,
                 passed=False,
                 details=f"Parse error: {e}",
-                suggestions=["Check configuration format"]
+                suggestions=["Check configuration format"],
             )
 
     async def _evaluate_dependencies(self, agent_path: Path) -> EvaluationResult:
@@ -246,7 +249,7 @@ class AgentEvaluator:
                 score=1.0,
                 passed=True,
                 details="No external dependencies",
-                suggestions=[]
+                suggestions=[],
             )
 
         return EvaluationResult(
@@ -254,7 +257,7 @@ class AgentEvaluator:
             score=0.8,
             passed=True,
             details=f"Found dependency files: {found_deps}",
-            suggestions=["Verify dependencies are installable"]
+            suggestions=["Verify dependencies are installable"],
         )
 
     async def _evaluate_documentation(self, agent_path: Path) -> EvaluationResult:
@@ -267,18 +270,18 @@ class AgentEvaluator:
                 score=0.0,
                 passed=False,
                 details="CLAUDE.md not found",
-                suggestions=["Add CLAUDE.md with agent description"]
+                suggestions=["Add CLAUDE.md with agent description"],
             )
 
         try:
-            content = claude_md.read_text(encoding='utf-8')
+            content = claude_md.read_text(encoding="utf-8")
         except Exception:
             return EvaluationResult(
                 dimension=QualityDimension.DOCUMENTATION,
                 score=0.0,
                 passed=False,
                 details="CLAUDE.md cannot be read",
-                suggestions=["Check file encoding"]
+                suggestions=["Check file encoding"],
             )
 
         # 检查文档长度
@@ -296,7 +299,7 @@ class AgentEvaluator:
             score=score,
             passed=score >= 0.3,
             details=f"Doc length: {len(content)} chars, sections: {sections_found}/{len(key_sections)}",
-            suggestions=["Add more detailed documentation"] if score < 0.5 else []
+            suggestions=["Add more detailed documentation"] if score < 0.5 else [],
         )
 
     async def _evaluate_security(self, agent_path: Path) -> EvaluationResult:
@@ -307,7 +310,7 @@ class AgentEvaluator:
         agent_yaml = agent_path / "agent.yaml"
         if agent_yaml.exists():
             try:
-                config = yaml.safe_load(agent_yaml.read_text(encoding='utf-8'))
+                config = yaml.safe_load(agent_yaml.read_text(encoding="utf-8"))
 
                 # 检查权限配置
                 permission = config.get("permission", {})
@@ -321,7 +324,7 @@ class AgentEvaluator:
         # 检查是否有危险的 shell 命令
         for py_file in agent_path.rglob("*.py"):
             try:
-                content = py_file.read_text(encoding='utf-8')
+                content = py_file.read_text(encoding="utf-8")
                 if "os.system" in content or "subprocess.run" in content:
                     warnings.append(f"Shell execution in {py_file.name}")
             except:
@@ -334,7 +337,7 @@ class AgentEvaluator:
             score=score,
             passed=len(warnings) == 0,
             details=f"Warnings: {warnings}" if warnings else "No security issues",
-            suggestions=warnings
+            suggestions=warnings,
         )
 
     async def _evaluate_runtime(self, agent_path: Path) -> EvaluationResult:
@@ -350,18 +353,18 @@ class AgentEvaluator:
                 score=0.0,
                 passed=False,
                 details="agent.yaml not found - cannot test runtime",
-                suggestions=["Create agent.yaml with model configuration"]
+                suggestions=["Create agent.yaml with model configuration"],
             )
 
         try:
-            config = yaml.safe_load(agent_yaml.read_text(encoding='utf-8'))
+            config = yaml.safe_load(agent_yaml.read_text(encoding="utf-8"))
         except Exception as e:
             return EvaluationResult(
                 dimension=QualityDimension.RUNTIME,
                 score=0.0,
                 passed=False,
                 details=f"Failed to parse agent.yaml: {e}",
-                suggestions=["Fix agent.yaml syntax"]
+                suggestions=["Fix agent.yaml syntax"],
             )
 
         # 检查是否有 model 配置
@@ -372,7 +375,7 @@ class AgentEvaluator:
                 score=0.0,
                 passed=False,
                 details="No model configured - cannot test runtime",
-                suggestions=["Add model field to agent.yaml"]
+                suggestions=["Add model field to agent.yaml"],
             )
 
         # 尝试创建一个简单的测试
@@ -413,11 +416,12 @@ class AgentEvaluator:
             score=score,
             passed=score >= 0.5,
             details=details,
-            suggestions=issues
+            suggestions=issues,
         )
 
 
 # ========== 便捷函数 ==========
+
 
 def create_evaluator() -> AgentEvaluator:
     """创建 AgentEvaluator 实例"""

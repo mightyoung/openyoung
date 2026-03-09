@@ -18,6 +18,7 @@ from .base_storage import BaseStorage
 @dataclass
 class DataLicense:
     """数据许可证"""
+
     license_id: str = field(default_factory=lambda: f"lic_{uuid.uuid4().hex[:12]}")
     owner_id: str = ""
     license_type: str = "private"  # public / private / team
@@ -34,7 +35,7 @@ class DataLicense:
             "team_id": self.team_id,
             "usage_terms": self.usage_terms,
             "watermark": self.watermark,
-            "created_at": self.created_at.isoformat()
+            "created_at": self.created_at.isoformat(),
         }
 
 
@@ -47,12 +48,7 @@ class Watermark:
     """
 
     @staticmethod
-    def generate_watermark(
-        data: Any,
-        license_id: str,
-        owner_id: str,
-        metadata: dict = None
-    ) -> str:
+    def generate_watermark(data: Any, license_id: str, owner_id: str, metadata: dict = None) -> str:
         """生成水印标识
 
         Args:
@@ -70,12 +66,12 @@ class Watermark:
             "owner_id": owner_id,
             "timestamp": datetime.now().isoformat(),
             "version": "1.0",
-            "metadata": metadata or {}
+            "metadata": metadata or {},
         }
 
         # 序列化并编码
         content_str = json.dumps(watermark_content, sort_keys=True)
-        watermark_bytes = content_str.encode('utf-8')
+        watermark_bytes = content_str.encode("utf-8")
 
         # 生成哈希签名
         hash_obj = hashlib.sha256(watermark_bytes)
@@ -83,20 +79,14 @@ class Watermark:
 
         # 组合最终水印
         final_watermark = base64.b64encode(
-            json.dumps({
-                "content": watermark_content,
-                "signature": signature
-            }).encode('utf-8')
-        ).decode('utf-8')
+            json.dumps({"content": watermark_content, "signature": signature}).encode("utf-8")
+        ).decode("utf-8")
 
         return final_watermark
 
     @staticmethod
     def embed_visible_watermark(
-        data: Any,
-        license_id: str,
-        owner_id: str,
-        metadata: dict = None
+        data: Any, license_id: str, owner_id: str, metadata: dict = None
     ) -> dict:
         """嵌入可见水印
 
@@ -109,9 +99,7 @@ class Watermark:
         Returns:
             嵌入水印后的数据
         """
-        watermark = Watermark.generate_watermark(
-            data, license_id, owner_id, metadata
-        )
+        watermark = Watermark.generate_watermark(data, license_id, owner_id, metadata)
 
         # 如果数据是字典，添加水印字段
         if isinstance(data, dict):
@@ -124,7 +112,8 @@ class Watermark:
             # 为列表中的每个字典添加水印
             return [
                 {**item, "_watermark": watermark, "_license_id": license_id, "_owner_id": owner_id}
-                if isinstance(item, dict) else item
+                if isinstance(item, dict)
+                else item
                 for item in data
             ]
         else:
@@ -133,14 +122,12 @@ class Watermark:
                 "_data": data,
                 "_watermark": watermark,
                 "_license_id": license_id,
-                "_owner_id": owner_id
+                "_owner_id": owner_id,
             }
 
     @staticmethod
     def verify_watermark(
-        data: Any,
-        expected_license_id: str = None,
-        expected_owner_id: str = None
+        data: Any, expected_license_id: str = None, expected_owner_id: str = None
     ) -> dict:
         """验证水印
 
@@ -163,7 +150,7 @@ class Watermark:
             "license_id": None,
             "owner_id": None,
             "timestamp": None,
-            "error": None
+            "error": None,
         }
 
         try:
@@ -183,7 +170,9 @@ class Watermark:
 
             # 解码水印
             try:
-                decoded = json.loads(base64.b64decode(watermark_str.encode('utf-8')).decode('utf-8'))
+                decoded = json.loads(
+                    base64.b64decode(watermark_str.encode("utf-8")).decode("utf-8")
+                )
             except Exception as e:
                 result["error"] = f"Invalid watermark format: {e}"
                 return result
@@ -193,7 +182,7 @@ class Watermark:
 
             # 验证签名
             content_str = json.dumps(content, sort_keys=True)
-            expected_signature = hashlib.sha256(content_str.encode('utf-8')).hexdigest()
+            expected_signature = hashlib.sha256(content_str.encode("utf-8")).hexdigest()
 
             if signature != expected_signature:
                 result["error"] = "Invalid signature"
@@ -256,12 +245,9 @@ class DataLicenseManager(BaseStorage):
                 "team_id": "TEXT",
                 "usage_terms": "TEXT",
                 "watermark": "INTEGER DEFAULT 1",
-                "created_at": "TEXT NOT NULL"
+                "created_at": "TEXT NOT NULL",
             },
-            indexes=[
-                ("idx_owner", "owner_id"),
-                ("idx_type", "license_type")
-            ]
+            indexes=[("idx_owner", "owner_id"), ("idx_type", "license_type")],
         )
 
     def create_license(
@@ -270,7 +256,7 @@ class DataLicenseManager(BaseStorage):
         license_type: str = "private",
         team_id: str = "",
         usage_terms: str = "",
-        watermark: bool = True
+        watermark: bool = True,
     ) -> str:
         """创建许可证"""
         # 输入验证
@@ -293,8 +279,8 @@ class DataLicenseManager(BaseStorage):
                 team_id,
                 usage_terms,
                 1 if watermark else 0,
-                datetime.now().isoformat()
-            )
+                datetime.now().isoformat(),
+            ),
         )
 
         return license_id
@@ -302,9 +288,7 @@ class DataLicenseManager(BaseStorage):
     def get_license(self, license_id: str) -> dict | None:
         """获取许可证"""
         result = self._execute(
-            "SELECT * FROM licenses WHERE license_id = ?",
-            (license_id,),
-            fetch=True
+            "SELECT * FROM licenses WHERE license_id = ?", (license_id,), fetch=True
         )
 
         if not result:
@@ -365,7 +349,9 @@ class DataLicenseManager(BaseStorage):
 
         return False
 
-    def check_permission(self, license_id: str, requester_id: str, required_permission: str) -> bool:
+    def check_permission(
+        self, license_id: str, requester_id: str, required_permission: str
+    ) -> bool:
         """检查特定权限
 
         Args:
@@ -418,12 +404,9 @@ class AccessLog(BaseStorage):
                 "access_type": "TEXT NOT NULL",
                 "purpose": "TEXT",
                 "license_id": "TEXT",
-                "accessed_at": "TEXT NOT NULL"
+                "accessed_at": "TEXT NOT NULL",
             },
-            indexes=[
-                ("idx_data", "data_id"),
-                ("idx_user", "accessed_by")
-            ]
+            indexes=[("idx_data", "data_id"), ("idx_user", "accessed_by")],
         )
 
     def log_access(
@@ -432,7 +415,7 @@ class AccessLog(BaseStorage):
         accessed_by: str,
         access_type: str,  # read / export / share
         purpose: str = "",
-        license_id: str = None
+        license_id: str = None,
     ) -> str:
         """记录访问"""
         log_id = f"log_{uuid.uuid4().hex[:12]}"
@@ -449,13 +432,15 @@ class AccessLog(BaseStorage):
                 access_type,
                 purpose,
                 license_id,
-                datetime.now().isoformat()
-            )
+                datetime.now().isoformat(),
+            ),
         )
 
         return log_id
 
-    def get_logs(self, data_id: str = None, accessed_by: str = None, limit: int = 100) -> list[dict]:
+    def get_logs(
+        self, data_id: str = None, accessed_by: str = None, limit: int = 100
+    ) -> list[dict]:
         """获取访问日志"""
         query = "SELECT * FROM access_logs"
         conditions = []
@@ -480,6 +465,7 @@ class AccessLog(BaseStorage):
 
 # ========== 便捷函数 ==========
 
+
 def get_license_manager(db_path: str = ".young/licenses.db") -> DataLicenseManager:
     """获取许可证管理器"""
     return DataLicenseManager(db_path)
@@ -490,21 +476,12 @@ def get_access_log(db_path: str = ".young/access_logs.db") -> AccessLog:
     return AccessLog(db_path)
 
 
-def add_watermark(
-    data: Any,
-    license_id: str,
-    owner_id: str,
-    metadata: dict = None
-) -> Any:
+def add_watermark(data: Any, license_id: str, owner_id: str, metadata: dict = None) -> Any:
     """便捷函数：添加水印"""
     return Watermark.embed_visible_watermark(data, license_id, owner_id, metadata)
 
 
-def verify_watermark(
-    data: Any,
-    license_id: str = None,
-    owner_id: str = None
-) -> dict:
+def verify_watermark(data: Any, license_id: str = None, owner_id: str = None) -> dict:
     """便捷函数：验证水印"""
     return Watermark.verify_watermark(data, license_id, owner_id)
 

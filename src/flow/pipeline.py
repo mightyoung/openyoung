@@ -13,6 +13,7 @@ from typing import Any
 
 class StageStatus(Enum):
     """Stage 执行状态"""
+
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
@@ -23,10 +24,11 @@ class StageStatus(Enum):
 @dataclass
 class Stage:
     """管道阶段"""
+
     name: str
     description: str = ""
     skill: str | None = None  # 使用的 Skill
-    agent: str | None = None   # 使用的 Agent
+    agent: str | None = None  # 使用的 Agent
     handler: Callable | None = None  # 自定义处理函数
     params: dict[str, Any] = field(default_factory=dict)
     condition: str | None = None  # 条件执行
@@ -39,6 +41,7 @@ class Stage:
 @dataclass
 class PipelineContext:
     """管道执行上下文"""
+
     initial_data: dict[str, Any] = field(default_factory=dict)
     stage_results: dict[str, Any] = field(default_factory=dict)
     errors: dict[str, str] = field(default_factory=dict)
@@ -187,7 +190,9 @@ class PipelineExecutor:
         """注册管道"""
         self.pipelines[pipeline.name] = pipeline
 
-    async def execute(self, pipeline_name: str, initial_data: dict | None = None) -> PipelineContext:
+    async def execute(
+        self, pipeline_name: str, initial_data: dict | None = None
+    ) -> PipelineContext:
         """执行管道"""
         if pipeline_name not in self.pipelines:
             raise ValueError(f"Pipeline not found: {pipeline_name}")
@@ -219,10 +224,9 @@ class PipelineExecutor:
 
 # ========== 便捷函数 ==========
 
+
 def create_pipeline(
-    name: str,
-    stages: list[dict[str, Any]],
-    executor: Callable | None = None
+    name: str, stages: list[dict[str, Any]], executor: Callable | None = None
 ) -> Pipeline:
     """创建管道的便捷函数
 
@@ -245,7 +249,7 @@ def create_pipeline(
                 stage = Stage(
                     name=s["name"],
                     description=s.get("description", ""),
-                    depends_on=s.get("depends_on", [])
+                    depends_on=s.get("depends_on", []),
                 )
                 self.add_stage(stage)
 
@@ -259,36 +263,17 @@ def create_pipeline(
 
 # ========== 示例 ==========
 
+
 class ExamplePipeline(Pipeline):
     """示例管道：代码开发流程"""
 
     def _build(self):
         # 添加 Stages
-        self.add_stage(Stage(
-            name="analyze",
-            description="分析需求",
-            depends_on=[]
-        ))
-        self.add_stage(Stage(
-            name="design",
-            description="设计架构",
-            depends_on=["analyze"]
-        ))
-        self.add_stage(Stage(
-            name="implement",
-            description="实现代码",
-            depends_on=["design"]
-        ))
-        self.add_stage(Stage(
-            name="test",
-            description="编写测试",
-            depends_on=["implement"]
-        ))
-        self.add_stage(Stage(
-            name="deploy",
-            description="部署发布",
-            depends_on=["test"]
-        ))
+        self.add_stage(Stage(name="analyze", description="分析需求", depends_on=[]))
+        self.add_stage(Stage(name="design", description="设计架构", depends_on=["analyze"]))
+        self.add_stage(Stage(name="implement", description="实现代码", depends_on=["design"]))
+        self.add_stage(Stage(name="test", description="编写测试", depends_on=["implement"]))
+        self.add_stage(Stage(name="deploy", description="部署发布", depends_on=["test"]))
 
     async def execute_stage(self, stage: Stage, context: PipelineContext) -> Any:
         # 获取依赖结果

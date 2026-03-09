@@ -23,6 +23,7 @@ from typing import Any
 @dataclass
 class EvalTestCase:
     """评估测试用例"""
+
     id: str
     task_type: str  # coding, general, research, web_scraping, data_processing
     task_description: str
@@ -102,7 +103,6 @@ EVALUATION_DATASET: list[EvalTestCase] = [
         difficulty="medium",
         domain="技术",
     ),
-
     # ========== GENERAL 任务 ==========
     EvalTestCase(
         id="gen_001",
@@ -156,7 +156,6 @@ EVALUATION_DATASET: list[EvalTestCase] = [
         difficulty="medium",
         domain="通用",
     ),
-
     # ========== RESEARCH 任务 ==========
     EvalTestCase(
         id="res_001",
@@ -197,7 +196,6 @@ EVALUATION_DATASET: list[EvalTestCase] = [
         difficulty="hard",
         domain="技术",
     ),
-
     # ========== WEB_SCRAPING 任务 ==========
     EvalTestCase(
         id="scrape_001",
@@ -238,7 +236,6 @@ EVALUATION_DATASET: list[EvalTestCase] = [
         difficulty="hard",
         domain="技术",
     ),
-
     # ========== DATA_PROCESSING 任务 ==========
     EvalTestCase(
         id="data_001",
@@ -279,7 +276,6 @@ EVALUATION_DATASET: list[EvalTestCase] = [
         difficulty="medium",
         domain="技术",
     ),
-
     # ========== FILE_OPERATIONS 任务 ==========
     EvalTestCase(
         id="file_001",

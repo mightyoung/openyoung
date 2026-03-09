@@ -25,6 +25,7 @@ try:
     from langchain_core.tools import BaseTool
     from langgraph.graph import END, StateGraph
     from langgraph.prebuilt import create_react_agent
+
     LANGGRAPH_AVAILABLE = True
 except ImportError:
     LANGGRAPH_AVAILABLE = False
@@ -33,6 +34,7 @@ except ImportError:
 
 class NodeType(Enum):
     """节点类型"""
+
     AGENT = "agent"
     TOOL = "tool"
     CONDITION = "condition"
@@ -42,6 +44,7 @@ class NodeType(Enum):
 @dataclass
 class FlowNode:
     """Flow 节点定义"""
+
     id: str
     name: str
     node_type: NodeType
@@ -52,6 +55,7 @@ class FlowNode:
 @dataclass
 class FlowEdge:
     """Flow 边定义"""
+
     source: str
     target: str
     condition: Optional[Callable[[Any], bool]] = None
@@ -60,6 +64,7 @@ class FlowEdge:
 @dataclass
 class AgentState:
     """Agent 状态定义"""
+
     messages: List[BaseMessage] = field(default_factory=list)
     context: Dict[str, Any] = field(default_factory=dict)
     next_step: Optional[str] = None
@@ -102,9 +107,7 @@ class StateGraphConverter:
         for edge in self.edges:
             if edge.condition:
                 self.graph.add_conditional_edges(
-                    edge.source,
-                    edge.condition,
-                    {True: edge.target, False: END}
+                    edge.source, edge.condition, {True: edge.target, False: END}
                 )
             else:
                 self.graph.add_edge(edge.source, edge.target)
@@ -136,7 +139,7 @@ class ReActAgentFactory:
         self,
         llm: Any,
         tools: Sequence[BaseTool],
-        state_modifier: Optional[Callable[[dict], dict]] = None
+        state_modifier: Optional[Callable[[dict], dict]] = None,
     ) -> Any:
         """创建 ReAct Agent"""
         if not LANGGRAPH_AVAILABLE:
@@ -180,10 +183,7 @@ class LangGraphAdapter:
         self._react_factory = ReActAgentFactory()
 
     def create_from_flow(
-        self,
-        nodes: List[FlowNode],
-        edges: List[FlowEdge],
-        state_schema: Optional[type] = None
+        self, nodes: List[FlowNode], edges: List[FlowEdge], state_schema: Optional[type] = None
     ) -> StateGraph:
         """从现有 Flow 节点创建 LangGraph
 
@@ -217,7 +217,7 @@ class LangGraphAdapter:
         self,
         llm: Any,
         tools: List[BaseTool],
-        state_modifier: Optional[Callable[[dict], dict]] = None
+        state_modifier: Optional[Callable[[dict], dict]] = None,
     ) -> Any:
         """创建 ReAct Agent
 
@@ -231,11 +231,7 @@ class LangGraphAdapter:
         """
         return self._react_factory.create_react_agent(llm, tools, state_modifier)
 
-    def run_agent(
-        self,
-        agent: Any,
-        input_data: str | Dict | List[BaseMessage]
-    ) -> Dict[str, Any]:
+    def run_agent(self, agent: Any, input_data: str | Dict | List[BaseMessage]) -> Dict[str, Any]:
         """运行 Agent
 
         Args:
@@ -253,9 +249,7 @@ class LangGraphAdapter:
 
 
 def create_simple_agent(
-    llm: Any,
-    tools: List[BaseTool],
-    system_message: Optional[str] = None
+    llm: Any, tools: List[BaseTool], system_message: Optional[str] = None
 ) -> Any:
     """创建简单的 ReAct Agent
 

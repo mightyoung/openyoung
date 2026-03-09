@@ -11,24 +11,26 @@ from typing import Any
 
 class IntentType(Enum):
     """意图类型"""
-    CODE = "code"           # 代码开发
-    REVIEW = "review"       # 代码审查
-    RESEARCH = "research"    # 调研研究
-    DEBUG = "debug"         # 调试修复
-    REFACTOR = "refactor"   # 重构优化
-    TEST = "test"           # 编写测试
-    DEPLOY = "deploy"       # 部署发布
-    DATA = "data"           # 数据处理
-    DOCUMENT = "document"   # 文档编写
-    IMPORT = "import"       # 导入/安装 Agent
-    SEARCH = "search"       # 搜索发现
-    GENERAL = "general"      # 通用任务
-    UNKNOWN = "unknown"     # 未知
+
+    CODE = "code"  # 代码开发
+    REVIEW = "review"  # 代码审查
+    RESEARCH = "research"  # 调研研究
+    DEBUG = "debug"  # 调试修复
+    REFACTOR = "refactor"  # 重构优化
+    TEST = "test"  # 编写测试
+    DEPLOY = "deploy"  # 部署发布
+    DATA = "data"  # 数据处理
+    DOCUMENT = "document"  # 文档编写
+    IMPORT = "import"  # 导入/安装 Agent
+    SEARCH = "search"  # 搜索发现
+    GENERAL = "general"  # 通用任务
+    UNKNOWN = "unknown"  # 未知
 
 
 @dataclass
 class Intent:
     """用户意图"""
+
     type: IntentType
     confidence: float  # 0-1
     description: str
@@ -48,7 +50,18 @@ class IntentAnalyzer:
 
     # 意图关键词映射
     INTENT_KEYWORDS = {
-        IntentType.CODE: ["写", "实现", "开发", "创建", "编写", "code", "write", "implement", "create", "build"],
+        IntentType.CODE: [
+            "写",
+            "实现",
+            "开发",
+            "创建",
+            "编写",
+            "code",
+            "write",
+            "implement",
+            "create",
+            "build",
+        ],
         IntentType.REVIEW: ["审查", "review", "检查", "看", "审阅", "review code"],
         IntentType.RESEARCH: ["调研", "研究", "搜索", "查找", "调查", "research", "search", "find"],
         IntentType.DEBUG: ["调试", "修复", "错误", "bug", "debug", "fix", "error", "问题"],
@@ -102,7 +115,7 @@ class IntentAnalyzer:
             type=IntentType.GENERAL,
             confidence=0.5,
             description="通用任务",
-            suggested_agents=["default"]
+            suggested_agents=["default"],
         )
 
     def _quick_match(self, user_input: str) -> Intent | None:
@@ -133,7 +146,7 @@ class IntentAnalyzer:
             description=self._get_intent_description(best_type, user_input),
             keywords=self._extract_keywords(user_input, best_type),
             suggested_agents=self.AGENT_RECOMMENDATIONS.get(best_type, ["default"]),
-            required_capabilities=self._get_required_capabilities(best_type)
+            required_capabilities=self._get_required_capabilities(best_type),
         )
 
     async def _llm_analyze(self, user_input: str) -> Intent:
@@ -162,7 +175,7 @@ class IntentAnalyzer:
                 confidence=result.get("confidence", 0.8),
                 description=result.get("description", ""),
                 suggested_agents=self.AGENT_RECOMMENDATIONS.get(intent_type, ["default"]),
-                required_capabilities=result.get("required_capabilities", [])
+                required_capabilities=result.get("required_capabilities", []),
             )
         except Exception as e:
             print(f"[IntentAnalyzer] LLM error: {e}")
@@ -170,7 +183,7 @@ class IntentAnalyzer:
                 type=IntentType.GENERAL,
                 confidence=0.5,
                 description="通用任务",
-                suggested_agents=["default"]
+                suggested_agents=["default"],
             )
 
     def _get_intent_description(self, intent_type: IntentType, user_input: str) -> str:
@@ -194,8 +207,9 @@ class IntentAnalyzer:
     def _extract_keywords(self, user_input: str, intent_type: IntentType) -> list[str]:
         """提取关键词"""
         import re
+
         # 提取中英文单词
-        keywords = re.findall(r'[\u4e00-\u9fa5a-zA-Z0-9]{2,}', user_input)
+        keywords = re.findall(r"[\u4e00-\u9fa5a-zA-Z0-9]{2,}", user_input)
         return keywords[:5]
 
     def _get_required_capabilities(self, intent_type: IntentType) -> list[str]:
@@ -228,17 +242,20 @@ class IntentAnalyzer:
 
         recommendations = []
         for agent_name in intent.suggested_agents:
-            recommendations.append({
-                "agent": agent_name,
-                "match_reason": f"适合 {intent.description}",
-                "confidence": intent.confidence,
-                "intent_type": intent.type.value
-            })
+            recommendations.append(
+                {
+                    "agent": agent_name,
+                    "match_reason": f"适合 {intent.description}",
+                    "confidence": intent.confidence,
+                    "intent_type": intent.type.value,
+                }
+            )
 
         return recommendations
 
 
 # ========== 便捷函数 ==========
+
 
 def create_analyzer(llm_client=None) -> IntentAnalyzer:
     """创建意图分析器"""

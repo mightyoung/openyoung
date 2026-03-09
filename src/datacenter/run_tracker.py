@@ -15,6 +15,7 @@ from .base_storage import BaseStorage
 @dataclass
 class RunRecord:
     """运行记录"""
+
     run_id: str
     agent_id: str
     task: str
@@ -40,7 +41,7 @@ class RunRecord:
             "input_tokens": self.input_tokens,
             "output_tokens": self.output_tokens,
             "error": self.error,
-            "metadata": self.metadata
+            "metadata": self.metadata,
         }
 
 
@@ -67,21 +68,16 @@ class RunTracker(BaseStorage):
                 "output_tokens": "INTEGER DEFAULT 0",
                 "error": "TEXT",
                 "metadata": "TEXT",
-                "created_at": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+                "created_at": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
             },
             indexes=[
                 ("idx_agent", "agent_id"),
                 ("idx_status", "status"),
-                ("idx_started", "started_at")
-            ]
+                ("idx_started", "started_at"),
+            ],
         )
 
-    def start_run(
-        self,
-        agent_id: str,
-        task: str,
-        metadata: dict = None
-    ) -> str:
+    def start_run(self, agent_id: str, task: str, metadata: dict = None) -> str:
         """开始追踪一个运行"""
         # 输入验证
         if not agent_id or not agent_id.strip():
@@ -102,8 +98,8 @@ class RunTracker(BaseStorage):
                 task,
                 "running",
                 datetime.now().isoformat(),
-                self._json_serialize(metadata or {})
-            )
+                self._json_serialize(metadata or {}),
+            ),
         )
 
         return run_id
@@ -115,14 +111,12 @@ class RunTracker(BaseStorage):
         error: str = None,
         input_tokens: int = 0,
         output_tokens: int = 0,
-        metadata: dict = None
+        metadata: dict = None,
     ) -> bool:
         """完成运行追踪"""
         # 计算时长
         result = self._execute(
-            "SELECT started_at FROM runs WHERE run_id = ?",
-            (run_id,),
-            fetch=True
+            "SELECT started_at FROM runs WHERE run_id = ?", (run_id,), fetch=True
         )
 
         if not result:
@@ -146,8 +140,8 @@ class RunTracker(BaseStorage):
                 input_tokens,
                 output_tokens,
                 self._json_serialize(metadata or {}),
-                run_id
-            )
+                run_id,
+            ),
         )
 
         return True
@@ -158,11 +152,7 @@ class RunTracker(BaseStorage):
 
     def get_run(self, run_id: str) -> dict | None:
         """获取运行记录"""
-        result = self._execute(
-            "SELECT * FROM runs WHERE run_id = ?",
-            (run_id,),
-            fetch=True
-        )
+        result = self._execute("SELECT * FROM runs WHERE run_id = ?", (run_id,), fetch=True)
 
         if not result:
             return None
@@ -171,12 +161,7 @@ class RunTracker(BaseStorage):
         row["metadata"] = self._json_deserialize(row.get("metadata", "{}"))
         return row
 
-    def list_runs(
-        self,
-        agent_id: str = None,
-        status: str = None,
-        limit: int = 100
-    ) -> list[dict]:
+    def list_runs(self, agent_id: str = None, status: str = None, limit: int = 100) -> list[dict]:
         """列出运行记录"""
         query = "SELECT * FROM runs"
         conditions = []
@@ -207,6 +192,7 @@ class RunTracker(BaseStorage):
     def get_stats(self, agent_id: str = None, days: int = 7) -> dict:
         """获取统计数据"""
         from datetime import timedelta
+
         start_date = (datetime.now() - timedelta(days=days)).isoformat()
 
         query = """
@@ -243,7 +229,7 @@ class RunTracker(BaseStorage):
             "success_rate": round(success_rate, 3),
             "avg_duration": round(row.get("avg_duration") or 0, 2),
             "total_input_tokens": row.get("total_input_tokens") or 0,
-            "total_output_tokens": row.get("total_output_tokens") or 0
+            "total_output_tokens": row.get("total_output_tokens") or 0,
         }
 
     def _empty_stats(self) -> dict:
@@ -255,11 +241,12 @@ class RunTracker(BaseStorage):
             "success_rate": 0.0,
             "avg_duration": 0.0,
             "total_input_tokens": 0,
-            "total_output_tokens": 0
+            "total_output_tokens": 0,
         }
 
 
 # ========== 便捷函数 ==========
+
 
 def get_run_tracker(db_path: str = ".young/runs.db") -> RunTracker:
     """获取运行追踪器"""

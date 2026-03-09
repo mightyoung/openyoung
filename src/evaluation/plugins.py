@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 class EvalMetricType(Enum):
     """评估指标类型"""
+
     QUALITY = "quality"
     SECURITY = "security"
     PERFORMANCE = "performance"
@@ -33,6 +34,7 @@ class EvalMetricType(Enum):
 @dataclass
 class EvalResult:
     """评估结果"""
+
     plugin_name: str
     score: float  # 0-1
     passed: bool
@@ -56,6 +58,7 @@ class EvalResult:
 @dataclass
 class EvalContext:
     """评估上下文"""
+
     task_description: str
     task_type: str
     input_data: Any = None
@@ -134,10 +137,7 @@ class CodeQualityPlugin(EvalPlugin):
         output = context.output_data
         if not output:
             return EvalResult(
-                plugin_name=self.name,
-                score=0.0,
-                passed=False,
-                errors=["No output to evaluate"]
+                plugin_name=self.name, score=0.0, passed=False, errors=["No output to evaluate"]
             )
 
         score = 0.5  # 基础分
@@ -229,10 +229,7 @@ class SecurityPlugin(EvalPlugin):
         output = context.output_data
         if not output:
             return EvalResult(
-                plugin_name=self.name,
-                score=0.0,
-                passed=False,
-                errors=["No output to evaluate"]
+                plugin_name=self.name, score=0.0, passed=False, errors=["No output to evaluate"]
             )
 
         score = 1.0
@@ -290,10 +287,7 @@ class PerformancePlugin(EvalPlugin):
         output = context.output_data
         if not output:
             return EvalResult(
-                plugin_name=self.name,
-                score=0.0,
-                passed=False,
-                errors=["No output to evaluate"]
+                plugin_name=self.name, score=0.0, passed=False, errors=["No output to evaluate"]
             )
 
         score = 0.7
@@ -353,10 +347,7 @@ class CorrectnessPlugin(EvalPlugin):
         output = context.output_data
         if not output:
             return EvalResult(
-                plugin_name=self.name,
-                score=0.0,
-                passed=False,
-                errors=["No output to evaluate"]
+                plugin_name=self.name, score=0.0, passed=False, errors=["No output to evaluate"]
             )
 
         score = 0.8
@@ -412,10 +403,7 @@ class DocumentationPlugin(EvalPlugin):
         output = context.output_data
         if not output:
             return EvalResult(
-                plugin_name=self.name,
-                score=0.0,
-                passed=False,
-                errors=["No output to evaluate"]
+                plugin_name=self.name, score=0.0, passed=False, errors=["No output to evaluate"]
             )
 
         score = 0.5
@@ -495,10 +483,7 @@ class ComplexityPlugin(EvalPlugin):
         output = context.output_data
         if not output:
             return EvalResult(
-                plugin_name=self.name,
-                score=0.0,
-                passed=False,
-                errors=["No output to evaluate"]
+                plugin_name=self.name, score=0.0, passed=False, errors=["No output to evaluate"]
             )
 
         score = 0.8
@@ -577,10 +562,7 @@ class StylePlugin(EvalPlugin):
         output = context.output_data
         if not output:
             return EvalResult(
-                plugin_name=self.name,
-                score=0.0,
-                passed=False,
-                errors=["No output to evaluate"]
+                plugin_name=self.name, score=0.0, passed=False, errors=["No output to evaluate"]
             )
 
         score = 0.7
@@ -608,7 +590,9 @@ class StylePlugin(EvalPlugin):
                 score -= 0.1
 
             # 检查 import 顺序 (简单)
-            import_lines = [l for l in code.split("\n") if l.startswith("import ") or l.startswith("from ")]
+            import_lines = [
+                l for l in code.split("\n") if l.startswith("import ") or l.startswith("from ")
+            ]
             if len(import_lines) > 1:
                 # 检查是否按字母顺序
                 sorted_imports = sorted(import_lines)
@@ -684,9 +668,7 @@ class PluginRegistry:
         return list(self._plugins.keys())
 
     def evaluate_all(
-        self,
-        context: EvalContext,
-        plugin_names: Optional[List[str]] = None
+        self, context: EvalContext, plugin_names: Optional[List[str]] = None
     ) -> List[EvalResult]:
         """运行所有插件评估
 
@@ -708,12 +690,9 @@ class PluginRegistry:
                     results.append(result)
                 except Exception as e:
                     logger.error(f"Plugin {name} evaluation failed: {e}")
-                    results.append(EvalResult(
-                        plugin_name=name,
-                        score=0.0,
-                        passed=False,
-                        errors=[str(e)]
-                    ))
+                    results.append(
+                        EvalResult(plugin_name=name, score=0.0, passed=False, errors=[str(e)])
+                    )
 
         return results
 
@@ -731,10 +710,7 @@ def get_registry() -> PluginRegistry:
 
 
 # 便捷函数
-def evaluate(
-    context: EvalContext,
-    plugins: Optional[List[str]] = None
-) -> List[EvalResult]:
+def evaluate(context: EvalContext, plugins: Optional[List[str]] = None) -> List[EvalResult]:
     """评估代码
 
     Args:

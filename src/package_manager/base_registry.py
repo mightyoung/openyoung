@@ -93,13 +93,16 @@ class BaseRegistry:
             """)
 
             now = datetime.now().isoformat()
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO usage (item_name, use_count, last_used, created_at)
                 VALUES (?, 1, ?, ?)
                 ON CONFLICT(item_name) DO UPDATE SET
                     use_count = use_count + 1,
                     last_used = ?
-            """, (item_name, now, now, now))
+            """,
+                (item_name, now, now, now),
+            )
 
             conn.commit()
             conn.close()
@@ -126,20 +129,19 @@ class BaseRegistry:
             conn = sqlite3.connect(str(db_path))
             cursor = conn.cursor()
 
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT item_name, use_count, last_used
                 FROM usage
                 ORDER BY use_count DESC
                 LIMIT ?
-            """, (limit,))
+            """,
+                (limit,),
+            )
 
             results = []
             for row in cursor.fetchall():
-                results.append({
-                    "name": row[0],
-                    "use_count": row[1],
-                    "last_used": row[2]
-                })
+                results.append({"name": row[0], "use_count": row[1], "last_used": row[2]})
 
             conn.close()
             return results
@@ -175,13 +177,16 @@ class BaseRegistry:
             """)
 
             now = datetime.now().isoformat()
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO ratings (item_name, rating, rated_at)
                 VALUES (?, ?, ?)
                 ON CONFLICT(item_name) DO UPDATE SET
                     rating = ?,
                     rated_at = ?
-            """, (item_name, rating, now, rating, now))
+            """,
+                (item_name, rating, now, rating, now),
+            )
 
             conn.commit()
             conn.close()

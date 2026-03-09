@@ -28,7 +28,9 @@ class MCPLoader:
                 mcp_json = item / "mcp.json"
                 package_yaml = item / "package.yaml"
 
-                if mcp_json.exists() or (package_yaml.exists() and self._is_mcp_package(package_yaml)):
+                if mcp_json.exists() or (
+                    package_yaml.exists() and self._is_mcp_package(package_yaml)
+                ):
                     mcps.append(item.name)
 
         return mcps

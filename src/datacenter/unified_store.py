@@ -51,7 +51,7 @@ class UnifiedStore(BaseStorage):
                 ("idx_session_id", "session_id"),
                 ("idx_status", "status"),
                 ("idx_start_time", "start_time"),
-            ]
+            ],
         )
 
     def save(self, record: ExecutionRecord) -> str:
@@ -65,24 +65,27 @@ class UnifiedStore(BaseStorage):
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
 
-        self._execute(query, (
-            record.execution_id,
-            record.run_id,
-            record.step_id,
-            record.agent_name,
-            record.task_description,
-            record.session_id,
-            record.start_time.isoformat() if record.start_time else None,
-            record.end_time.isoformat() if record.end_time else None,
-            record.duration_ms,
-            record.prompt_tokens,
-            record.completion_tokens,
-            record.total_tokens,
-            record.cost_usd,
-            record.status,
-            record.error,
-            json.dumps(record.metadata, ensure_ascii=False, default=str),
-        ))
+        self._execute(
+            query,
+            (
+                record.execution_id,
+                record.run_id,
+                record.step_id,
+                record.agent_name,
+                record.task_description,
+                record.session_id,
+                record.start_time.isoformat() if record.start_time else None,
+                record.end_time.isoformat() if record.end_time else None,
+                record.duration_ms,
+                record.prompt_tokens,
+                record.completion_tokens,
+                record.total_tokens,
+                record.cost_usd,
+                record.status,
+                record.error,
+                json.dumps(record.metadata, ensure_ascii=False, default=str),
+            ),
+        )
 
         return record.execution_id
 
@@ -127,7 +130,11 @@ class UnifiedStore(BaseStorage):
 
     def update_status(self, execution_id: str, status: str, error: str = "") -> bool:
         """更新执行状态"""
-        end_time = datetime.now().isoformat() if status in [ExecutionStatus.SUCCESS, ExecutionStatus.FAILED] else None
+        end_time = (
+            datetime.now().isoformat()
+            if status in [ExecutionStatus.SUCCESS, ExecutionStatus.FAILED]
+            else None
+        )
 
         query = """
             UPDATE executions
@@ -236,6 +243,7 @@ class UnifiedStore(BaseStorage):
 
 
 # ========== 便捷函数 ==========
+
 
 def get_unified_store(db_path: str = ".young/unified.db") -> UnifiedStore:
     """获取统一存储实例"""

@@ -16,6 +16,7 @@ from src.package_manager.base_registry import BaseRegistry
 @dataclass
 class Template:
     """模板"""
+
     name: str
     source: str  # GitHub URL 或 local:路径
     description: str = ""
@@ -114,9 +115,11 @@ class TemplateRegistry(BaseRegistry):
         results = []
 
         for template in self.templates.values():
-            if (query in template.name.lower() or
-                query in template.description.lower() or
-                any(query in tag.lower() for tag in template.tags)):
+            if (
+                query in template.name.lower()
+                or query in template.description.lower()
+                or any(query in tag.lower() for tag in template.tags)
+            ):
                 results.append(template)
 
         return sorted(results, key=lambda t: t.rating, reverse=True)
@@ -139,13 +142,12 @@ class TemplateRegistry(BaseRegistry):
     def export_json(self) -> str:
         """导出为 JSON"""
         return json.dumps(
-            [asdict(t) for t in self.templates.values()],
-            indent=2,
-            ensure_ascii=False
+            [asdict(t) for t in self.templates.values()], indent=2, ensure_ascii=False
         )
 
 
 # ========== 便捷函数 ==========
+
 
 def get_registry(registry_path: str = "templates/registry.yaml") -> TemplateRegistry:
     """获取注册表实例"""
@@ -158,7 +160,7 @@ def add_template(
     description: str = "",
     tags: list[str] | None = None,
     author: str = "",
-    registry_path: str = "templates/registry.yaml"
+    registry_path: str = "templates/registry.yaml",
 ) -> Template:
     """添加模板的便捷函数"""
     # 确定 source_host

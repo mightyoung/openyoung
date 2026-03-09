@@ -27,21 +27,12 @@ class DataTrackerMixin:
         self._run_tracker = RunTracker(f"{data_dir}/runs.db")
         self._step_recorder = StepRecorder(f"{data_dir}/steps.db")
 
-    def start_run_tracking(
-        self,
-        agent_id: str,
-        task: str,
-        metadata: dict = None
-    ) -> str:
+    def start_run_tracking(self, agent_id: str, task: str, metadata: dict = None) -> str:
         """开始运行追踪"""
         if not self._run_tracker:
             return None
 
-        run_id = self._run_tracker.start_run(
-            agent_id=agent_id,
-            task=task,
-            metadata=metadata
-        )
+        run_id = self._run_tracker.start_run(agent_id=agent_id, task=task, metadata=metadata)
         self._current_run_id = run_id
         return run_id
 
@@ -51,7 +42,7 @@ class DataTrackerMixin:
         error: str = None,
         input_tokens: int = 0,
         output_tokens: int = 0,
-        metadata: dict = None
+        metadata: dict = None,
     ) -> bool:
         """完成运行追踪"""
         if not self._run_tracker or not self._current_run_id:
@@ -63,7 +54,7 @@ class DataTrackerMixin:
             error=error,
             input_tokens=input_tokens,
             output_tokens=output_tokens,
-            metadata=metadata
+            metadata=metadata,
         )
         self._current_run_id = None
         return result
@@ -75,11 +66,7 @@ class DataTrackerMixin:
         return self._run_tracker.fail_run(self._current_run_id, error)
 
     def start_step_tracking(
-        self,
-        step_name: str,
-        step_order: int,
-        tool_name: str = "",
-        input_data: dict = None
+        self, step_name: str, step_order: int, tool_name: str = "", input_data: dict = None
     ) -> str:
         """开始步骤追踪"""
         if not self._step_recorder or not self._current_run_id:
@@ -90,7 +77,7 @@ class DataTrackerMixin:
             step_name=step_name,
             step_order=step_order,
             tool_name=tool_name,
-            input_data=input_data
+            input_data=input_data,
         )
         self._current_step_id = step_id
         return step_id
@@ -100,7 +87,7 @@ class DataTrackerMixin:
         status: str = "success",
         output_data: dict = None,
         latency_ms: int = 0,
-        error: str = None
+        error: str = None,
     ) -> bool:
         """完成步骤追踪"""
         if not self._step_recorder or not self._current_step_id:
@@ -111,7 +98,7 @@ class DataTrackerMixin:
             status=status,
             output_data=output_data,
             latency_ms=latency_ms,
-            error=error
+            error=error,
         )
         self._current_step_id = None
         return result
@@ -126,7 +113,9 @@ class DataTrackerMixin:
 class TrackingContext:
     """追踪上下文管理器"""
 
-    def __init__(self, tracker: DataTrackerMixin, step_name: str, step_order: int, tool_name: str = ""):
+    def __init__(
+        self, tracker: DataTrackerMixin, step_name: str, step_order: int, tool_name: str = ""
+    ):
         self._tracker = tracker
         self._step_name = step_name
         self._step_order = step_order
@@ -138,6 +127,7 @@ class TrackingContext:
 
         # 开始步骤追踪
         from datetime import datetime
+
         input_data = {"started_at": datetime.now().isoformat()}
 
         if self._tracker._current_run_id:
@@ -145,7 +135,7 @@ class TrackingContext:
                 step_name=self._step_name,
                 step_order=self._step_order,
                 tool_name=self._tool_name,
-                input_data=input_data
+                input_data=input_data,
             )
 
         return self
@@ -165,11 +155,12 @@ class TrackingContext:
             self._tracker.complete_step_tracking(
                 status="success",
                 output_data={"completed_at": datetime.now().isoformat()},
-                latency_ms=latency_ms
+                latency_ms=latency_ms,
             )
 
 
 # ========== 便捷函数 ==========
+
 
 def track_step(tracker: DataTrackerMixin, step_name: str, step_order: int, tool_name: str = ""):
     """步骤追踪上下文管理器（同步版本）"""

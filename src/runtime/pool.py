@@ -148,8 +148,10 @@ class SandboxPool:
         active = len(self._active)
 
         # 如果可用实例少于预热目标，创建新实例
-        if available < self.config.warm_up_target and \
-           (available + active) < self.config.max_instances:
+        if (
+            available < self.config.warm_up_target
+            and (available + active) < self.config.max_instances
+        ):
             needed = self.config.warm_up_target - available
             needed = min(needed, 2)  # 每次最多预热2个
 
@@ -203,7 +205,9 @@ class SandboxPool:
             self._created_count = state.get("created_count", 0)
             self._destroyed_count = state.get("destroyed_count", 0)
 
-            logger.info(f"Pool state loaded: created={self._created_count}, destroyed={self._destroyed_count}")
+            logger.info(
+                f"Pool state loaded: created={self._created_count}, destroyed={self._destroyed_count}"
+            )
         except Exception as e:
             logger.error(f"Failed to load pool state: {e}")
 
@@ -247,8 +251,10 @@ class SandboxPool:
                 # 检查是否需要缩容
                 utilization = len(self._active) / self.config.max_instances
 
-                if utilization < self.config.scale_down_threshold and \
-                   self._available.qsize() > self.config.min_instances:
+                if (
+                    utilization < self.config.scale_down_threshold
+                    and self._available.qsize() > self.config.min_instances
+                ):
                     # 缩容：销毁实例
                     await self.sandbox.destroy(instance.id)
                     self._destroyed_count += 1
@@ -292,12 +298,16 @@ class SandboxPool:
                 break
 
         self._active.clear()
-        logger.info(f"Sandbox pool shut down. Created: {self._created_count}, Destroyed: {self._destroyed_count}")
+        logger.info(
+            f"Sandbox pool shut down. Created: {self._created_count}, Destroyed: {self._destroyed_count}"
+        )
 
     def get_stats(self) -> PoolStats:
         """获取池统计信息"""
         total = self._available.qsize() + len(self._active)
-        utilization = len(self._active) / self.config.max_instances if self.config.max_instances > 0 else 0
+        utilization = (
+            len(self._active) / self.config.max_instances if self.config.max_instances > 0 else 0
+        )
 
         return PoolStats(
             total_instances=total,
@@ -310,13 +320,15 @@ class SandboxPool:
 
     async def scale_check(self) -> None:
         """检查并执行扩缩容"""
-        utilization = len(self._active) / self.config.max_instances if self.config.max_instances > 0 else 0
+        utilization = (
+            len(self._active) / self.config.max_instances if self.config.max_instances > 0 else 0
+        )
 
         # 扩容
         if utilization > self.config.scale_up_threshold:
             needed = min(
                 2,  # 每次最多扩容2个
-                self.config.max_instances - len(self._active) - self._available.qsize()
+                self.config.max_instances - len(self._active) - self._available.qsize(),
             )
             for i in range(needed):
                 sandbox_id = await self.sandbox.create(

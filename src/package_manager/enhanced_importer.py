@@ -23,6 +23,7 @@ from .subagent_registry import SubAgentBinding
 @dataclass
 class ImportAnalysis:
     """LLM 导入分析结果"""
+
     quality_score: float  # 0-1 质量分数
     missing_elements: list[str] = field(default_factory=list)
     recommendations: list[str] = field(default_factory=list)
@@ -36,6 +37,7 @@ class ImportAnalysis:
 @dataclass
 class GitHubFile:
     """GitHub 文件"""
+
     path: str
     content: str
     is_yaml: bool
@@ -45,6 +47,7 @@ class GitHubFile:
 @dataclass
 class FlowSkill:
     """FlowSkill 配置 - Agent 执行流程"""
+
     name: str
     description: str
     trigger_conditions: list[str]
@@ -72,6 +75,7 @@ class ImportAnalyzer:
         """初始化 LLM 客户端"""
         try:
             from src.llm.unified_client import get_unified_client
+
             self.llm_client = get_unified_client()
         except ImportError:
             # 备用方案：使用简单规则分析
@@ -149,7 +153,9 @@ class ImportAnalyzer:
             analysis.missing_elements.append("Skills - 项目没有可用的 skills")
             analysis.recommendations.append("考虑从项目的 skills/ 目录提取 skill 定义")
         elif len(skills) < 3:
-            analysis.recommendations.append(f"项目仅有 {len(skills)} 个 skill，可能需要更多来增强能力")
+            analysis.recommendations.append(
+                f"项目仅有 {len(skills)} 个 skill，可能需要更多来增强能力"
+            )
 
     def _analyze_mcps(self, config_result: dict[str, Any], analysis: ImportAnalysis):
         """分析 MCP 配置"""
@@ -234,16 +240,16 @@ class ImportAnalyzer:
         prompt = f"""分析以下 GitHub 仓库的导入质量，并提供改进建议:
 
 仓库信息:
-- 名称: {repo_metadata.get('name', 'unknown') if repo_metadata else 'unknown'}
-- 描述: {repo_metadata.get('description', '')[:200] if repo_metadata else ''}
-- 主要语言: {languages[0] if languages else 'unknown'}
+- 名称: {repo_metadata.get("name", "unknown") if repo_metadata else "unknown"}
+- 描述: {repo_metadata.get("description", "")[:200] if repo_metadata else ""}
+- 主要语言: {languages[0] if languages else "unknown"}
 
 当前导入状态:
 - Skills: {skills_count}
 - SubAgents: {subagents_count}
 - MCPs: {mcps_count}
-- 有 CLAUDE.md: {structure.get('has_claude_md', False)}
-- 有 AGENTS.md: {structure.get('has_agents_md', False)}
+- 有 CLAUDE.md: {structure.get("has_claude_md", False)}
+- 有 AGENTS.md: {structure.get("has_agents_md", False)}
 
 请分析:
 1. 是否有重要的元素被遗漏?
@@ -260,7 +266,8 @@ class ImportAnalyzer:
         try:
             # 尝试提取 JSON
             import re
-            json_match = re.search(r'\{.*\}', result, re.DOTALL)
+
+            json_match = re.search(r"\{.*\}", result, re.DOTALL)
             if json_match:
                 data = json.loads(json_match.group())
                 if "missing_elements" in data:
@@ -328,9 +335,15 @@ class EnhancedGitHubImporter:
         self.temp_dir = Path("/tmp") / "openyoung_imports"
         self.temp_dir.mkdir(parents=True, exist_ok=True)
 
-    async def import_from_url(self, url: str, agent_name: str = None,
-                       use_git_clone: bool = True, analyze_with_agent: bool = True,
-                       validate: bool = True, lazy_clone: bool = False) -> dict[str, Any]:
+    async def import_from_url(
+        self,
+        url: str,
+        agent_name: str = None,
+        use_git_clone: bool = True,
+        analyze_with_agent: bool = True,
+        validate: bool = True,
+        lazy_clone: bool = False,
+    ) -> dict[str, Any]:
         """从 Git/GitLab/Gitee URL 导入
 
         Args:
@@ -359,7 +372,9 @@ class EnhancedGitHubImporter:
         # Step 1: 获取仓库元数据（API 优先，快速）
         metadata = self._fetch_repo_metadata(host, owner, repo)
         if metadata:
-            print(f"[{host.capitalize()}] Repository: {metadata.get('name', repo)} - {metadata.get('description', '')[:50]}...")
+            print(
+                f"[{host.capitalize()}] Repository: {metadata.get('name', repo)} - {metadata.get('description', '')[:50]}..."
+            )
 
         # Step 2: 如果是 lazy_clone，仅返回元数据
         if lazy_clone:
@@ -385,6 +400,7 @@ class EnhancedGitHubImporter:
                 return {"error": "Failed to clone repository"}
             # 复制到 packages 目录
             import shutil
+
             for item in temp_path.iterdir():
                 dest = agent_repo_dir / item.name
                 if item.is_dir():
@@ -469,6 +485,7 @@ class EnhancedGitHubImporter:
                     }
             elif host == "gitlab.com":
                 import urllib.parse
+
                 encoded = urllib.parse.quote(f"{owner}/{repo}")
                 url = f"https://gitlab.com/api/v4/projects/{encoded}"
                 response = httpx.get(url, timeout=10)
@@ -551,7 +568,7 @@ class EnhancedGitHubImporter:
                 ["git", "clone", "--depth", "1", repo_url, str(local_path)],
                 capture_output=True,
                 text=True,
-                timeout=120
+                timeout=120,
             )
             if result.returncode == 0:
                 print(f"[GitHub] Cloned to {local_path}")
@@ -581,8 +598,9 @@ class EnhancedGitHubImporter:
         # 简化的 API 获取实现
         return None
 
-    def _validate_import(self, agent_name: str, structure: dict[str, Any],
-                       config_result: dict[str, Any]) -> dict[str, Any]:
+    def _validate_import(
+        self, agent_name: str, structure: dict[str, Any], config_result: dict[str, Any]
+    ) -> dict[str, Any]:
         """验证导入结果 - 质量门禁"""
 
         validation = {
@@ -618,7 +636,9 @@ class EnhancedGitHubImporter:
         # 质量阈值判断
         if validation["score"] < 0.6:
             validation["passed"] = False
-            validation["errors"].append(f"Quality score {validation['score']:.2f} below threshold 0.6")
+            validation["errors"].append(
+                f"Quality score {validation['score']:.2f} below threshold 0.6"
+            )
 
         # 添加质量报告
         validation["report"] = {
@@ -692,7 +712,9 @@ class EnhancedGitHubImporter:
                 name = item.name.lower()
                 if name == "claude.md":
                     structure["has_claude_md"] = True
-                    structure["main_prompt"] = item.read_text(encoding="utf-8", errors="ignore")[:5000]
+                    structure["main_prompt"] = item.read_text(encoding="utf-8", errors="ignore")[
+                        :5000
+                    ]
                 elif name == "agents.md":
                     structure["has_agents_md"] = True
                 elif "skill" in str(rel_path):
@@ -719,7 +741,9 @@ class EnhancedGitHubImporter:
                 if ext:
                     ext_counts[ext] = ext_counts.get(ext, 0) + 1
 
-        structure["languages"] = sorted(ext_counts.keys(), key=lambda x: ext_counts[x], reverse=True)[:5]
+        structure["languages"] = sorted(
+            ext_counts.keys(), key=lambda x: ext_counts[x], reverse=True
+        )[:5]
 
         # 发现 SubAgents - 从多个来源
         structure["subagent_prompts"] = self._discover_all_subagents(local_path)
@@ -774,12 +798,14 @@ class EnhancedGitHubImporter:
                         name = match.group(1).lower()
                         # 尝试从类的文档字符串获取描述
                         desc = self._extract_role_description(content, match.start())[:200]
-                        subagents.append({
-                            "name": name,
-                            "description": desc or f"Role from {role_file.name}",
-                            "source": "roles/",
-                            "file": str(role_file.relative_to(local_path))
-                        })
+                        subagents.append(
+                            {
+                                "name": name,
+                                "description": desc or f"Role from {role_file.name}",
+                                "source": "roles/",
+                                "file": str(role_file.relative_to(local_path)),
+                            }
+                        )
                 except Exception as e:
                     print(f"[Warning] Failed to parse role file {role_file}: {e}")
 
@@ -792,7 +818,7 @@ class EnhancedGitHubImporter:
         """从角色文件提取描述"""
         # 查找类后面的文档字符串
         doc_pattern = re.compile(r'"""(.*?)"""', re.DOTALL)
-        for match in doc_pattern.finditer(content[class_start:class_start+500]):
+        for match in doc_pattern.finditer(content[class_start : class_start + 500]):
             desc = match.group(1).strip().split("\n")[0]
             if len(desc) > 10:
                 return desc
@@ -817,16 +843,19 @@ class EnhancedGitHubImporter:
                 for config_file in agent_dir.glob("*.yaml"):
                     try:
                         import yaml
+
                         config = yaml.safe_load(config_file.read_text(encoding="utf-8"))
 
                         name = config.get("name", agent_dir.name)
                         desc = config.get("description", f"Agent from {dir_name}/")
-                        subagents.append({
-                            "name": name,
-                            "description": desc[:200],
-                            "source": f"{dir_name}/",
-                            "file": str(config_file.relative_to(local_path))
-                        })
+                        subagents.append(
+                            {
+                                "name": name,
+                                "description": desc[:200],
+                                "source": f"{dir_name}/",
+                                "file": str(config_file.relative_to(local_path)),
+                            }
+                        )
                     except Exception as e:
                         print(f"[Warning] Failed to parse {config_file}: {e}")
 
@@ -843,16 +872,19 @@ class EnhancedGitHubImporter:
         for config_file in local_path.rglob("agents.yaml"):
             try:
                 import yaml
+
                 config = yaml.safe_load(config_file.read_text(encoding="utf-8"))
 
                 agents_list = config.get("agents", []) or config.get("sub_agents", [])
                 for agent in agents_list:
-                    subagents.append({
-                        "name": agent.get("name", "unknown"),
-                        "description": agent.get("description", "")[:200],
-                        "source": "agents.yaml",
-                        "file": str(config_file.relative_to(local_path))
-                    })
+                    subagents.append(
+                        {
+                            "name": agent.get("name", "unknown"),
+                            "description": agent.get("description", "")[:200],
+                            "source": "agents.yaml",
+                            "file": str(config_file.relative_to(local_path)),
+                        }
+                    )
             except Exception as e:
                 print(f"[Warning] Failed to parse {config_file}: {e}")
 
@@ -865,17 +897,22 @@ class EnhancedGitHubImporter:
                     # 查找 "role" 或 "agent" 相关的配置段
                     if "role:" in content.lower() or "agent:" in content.lower():
                         import yaml
+
                         config = yaml.safe_load(content)
                         # 简单提取角色名
                         if isinstance(config, dict):
                             for key, value in config.items():
-                                if isinstance(value, dict) and ("role" in str(key).lower() or "agent" in str(key).lower()):
-                                    subagents.append({
-                                        "name": key,
-                                        "description": f"From {config_file.name}",
-                                        "source": "config/",
-                                        "file": str(config_file.relative_to(local_path))
-                                    })
+                                if isinstance(value, dict) and (
+                                    "role" in str(key).lower() or "agent" in str(key).lower()
+                                ):
+                                    subagents.append(
+                                        {
+                                            "name": key,
+                                            "description": f"From {config_file.name}",
+                                            "source": "config/",
+                                            "file": str(config_file.relative_to(local_path)),
+                                        }
+                                    )
                 except Exception:
                     pass
 
@@ -933,18 +970,22 @@ class EnhancedGitHubImporter:
                     for match in pattern.finditer(content):
                         name = match.group(1).strip()
                         desc = match.group(2).strip()[:200]
-                        subagents.append({
-                            "name": name,
-                            "description": desc,
-                            "source": filename,
-                            "file": str(md_file.relative_to(local_path))
-                        })
+                        subagents.append(
+                            {
+                                "name": name,
+                                "description": desc,
+                                "source": filename,
+                                "file": str(md_file.relative_to(local_path)),
+                            }
+                        )
                 except Exception as e:
                     print(f"[Warning] Failed to parse {md_file}: {e}")
 
         return subagents
 
-    def _generate_flowskill(self, local_path: Path, structure: dict[str, Any], repo_name: str = None) -> FlowSkill | None:
+    def _generate_flowskill(
+        self, local_path: Path, structure: dict[str, Any], repo_name: str = None
+    ) -> FlowSkill | None:
         """生成 FlowSkill - 分析代码执行流程"""
         # 读取关键文件进行分析
         key_files = []
@@ -964,8 +1005,18 @@ class EnhancedGitHubImporter:
 
         # 生成 FlowSkill 配置
         # 映射扩展名到语言名称
-        ext_to_lang = {".py": "python", ".js": "javascript", ".ts": "typescript", ".tsx": "react", ".go": "go", ".rs": "rust", ".java": "java"}
-        lang = structure.get("languages", ["unknown"])[0] if structure.get("languages") else "unknown"
+        ext_to_lang = {
+            ".py": "python",
+            ".js": "javascript",
+            ".ts": "typescript",
+            ".tsx": "react",
+            ".go": "go",
+            ".rs": "rust",
+            ".java": "java",
+        }
+        lang = (
+            structure.get("languages", ["unknown"])[0] if structure.get("languages") else "unknown"
+        )
         # 去掉点号
         lang = lang.lstrip(".")
         # 尝试转换
@@ -996,7 +1047,7 @@ class EnhancedGitHubImporter:
         lines = prompt.split("\n")
         for i, line in enumerate(lines):
             if any(kw in line.lower() for kw in ["step", "process", "flow", "workflow"]):
-                return " -> ".join(lines[i:i+3]).strip()[:200]
+                return " -> ".join(lines[i : i + 3]).strip()[:200]
         return "Default agent execution flow"
 
     def _extract_triggers(self, prompt: str) -> list[str]:
@@ -1015,11 +1066,13 @@ class EnhancedGitHubImporter:
         """提取子代理调用"""
         calls = []
         for sa in subagent_prompts[:6]:
-            calls.append({
-                "name": sa.get("name", "unknown"),
-                "condition": f"task matches '{sa.get('description', '')}'",
-                "type": "general",
-            })
+            calls.append(
+                {
+                    "name": sa.get("name", "unknown"),
+                    "condition": f"task matches '{sa.get('description', '')}'",
+                    "type": "general",
+                }
+            )
         return calls
 
     def _parse_configs(self, local_path: Path) -> dict[str, Any]:
@@ -1049,10 +1102,16 @@ class EnhancedGitHubImporter:
                 content = item.read_text(encoding="utf-8", errors="ignore")
                 # 提取 skill 名称
                 skill_name = item.parent.name if item.parent.name else item.stem
-                configs["skills"].append({
-                    "path": str(item),
-                    "config": {"name": skill_name, "type": "markdown", "content_preview": content[:500]}
-                })
+                configs["skills"].append(
+                    {
+                        "path": str(item),
+                        "config": {
+                            "name": skill_name,
+                            "type": "markdown",
+                            "content_preview": content[:500],
+                        },
+                    }
+                )
             except:
                 pass
 
@@ -1176,7 +1235,11 @@ class EnhancedGitHubImporter:
                 yaml.dump(asdict(subagent), f, allow_unicode=True, default_flow_style=False)
 
         agent_config["sub_agents"] = [
-            {"name": sa["name"], "type": sa.get("type", "general"), "description": sa.get("description", "")}
+            {
+                "name": sa["name"],
+                "type": sa.get("type", "general"),
+                "description": sa.get("description", ""),
+            }
             for sa in results["subagents"]
         ]
 
@@ -1215,16 +1278,22 @@ class EnhancedGitHubImporter:
         return results
 
 
-def import_github_enhanced(github_url: str, packages_dir: str = "packages",
-                           subagents_dir: str = "subagents",
-                           use_git_clone: bool = True,
-                           analyze_with_agent: bool = True) -> dict[str, Any]:
+def import_github_enhanced(
+    github_url: str,
+    packages_dir: str = "packages",
+    subagents_dir: str = "subagents",
+    use_git_clone: bool = True,
+    analyze_with_agent: bool = True,
+) -> dict[str, Any]:
     """从 GitHub 导入 (增强版 CLI 入口)"""
     import asyncio
 
     importer = EnhancedGitHubImporter(packages_dir, subagents_dir)
-    return asyncio.run(importer.import_from_url(github_url, use_git_clone=use_git_clone,
-                                               analyze_with_agent=analyze_with_agent))
+    return asyncio.run(
+        importer.import_from_url(
+            github_url, use_git_clone=use_git_clone, analyze_with_agent=analyze_with_agent
+        )
+    )
 
 
 # 兼容旧接口

@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 class SkillCategory(Enum):
     """技能分类"""
+
     CODE = "code"
     REVIEW = "review"
     TEST = "test"
@@ -34,6 +35,7 @@ class SkillCategory(Enum):
 
 class TriggerType(Enum):
     """触发类型"""
+
     KEYWORD = "keyword"
     PATTERN = "pattern"
     SCHEDULE = "schedule"
@@ -44,6 +46,7 @@ class TriggerType(Enum):
 @dataclass
 class SkillAction:
     """技能动作定义"""
+
     name: str
     description: str
     handler: Optional[Callable] = None
@@ -53,6 +56,7 @@ class SkillAction:
 @dataclass
 class SkillTemplate:
     """技能模板"""
+
     name: str
     description: str
     category: SkillCategory
@@ -66,6 +70,7 @@ class SkillTemplate:
 @dataclass
 class CreatedSkill:
     """创建的技能"""
+
     name: str
     path: Path
     template: SkillTemplate
@@ -100,26 +105,18 @@ def _create_code_template() -> SkillTemplate:
         trigger_value="写代码",
         actions=[
             SkillAction(
-                name="analyze_requirement",
-                description="分析需求",
-                parameters={"required": True}
+                name="analyze_requirement", description="分析需求", parameters={"required": True}
             ),
             SkillAction(
-                name="generate_code",
-                description="生成代码",
-                parameters={"language": "python"}
+                name="generate_code", description="生成代码", parameters={"language": "python"}
             ),
-            SkillAction(
-                name="add_tests",
-                description="添加测试",
-                parameters={"required": False}
-            ),
+            SkillAction(name="add_tests", description="添加测试", parameters={"required": False}),
         ],
         validation_rules={
             "min_score": 0.7,
             "check_syntax": True,
             "check_types": True,
-        }
+        },
     )
 
 
@@ -133,25 +130,19 @@ def _create_review_template() -> SkillTemplate:
         trigger_value="审查代码",
         actions=[
             SkillAction(
-                name="check_style",
-                description="检查代码风格",
-                parameters={"standard": "pep8"}
+                name="check_style", description="检查代码风格", parameters={"standard": "pep8"}
             ),
-            SkillAction(
-                name="find_bugs",
-                description="查找潜在bug",
-                parameters={"level": "basic"}
-            ),
+            SkillAction(name="find_bugs", description="查找潜在bug", parameters={"level": "basic"}),
             SkillAction(
                 name="suggest_improvements",
                 description="建议改进",
-                parameters={"max_suggestions": 5}
+                parameters={"max_suggestions": 5},
             ),
         ],
         validation_rules={
             "check_security": True,
             "check_performance": True,
-        }
+        },
     )
 
 
@@ -165,25 +156,23 @@ def _create_test_template() -> SkillTemplate:
         trigger_value="生成测试",
         actions=[
             SkillAction(
-                name="analyze_code",
-                description="分析待测代码",
-                parameters={"required": True}
+                name="analyze_code", description="分析待测代码", parameters={"required": True}
             ),
             SkillAction(
                 name="generate_unit_tests",
                 description="生成单元测试",
-                parameters={"framework": "pytest"}
+                parameters={"framework": "pytest"},
             ),
             SkillAction(
                 name="generate_integration_tests",
                 description="生成集成测试",
-                parameters={"required": False}
+                parameters={"required": False},
             ),
         ],
         validation_rules={
             "min_coverage": 80,
             "check_edge_cases": True,
-        }
+        },
     )
 
 
@@ -199,23 +188,21 @@ def _create_data_analysis_template() -> SkillTemplate:
             SkillAction(
                 name="load_data",
                 description="加载数据",
-                parameters={"formats": ["csv", "json", "excel"]}
+                parameters={"formats": ["csv", "json", "excel"]},
             ),
             SkillAction(
-                name="explore_data",
-                description="探索数据",
-                parameters={"statistics": True}
+                name="explore_data", description="探索数据", parameters={"statistics": True}
             ),
             SkillAction(
                 name="visualize",
                 description="生成可视化",
-                parameters={"charts": ["bar", "line", "scatter"]}
+                parameters={"charts": ["bar", "line", "scatter"]},
             ),
         ],
         validation_rules={
             "check_nulls": True,
             "check_duplicates": True,
-        }
+        },
     )
 
 
@@ -229,25 +216,15 @@ def _create_research_template() -> SkillTemplate:
         trigger_value="研究",
         actions=[
             SkillAction(
-                name="search",
-                description="搜索信息",
-                parameters={"sources": ["web", "docs"]}
+                name="search", description="搜索信息", parameters={"sources": ["web", "docs"]}
             ),
-            SkillAction(
-                name="summarize",
-                description="总结要点",
-                parameters={"max_points": 5}
-            ),
-            SkillAction(
-                name="cite",
-                description="引用来源",
-                parameters={"format": "apa"}
-            ),
+            SkillAction(name="summarize", description="总结要点", parameters={"max_points": 5}),
+            SkillAction(name="cite", description="引用来源", parameters={"format": "apa"}),
         ],
         validation_rules={
             "verify_sources": True,
             "min_sources": 3,
-        }
+        },
     )
 
 
@@ -283,10 +260,7 @@ class SkillCreator:
         self._templates[name] = template
 
     def create_from_template(
-        self,
-        template_name: str,
-        skill_name: str,
-        customizations: Optional[Dict[str, Any]] = None
+        self, template_name: str, skill_name: str, customizations: Optional[Dict[str, Any]] = None
     ) -> CreatedSkill:
         """从模板创建技能
 
@@ -321,10 +295,7 @@ class SkillCreator:
         )
 
     def _generate_files(
-        self,
-        template: SkillTemplate,
-        skill_name: str,
-        customizations: Dict[str, Any]
+        self, template: SkillTemplate, skill_name: str, customizations: Dict[str, Any]
     ) -> Dict[str, str]:
         """生成技能文件"""
         files = {}
@@ -342,10 +313,7 @@ class SkillCreator:
         return files
 
     def _generate_skill_md(
-        self,
-        template: SkillTemplate,
-        skill_name: str,
-        customizations: Dict[str, Any]
+        self, template: SkillTemplate, skill_name: str, customizations: Dict[str, Any]
     ) -> str:
         """生成 SKILL.md"""
         lines = [
@@ -369,25 +337,23 @@ class SkillCreator:
             lines.append(f"_{action.description}_")
             lines.append("")
 
-        lines.extend([
-            "## Usage",
-            "",
-            f"Trigger with: `{template.trigger_value}`",
-            "",
-            "## Validation",
-            "",
-        ])
+        lines.extend(
+            [
+                "## Usage",
+                "",
+                f"Trigger with: `{template.trigger_value}`",
+                "",
+                "## Validation",
+                "",
+            ]
+        )
 
         for key, value in template.validation_rules.items():
             lines.append(f"- **{key}**: {value}")
 
         return "\n".join(lines)
 
-    def _generate_main_py(
-        self,
-        template: SkillTemplate,
-        customizations: Dict[str, Any]
-    ) -> str:
+    def _generate_main_py(self, template: SkillTemplate, customizations: Dict[str, Any]) -> str:
         """生成 main.py"""
         return f'''"""Main entry point for {template.name}"""
 
@@ -450,10 +416,7 @@ if __name__ == "__main__":
 
 # 便捷函数
 def create_skill(
-    name: str,
-    template: str = "code",
-    output_dir: Optional[Path] = None,
-    save: bool = True
+    name: str, template: str = "code", output_dir: Optional[Path] = None, save: bool = True
 ) -> CreatedSkill:
     """创建技能
 

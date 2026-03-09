@@ -12,7 +12,8 @@ from src.flow.base import FlowSkill
 
 class CompositionType(Enum):
     """组合类型"""
-    CHAIN = "chain"       # 链式：顺序执行
+
+    CHAIN = "chain"  # 链式：顺序执行
     PARALLEL = "parallel"  # 并行：同时执行
     CONDITIONAL = "conditional"  # 条件：根据条件选择
 
@@ -20,6 +21,7 @@ class CompositionType(Enum):
 @dataclass
 class CompositeConfig:
     """组合配置"""
+
     composition_type: CompositionType = CompositionType.CHAIN
     fallbacks: list[FlowSkill] = field(default_factory=list)  # 备用 Skill
 
@@ -38,7 +40,7 @@ class CompositeFlowSkill(FlowSkill):
         name: str,
         description: str,
         skills: list[FlowSkill],
-        config: CompositeConfig | None = None
+        config: CompositeConfig | None = None,
     ):
         self._name = name
         self._description = description
@@ -102,7 +104,7 @@ class ChainFlowSkill(CompositeFlowSkill):
             name=name,
             description="Chain composition of skills",
             skills=skills,
-            config=CompositeConfig(composition_type=CompositionType.CHAIN)
+            config=CompositeConfig(composition_type=CompositionType.CHAIN),
         )
 
 
@@ -117,7 +119,7 @@ class ParallelFlowSkill(CompositeFlowSkill):
             name=name,
             description="Parallel composition of skills",
             skills=skills,
-            config=CompositeConfig(composition_type=CompositionType.PARALLEL)
+            config=CompositeConfig(composition_type=CompositionType.PARALLEL),
         )
 
     @property
@@ -129,6 +131,7 @@ class ParallelFlowSkill(CompositeFlowSkill):
         """并行前处理：所有 Skill 预处理同一输入"""
         # 并行执行所有预处理
         import asyncio
+
         tasks = [skill.pre_process(user_input, context) for skill in self.skills]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -145,6 +148,7 @@ class ParallelFlowSkill(CompositeFlowSkill):
     async def post_process(self, agent_output: str, context: dict) -> str:
         """并行后处理：所有 Skill 后处理同一输出"""
         import asyncio
+
         tasks = [skill.post_process(agent_output, context) for skill in self.skills]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -169,13 +173,13 @@ class ConditionalFlowSkill(CompositeFlowSkill):
         self,
         skills: list[FlowSkill],
         condition_fn: Callable[[str, dict], int],
-        name: str = "conditional"
+        name: str = "conditional",
     ):
         super().__init__(
             name=name,
             description="Conditional composition of skills",
             skills=skills,
-            config=CompositeConfig(composition_type=CompositionType.CONDITIONAL)
+            config=CompositeConfig(composition_type=CompositionType.CONDITIONAL),
         )
         self.condition_fn = condition_fn
 
@@ -188,13 +192,14 @@ class ConditionalFlowSkill(CompositeFlowSkill):
 
     async def post_process(self, agent_output: str, context: dict) -> str:
         """条件后处理"""
-        idx = self.condition_fn(agent_output, context) if hasattr(self, 'last_idx') else 0
+        idx = self.condition_fn(agent_output, context) if hasattr(self, "last_idx") else 0
         if 0 <= idx < len(self.skills):
             return await self.skills[idx].post_process(agent_output, context)
         return agent_output
 
 
 # ========== 便捷函数 ==========
+
 
 def compose_skills(*skills: FlowSkill) -> CompositeFlowSkill:
     """组合多个 Skill 为链式 Skill"""
@@ -207,8 +212,7 @@ def compose_parallel(*skills: FlowSkill) -> ParallelFlowSkill:
 
 
 def compose_conditional(
-    skills: list[FlowSkill],
-    condition_fn: Callable[[str, dict], int]
+    skills: list[FlowSkill], condition_fn: Callable[[str, dict], int]
 ) -> ConditionalFlowSkill:
     """组合多个 Skill 为条件 Skill"""
     return ConditionalFlowSkill(skills, condition_fn)

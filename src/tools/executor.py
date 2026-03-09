@@ -90,8 +90,11 @@ FORBIDDEN_PATTERNS = [
 
 class ToolExecutor:
     def __init__(
-        self, workspace: str = None, permission_evaluator=None, allowed_dirs: list[str] = None,
-        sandbox=None
+        self,
+        workspace: str = None,
+        permission_evaluator=None,
+        allowed_dirs: list[str] = None,
+        sandbox=None,
     ):
         # 默认使用当前工作目录或环境变量
         self.workspace = workspace or os.getcwd()
@@ -506,8 +509,17 @@ class ToolExecutor:
 
         # 检测是否是代码执行命令
         code_patterns = [
-            "python", "python3", "node", "nodejs", "npm", "pip",
-            "cargo", "go run", "ruby", "perl", "php"
+            "python",
+            "python3",
+            "node",
+            "nodejs",
+            "npm",
+            "pip",
+            "cargo",
+            "go run",
+            "ruby",
+            "perl",
+            "php",
         ]
 
         is_code_exec = any(p in command for p in code_patterns)
@@ -527,7 +539,9 @@ class ToolExecutor:
                 return None, -1
 
             # 确定语言
-            language = "python" if "python" in command else "nodejs" if "node" in command else "bash"
+            language = (
+                "python" if "python" in command else "nodejs" if "node" in command else "bash"
+            )
 
             # 执行代码
             result = await self._sandbox.execute(sandbox_id, command, language=language)
@@ -536,7 +550,9 @@ class ToolExecutor:
             if self._sandbox_pool and instance:
                 await self._sandbox_pool.release(instance)
 
-            return result.output + (f"\n[error]: {result.error}" if result.error else ""), result.exit_code
+            return result.output + (
+                f"\n[error]: {result.error}" if result.error else ""
+            ), result.exit_code
         except Exception as e:
             return f"[Sandbox Error] {str(e)}", 1
 

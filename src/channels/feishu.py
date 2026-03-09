@@ -90,11 +90,7 @@ class FeishuChannel(BaseChannel):
             print(f"[Feishu] Token refresh failed: {e}")
             raise
 
-    async def send_message(
-        self,
-        message: ChannelMessage,
-        reply_to: str | None = None
-    ) -> bool:
+    async def send_message(self, message: ChannelMessage, reply_to: str | None = None) -> bool:
         """发送文本消息到飞书"""
         if not self._connected:
             return False
@@ -107,18 +103,16 @@ class FeishuChannel(BaseChannel):
 
             # 构建消息体
             url = "https://open.feishu.cn/open-apis/im/v1/messages"
-            params = {
-                "receive_id_type": "user_id"
-            }
+            params = {"receive_id_type": "user_id"}
             headers = {
                 "Authorization": f"Bearer {token}",
-                "Content-Type": "application/json; charset=utf-8"
+                "Content-Type": "application/json; charset=utf-8",
             }
 
             data = {
                 "receive_id": message.user_id,
                 "msg_type": "text",
-                "content": json.dumps({"text": message.content})
+                "content": json.dumps({"text": message.content}),
             }
 
             async with aiohttp.ClientSession() as session:
@@ -134,11 +128,7 @@ class FeishuChannel(BaseChannel):
             print(f"[Feishu] Send error: {e}")
             return False
 
-    async def send_markdown(
-        self,
-        message: ChannelMessage,
-        reply_to: str | None = None
-    ) -> bool:
+    async def send_markdown(self, message: ChannelMessage, reply_to: str | None = None) -> bool:
         """发送 Markdown 消息"""
         if not self._connected:
             return False
@@ -154,23 +144,23 @@ class FeishuChannel(BaseChannel):
             params = {"receive_id_type": "user_id"}
             headers = {
                 "Authorization": f"Bearer {token}",
-                "Content-Type": "application/json; charset=utf-8"
+                "Content-Type": "application/json; charset=utf-8",
             }
 
             # 飞书使用 post 消息类型支持富文本
             data = {
                 "receive_id": message.user_id,
                 "msg_type": "post",
-                "content": json.dumps({
-                    "post": {
-                        "zh_cn": {
-                            "title": "OpenYoung",
-                            "content": [[
-                                {"tag": "text", "text": message.content}
-                            ]]
+                "content": json.dumps(
+                    {
+                        "post": {
+                            "zh_cn": {
+                                "title": "OpenYoung",
+                                "content": [[{"tag": "text", "text": message.content}]],
+                            }
                         }
                     }
-                })
+                ),
             }
 
             async with aiohttp.ClientSession() as session:
@@ -181,11 +171,7 @@ class FeishuChannel(BaseChannel):
             print(f"[Feishu] Markdown send error: {e}")
             return False
 
-    async def send_image(
-        self,
-        message: ChannelMessage,
-        image_url: str
-    ) -> bool:
+    async def send_image(self, message: ChannelMessage, image_url: str) -> bool:
         """发送图片消息"""
         if not self._connected:
             return False
@@ -219,11 +205,7 @@ class FeishuWebhookChannel(FeishuChannel):
         print("[Feishu] Webhook mode configured")
         return True
 
-    async def send_message(
-        self,
-        message: ChannelMessage,
-        reply_to: str | None = None
-    ) -> bool:
+    async def send_message(self, message: ChannelMessage, reply_to: str | None = None) -> bool:
         """通过 Webhook 发送消息"""
         if not self._connected:
             return False
@@ -232,10 +214,7 @@ class FeishuWebhookChannel(FeishuChannel):
             import aiohttp
 
             # Webhook 消息格式
-            data = {
-                "msg_type": "text",
-                "content": {"text": message.content}
-            }
+            data = {"msg_type": "text", "content": {"text": message.content}}
 
             async with aiohttp.ClientSession() as session:
                 async with session.post(self._webhook_url, json=data) as resp:

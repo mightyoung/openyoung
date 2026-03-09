@@ -64,13 +64,9 @@ class TaskExecutor:
             # ========== FlowSkill 智能路由 ==========
             if self._flow_skill:
                 try:
-                    should_delegate = await self._flow_skill.should_delegate(
-                        task.description, {}
-                    )
+                    should_delegate = await self._flow_skill.should_delegate(task.description, {})
                     if should_delegate:
-                        subagent_type = await self._flow_skill.get_subagent_type(
-                            task.description
-                        )
+                        subagent_type = await self._flow_skill.get_subagent_type(task.description)
                         if subagent_type and subagent_type != "general":
                             print(f"[FlowSkill] Delegating to subagent: {subagent_type}")
                             task.subagent_type = subagent_type
@@ -166,10 +162,9 @@ class TaskExecutor:
                         converted = self._exception_handler.handle_exception(
                             e, context, reraise=False
                         )
-                        result = type('obj', (object,), {
-                            'success': False,
-                            'error': str(converted)
-                        })()
+                        result = type(
+                            "obj", (object,), {"success": False, "error": str(converted)}
+                        )()
 
                     messages.append(
                         {
@@ -178,9 +173,7 @@ class TaskExecutor:
                             "tool_calls": [tool_call],
                         }
                     )
-                    tool_result = (
-                        result.result if result.success else f"错误: {result.error}"
-                    )
+                    tool_result = result.result if result.success else f"错误: {result.error}"
                     messages.append(
                         {
                             "role": "tool",
@@ -198,9 +191,7 @@ class TaskExecutor:
                 function="_execute_task",
                 additional_data={"task": task.description[:50]},
             )
-            converted = self._exception_handler.handle_exception(
-                e, context, reraise=False
-            )
+            converted = self._exception_handler.handle_exception(e, context, reraise=False)
             return f"Error: {type(e).__name__}: {converted}"
 
     def set_history(self, history: list):

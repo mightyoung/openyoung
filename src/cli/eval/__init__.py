@@ -45,6 +45,7 @@ def run_eval(task_description, expected, output, format):
 
         if format == "json":
             import json
+
             click.echo(json.dumps(result, indent=2, default=str))
         else:
             _display_eval_result(result)
@@ -66,6 +67,7 @@ def list_metrics(format):
 
     if format == "json":
         import json
+
         click.echo(json.dumps(metrics, indent=2))
     else:
         click.echo("\nAvailable Evaluation Metrics:\n")
@@ -115,6 +117,7 @@ def eval_history(limit, format):
 
     if format == "json":
         import json
+
         click.echo(json.dumps(sample_history[:limit], indent=2, default=str))
     else:
         click.echo("\nEvaluation History:\n")

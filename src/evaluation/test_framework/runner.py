@@ -43,7 +43,7 @@ class AgentTestRunner:
     def __init__(
         self,
         agent,  # YoungAgent instance
-        config: Optional[RunnerConfig] = None
+        config: Optional[RunnerConfig] = None,
     ):
         self.agent = agent
         self.config = config or RunnerConfig()
@@ -131,12 +131,11 @@ class AgentTestRunner:
         results = []
         for i, case in enumerate(suite.test_cases):
             if self.config.verbose:
-                print(f"[TestRunner] {i+1}/{suite.size}: {case.id}")
+                print(f"[TestRunner] {i + 1}/{suite.size}: {case.id}")
 
             try:
                 result = await self._run_with_timeout(
-                    self.run_case(case, input_tester, output_tester),
-                    suite.timeout_seconds
+                    self.run_case(case, input_tester, output_tester), suite.timeout_seconds
                 )
                 results.append(result)
             except Exception as e:
@@ -157,8 +156,7 @@ class AgentTestRunner:
         tasks = []
         for case in suite.test_cases:
             task = self._run_with_timeout(
-                self.run_case(case, input_tester, output_tester),
-                suite.timeout_seconds
+                self.run_case(case, input_tester, output_tester), suite.timeout_seconds
             )
             tasks.append(task)
 
@@ -190,9 +188,12 @@ class AgentTestRunner:
     def _is_input_test(self, test_case: TestCase) -> bool:
         """判断是否为输入理解测试"""
         # 输入理解测试主要关注意图解析、任务分类
-        return test_case.task_type in [
-            # 需要理解意图的任务类型
-        ]
+        return (
+            test_case.task_type
+            in [
+                # 需要理解意图的任务类型
+            ]
+        )
 
     def _create_error_result(self, case: TestCase, error: str) -> TestResult:
         """创建错误结果"""
@@ -240,7 +241,9 @@ class AgentTestRunner:
             output_results=output_results,
             results=results,
             dataset_name=dataset_name,
-            agent_name=getattr(self.agent, "config", None).__dict__.get("name", "unknown") if hasattr(self.agent, "config") else "unknown",
+            agent_name=getattr(self.agent, "config", None).__dict__.get("name", "unknown")
+            if hasattr(self.agent, "config")
+            else "unknown",
         )
 
     def _calculate_dimension_score(self, results: list[TestResult]) -> float:

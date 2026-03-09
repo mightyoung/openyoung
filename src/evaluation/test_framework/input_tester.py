@@ -50,19 +50,14 @@ class InputTester:
         parsed = await self._parse_input(test_case.task_description)
 
         # 2. 计算各项匹配度
-        intent_score = self._calculate_intent_match(
-            parsed.get("intent"),
-            test_case.expected_intent
-        )
+        intent_score = self._calculate_intent_match(parsed.get("intent"), test_case.expected_intent)
 
         task_type_score = self._calculate_task_type_match(
-            parsed.get("task_type"),
-            test_case.task_type.value
+            parsed.get("task_type"), test_case.task_type.value
         )
 
         param_score = self._calculate_param_match(
-            parsed.get("params", {}),
-            test_case.expected_params
+            parsed.get("params", {}), test_case.expected_params
         )
 
         # 3. 综合评分
@@ -140,11 +135,7 @@ class InputTester:
             "params": params,
         }
 
-    def _calculate_intent_match(
-        self,
-        parsed_intent: str,
-        expected_intent: str
-    ) -> float:
+    def _calculate_intent_match(self, parsed_intent: str, expected_intent: str) -> float:
         """计算意图匹配度"""
         if not parsed_intent or not expected_intent:
             return 0.0
@@ -159,19 +150,11 @@ class InputTester:
 
         return 0.0
 
-    def _calculate_task_type_match(
-        self,
-        parsed_type: str,
-        expected_type: str
-    ) -> float:
+    def _calculate_task_type_match(self, parsed_type: str, expected_type: str) -> float:
         """计算任务类型匹配度"""
         return self._calculate_intent_match(parsed_type, expected_type)
 
-    def _calculate_param_match(
-        self,
-        parsed_params: dict,
-        expected_params: dict
-    ) -> float:
+    def _calculate_param_match(self, parsed_params: dict, expected_params: dict) -> float:
         """计算参数匹配度"""
         if not expected_params:
             return 1.0  # 没有预期参数则通过
@@ -181,8 +164,7 @@ class InputTester:
 
         # 计算交集
         matched = sum(
-            1 for k, v in expected_params.items()
-            if k in parsed_params and parsed_params[k] == v
+            1 for k, v in expected_params.items() if k in parsed_params and parsed_params[k] == v
         )
 
         return matched / len(expected_params)
@@ -235,6 +217,5 @@ class IntentParser:
             "intent": best_match,
             "task_type": best_match,
             "confidence": min(best_score / 3, 1.0),  # 归一化
-            "keywords": [kw for kw in cls.INTENT_KEYWORDS.get(best_match, [])
-                        if kw in task_lower],
+            "keywords": [kw for kw in cls.INTENT_KEYWORDS.get(best_match, []) if kw in task_lower],
         }

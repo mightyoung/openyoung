@@ -49,7 +49,9 @@ class EvalHubAPI:
             "service": "eval-hub",
             "version": "1.0.0",
             "evaluators": list(self._hub._evaluators.keys()),
-            "plugins": self._hub._plugin_registry.list_plugins() if self._hub._plugin_registry else [],
+            "plugins": self._hub._plugin_registry.list_plugins()
+            if self._hub._plugin_registry
+            else [],
         }
 
     # ========== Evaluation Endpoints ==========
@@ -364,6 +366,7 @@ class EvalHubAPI:
 
 # ========== ASGI App ==========
 
+
 class EvalHubApp:
     """EvalHub ASGI 应用
 
@@ -455,18 +458,23 @@ class EvalHubApp:
 
     async def _send_json(self, send, data: dict, status: int = 200):
         """发送 JSON 响应"""
-        await send({
-            "type": "http.response.start",
-            "status": status,
-            "headers": [[b"content-type", b"application/json"]],
-        })
-        await send({
-            "type": "http.response.body",
-            "body": json.dumps(data).encode(),
-        })
+        await send(
+            {
+                "type": "http.response.start",
+                "status": status,
+                "headers": [[b"content-type", b"application/json"]],
+            }
+        )
+        await send(
+            {
+                "type": "http.response.body",
+                "body": json.dumps(data).encode(),
+            }
+        )
 
 
 # ========== Convenience Functions ==========
+
 
 def create_eval_hub_api() -> EvalHubAPI:
     """创建 EvalHub API 实例"""
@@ -479,6 +487,7 @@ def create_eval_hub_app() -> EvalHubApp:
 
 
 # ========== CLI Server ==========
+
 
 async def run_server(host: str = "0.0.0.0", port: int = 8000):
     """运行评估服务

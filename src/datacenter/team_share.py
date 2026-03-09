@@ -14,6 +14,7 @@ from .base_storage import BaseStorage
 @dataclass
 class TeamShare:
     """团队共享记录"""
+
     share_id: str
     data_id: str
     data_type: str  # run / agent / checkpoint
@@ -39,9 +40,9 @@ class TeamShareManager(BaseStorage):
                 "team_id": "TEXT NOT NULL UNIQUE",
                 "name": "TEXT NOT NULL",
                 "owner_id": "TEXT NOT NULL",
-                "created_at": "TEXT NOT NULL"
+                "created_at": "TEXT NOT NULL",
             },
-            indexes=[("idx_team", "team_id")]
+            indexes=[("idx_team", "team_id")],
         )
 
         # 团队成员表
@@ -53,9 +54,9 @@ class TeamShareManager(BaseStorage):
                 "user_id": "TEXT NOT NULL",
                 "role": "TEXT DEFAULT 'member'",
                 "joined_at": "TEXT NOT NULL",
-                "UNIQUE": "(team_id, user_id)"
+                "UNIQUE": "(team_id, user_id)",
             },
-            indexes=[("idx_member_user", "user_id")]
+            indexes=[("idx_member_user", "user_id")],
         )
 
         # 数据共享表
@@ -69,12 +70,9 @@ class TeamShareManager(BaseStorage):
                 "team_id": "TEXT NOT NULL",
                 "owner_id": "TEXT NOT NULL",
                 "permission": "TEXT DEFAULT 'read'",
-                "shared_at": "TEXT NOT NULL"
+                "shared_at": "TEXT NOT NULL",
             },
-            indexes=[
-                ("idx_share_team", "team_id"),
-                ("idx_share_data", "data_id")
-            ]
+            indexes=[("idx_share_team", "team_id"), ("idx_share_data", "data_id")],
         )
 
     # ===== 团队管理 =====
@@ -94,7 +92,7 @@ class TeamShareManager(BaseStorage):
             INSERT OR REPLACE INTO teams (team_id, name, owner_id, created_at)
             VALUES (?, ?, ?, ?)
             """,
-            (team_id, name, owner_id, datetime.now().isoformat())
+            (team_id, name, owner_id, datetime.now().isoformat()),
         )
 
         # 自动添加创建者为管理员
@@ -103,29 +101,29 @@ class TeamShareManager(BaseStorage):
             INSERT OR IGNORE INTO team_members (team_id, user_id, role, joined_at)
             VALUES (?, ?, ?, ?)
             """,
-            (team_id, owner_id, 'admin', datetime.now().isoformat())
+            (team_id, owner_id, "admin", datetime.now().isoformat()),
         )
 
         return team_id
 
     def get_team(self, team_id: str) -> dict | None:
         """获取团队信息"""
-        result = self._execute(
-            "SELECT * FROM teams WHERE team_id = ?",
-            (team_id,),
-            fetch=True
-        )
+        result = self._execute("SELECT * FROM teams WHERE team_id = ?", (team_id,), fetch=True)
 
         return result[0] if result else None
 
     def list_teams(self, user_id: str = None) -> list[dict]:
         """列出团队"""
         if user_id:
-            result = self._execute("""
+            result = self._execute(
+                """
                 SELECT t.* FROM teams t
                 JOIN team_members tm ON t.team_id = tm.team_id
                 WHERE tm.user_id = ?
-            """, (user_id,), fetch=True)
+            """,
+                (user_id,),
+                fetch=True,
+            )
         else:
             result = self._execute("SELECT * FROM teams", fetch=True)
 
@@ -139,7 +137,7 @@ class TeamShareManager(BaseStorage):
                 INSERT OR IGNORE INTO team_members (team_id, user_id, role, joined_at)
                 VALUES (?, ?, ?, ?)
                 """,
-                (team_id, user_id, role, datetime.now().isoformat())
+                (team_id, user_id, role, datetime.now().isoformat()),
             )
             return True
         except Exception:
@@ -150,7 +148,7 @@ class TeamShareManager(BaseStorage):
         result = self._execute(
             "DELETE FROM team_members WHERE team_id = ? AND user_id = ?",
             (team_id, user_id),
-            fetch=True
+            fetch=True,
         )
         # sqlite3 在 delete 后 rowcount 不可用，这里简单返回 True
         return True
@@ -158,21 +156,14 @@ class TeamShareManager(BaseStorage):
     def list_members(self, team_id: str) -> list[dict]:
         """列出团队成员"""
         result = self._execute(
-            "SELECT * FROM team_members WHERE team_id = ?",
-            (team_id,),
-            fetch=True
+            "SELECT * FROM team_members WHERE team_id = ?", (team_id,), fetch=True
         )
         return result or []
 
     # ===== 数据共享 =====
 
     def share_data(
-        self,
-        data_id: str,
-        data_type: str,
-        team_id: str,
-        owner_id: str,
-        permission: str = "read"
+        self, data_id: str, data_type: str, team_id: str, owner_id: str, permission: str = "read"
     ) -> str:
         """共享数据给团队"""
         share_id = f"share_{uuid.uuid4().hex[:12]}"
@@ -182,7 +173,15 @@ class TeamShareManager(BaseStorage):
             INSERT INTO data_shares (share_id, data_id, data_type, team_id, owner_id, permission, shared_at)
             VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
-            (share_id, data_id, data_type, team_id, owner_id, permission, datetime.now().isoformat())
+            (
+                share_id,
+                data_id,
+                data_type,
+                team_id,
+                owner_id,
+                permission,
+                datetime.now().isoformat(),
+            ),
         )
 
         return share_id
@@ -204,7 +203,9 @@ class TeamShareManager(BaseStorage):
         result = self._execute(query, tuple(params), fetch=True)
         return result or []
 
-    def check_access(self, team_id: str, user_id: str, data_id: str, required_permission: str = "read") -> bool:
+    def check_access(
+        self, team_id: str, user_id: str, data_id: str, required_permission: str = "read"
+    ) -> bool:
         """检查用户是否有权访问数据
 
         Args:
@@ -220,7 +221,7 @@ class TeamShareManager(BaseStorage):
         member_result = self._execute(
             "SELECT role FROM team_members WHERE team_id = ? AND user_id = ?",
             (team_id, user_id),
-            fetch=True
+            fetch=True,
         )
 
         if not member_result:
@@ -236,7 +237,7 @@ class TeamShareManager(BaseStorage):
         share_result = self._execute(
             "SELECT permission FROM data_shares WHERE team_id = ? AND data_id = ?",
             (team_id, data_id),
-            fetch=True
+            fetch=True,
         )
 
         if not share_result:
@@ -257,6 +258,7 @@ class TeamShareManager(BaseStorage):
 
 
 # ========== 便捷函数 ==========
+
 
 def get_team_share_manager(db_path: str = ".young/team_shares.db") -> TeamShareManager:
     """获取团队共享管理器"""

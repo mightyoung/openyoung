@@ -36,6 +36,7 @@ def run_tests(suite, dataset, agent_name, parallel, verbose):
         openyoung test run --suite unit
         openyoung test run -s integration -v
     """
+
     async def _run():
         from src.agents.young_agent import YoungAgent
         from src.config.loader import ConfigLoader
@@ -127,6 +128,7 @@ def run_case(case_id, agent_name):
     Example:
         openyoung test case code_gen_001
     """
+
     async def _run():
         from src.agents.young_agent import YoungAgent
         from src.config.loader import ConfigLoader

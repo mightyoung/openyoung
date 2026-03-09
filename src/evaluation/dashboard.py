@@ -96,7 +96,7 @@ class EvalDashboard:
 
         # 计算标准差
         variance = sum((s - avg_score) ** 2 for s in scores) / len(scores)
-        std_dev = variance ** 0.5
+        std_dev = variance**0.5
 
         # 计算趋势 (最近5个 vs 之前5个)
         trend = "stable"
@@ -375,14 +375,14 @@ class EvalDashboard:
         lines.append("EVALUATION COMPARISON REPORT")
         lines.append("=" * 60)
         lines.append("")
-        lines.append(f"{'Metric':<20} {'Left (ID:' + str(left_id) + ')':<20} {'Right (ID:' + str(right_id) + ')':<20}")
+        lines.append(
+            f"{'Metric':<20} {'Left (ID:' + str(left_id) + ')':<20} {'Right (ID:' + str(right_id) + ')':<20}"
+        )
         lines.append("-" * 60)
         lines.append(
             f"{'Score':<20} {left.score:.4f} {left_status:<18} {right.score:.4f} {right_status}"
         )
-        lines.append(
-            f"{'Success':<20} {str(left.success):<20} {str(right.success):<20}"
-        )
+        lines.append(f"{'Success':<20} {str(left.success):<20} {str(right.success):<20}")
         lines.append("-" * 60)
         lines.append(f"{'Difference:':<20} {comparison.score_diff:+.4f}")
         lines.append(f"{'Winner:':<20} {comparison.winner}")

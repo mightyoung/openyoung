@@ -23,6 +23,7 @@ def search_agents(query, limit, format):
 
     if format == "json":
         import json
+
         click.echo(json.dumps(results, indent=2, default=str))
     else:
         _display_search_results(results)

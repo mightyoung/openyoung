@@ -10,6 +10,7 @@ from enum import Enum
 
 class Capability(Enum):
     """LLM 能力枚举"""
+
     VISION = "vision"
     THINKING = "thinking"
     FUNCTION_CALLING = "function_calling"
@@ -20,6 +21,7 @@ class Capability(Enum):
 
 class Provider(Enum):
     """支持的 LLM Provider"""
+
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
     DEEPSEEK = "deepseek"
@@ -31,6 +33,7 @@ class Provider(Enum):
 @dataclass
 class ModelProfile:
     """模型能力描述"""
+
     model: str
     provider: Provider
     capabilities: list[Capability] = field(default_factory=list)
@@ -45,6 +48,7 @@ class ModelProfile:
 @dataclass
 class LLMResponse:
     """统一的 LLM 响应格式"""
+
     content: str
     reasoning: str | None = None  # 统一的 reasoning 字段
     usage: dict[str, int] = field(default_factory=dict)
@@ -56,6 +60,7 @@ class LLMResponse:
 @dataclass
 class Message:
     """统一的消息格式"""
+
     role: str  # "system", "user", "assistant"
     content: str
     name: str | None = None
@@ -75,7 +80,13 @@ MODEL_PROFILES: dict[str, ModelProfile] = {
         thinking_budget_max=100000,
         context_window=200000,
         max_output_tokens=100000,
-        unsupported_params=["temperature", "top_p", "logprobs", "frequency_penalty", "presence_penalty"],
+        unsupported_params=[
+            "temperature",
+            "top_p",
+            "logprobs",
+            "frequency_penalty",
+            "presence_penalty",
+        ],
     ),
     "o1-mini": ModelProfile(
         model="o1-mini",
@@ -85,7 +96,13 @@ MODEL_PROFILES: dict[str, ModelProfile] = {
         thinking_budget_max=65000,
         context_window=128000,
         max_output_tokens=65000,
-        unsupported_params=["temperature", "top_p", "logprobs", "frequency_penalty", "presence_penalty"],
+        unsupported_params=[
+            "temperature",
+            "top_p",
+            "logprobs",
+            "frequency_penalty",
+            "presence_penalty",
+        ],
     ),
     "o3": ModelProfile(
         model="o3",
@@ -95,7 +112,13 @@ MODEL_PROFILES: dict[str, ModelProfile] = {
         thinking_budget_max=200000,
         context_window=200000,
         max_output_tokens=100000,
-        unsupported_params=["temperature", "top_p", "logprobs", "frequency_penalty", "presence_penalty"],
+        unsupported_params=[
+            "temperature",
+            "top_p",
+            "logprobs",
+            "frequency_penalty",
+            "presence_penalty",
+        ],
     ),
     "gpt-4o": ModelProfile(
         model="gpt-4o",
@@ -113,7 +136,6 @@ MODEL_PROFILES: dict[str, ModelProfile] = {
         context_window=128000,
         max_output_tokens=16384,
     ),
-
     # Anthropic
     "claude-sonnet-4-20250514": ModelProfile(
         model="claude-sonnet-4-20250514",
@@ -151,7 +173,6 @@ MODEL_PROFILES: dict[str, ModelProfile] = {
         context_window=200000,
         max_output_tokens=4096,
     ),
-
     # DeepSeek
     "deepseek-chat": ModelProfile(
         model="deepseek-chat",
@@ -172,7 +193,6 @@ MODEL_PROFILES: dict[str, ModelProfile] = {
         thinking_param_name="thinking",
         unsupported_params=["temperature", "top_p", "logprobs"],
     ),
-
     # Google
     "gemini-2.0-flash": ModelProfile(
         model="gemini-2.0-flash",
@@ -190,7 +210,6 @@ MODEL_PROFILES: dict[str, ModelProfile] = {
         context_window=2000000,
         max_output_tokens=8192,
     ),
-
     # Ollama
     "llama3": ModelProfile(
         model="llama3",
@@ -236,7 +255,11 @@ def detect_provider(model: str) -> Provider:
     """从模型名检测 Provider"""
     model_lower = model.lower()
 
-    if model_lower.startswith("gpt") or model_lower.startswith("o1") or model_lower.startswith("o3"):
+    if (
+        model_lower.startswith("gpt")
+        or model_lower.startswith("o1")
+        or model_lower.startswith("o3")
+    ):
         return Provider.OPENAI
     if "claude" in model_lower:
         return Provider.ANTHROPIC

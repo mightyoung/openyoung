@@ -24,6 +24,7 @@ def list_skills(format):
     try:
         # 初始化加载器
         import asyncio
+
         asyncio.run(loader.initialize())
 
         # 获取所有 skill
@@ -35,6 +36,7 @@ def list_skills(format):
 
         if format == "json":
             import json
+
             click.echo(json.dumps(all_metadata, indent=2, default=str))
         else:
             _display_skills_table(all_metadata)
@@ -57,6 +59,7 @@ def add_skill(skill_path, name):
 
     try:
         import asyncio
+
         asyncio.run(loader.add_skill_path(skill_path, name))
 
         click.echo(f"✅ Skill added: {name or skill_path}")
@@ -78,6 +81,7 @@ def remove_skill(skill_name):
 
     try:
         import asyncio
+
         asyncio.run(loader.remove_skill(skill_name))
 
         click.echo(f"✅ Skill removed: {skill_name}")
@@ -99,6 +103,7 @@ def search_skills(query, limit):
 
     try:
         import asyncio
+
         asyncio.run(loader.initialize())
 
         # 搜索 skills
@@ -133,6 +138,7 @@ def skill_info(skill_name):
 
     try:
         import asyncio
+
         asyncio.run(loader.initialize())
 
         # 获取 skill 元数据

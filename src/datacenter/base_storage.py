@@ -41,12 +41,7 @@ class BaseStorage:
         finally:
             conn.close()
 
-    def _execute(
-        self,
-        query: str,
-        params: tuple = None,
-        fetch: bool = False
-    ) -> list[dict] | None:
+    def _execute(self, query: str, params: tuple = None, fetch: bool = False) -> list[dict] | None:
         """执行 SQL 查询"""
         with self._get_connection() as conn:
             cursor = conn.cursor()
@@ -66,11 +61,7 @@ class BaseStorage:
                 logger.error(f"SQL execution error: {e}")
                 raise
 
-    def _execute_many(
-        self,
-        query: str,
-        params_list: list[tuple]
-    ) -> None:
+    def _execute_many(self, query: str, params_list: list[tuple]) -> None:
         """批量执行"""
         with self._get_connection() as conn:
             cursor = conn.cursor()
@@ -82,10 +73,7 @@ class BaseStorage:
                 raise
 
     def _create_table(
-        self,
-        table_name: str,
-        columns: dict[str, str],
-        indexes: list[tuple] = None
+        self, table_name: str, columns: dict[str, str], indexes: list[tuple] = None
     ) -> None:
         """创建表"""
         cols = ", ".join(f"{name} {dtype}" for name, dtype in columns.items())
@@ -172,6 +160,7 @@ class BaseStorage:
 
 
 # ========== 便捷函数 ==========
+
 
 def get_storage(db_path: str) -> BaseStorage:
     """获取存储实例"""

@@ -80,6 +80,7 @@ class EvaluationHub:
         """初始化插件注册中心"""
         try:
             from .plugins import PluginRegistry
+
             self._plugin_registry = PluginRegistry()
         except ImportError:
             self._plugin_registry = None
@@ -580,10 +581,7 @@ class EvaluationHub:
             评估结果字典
         """
         if not self._plugin_registry:
-            return {
-                "error": "Plugin registry not initialized",
-                "results": []
-            }
+            return {"error": "Plugin registry not initialized", "results": []}
 
         try:
             from .plugins import EvalContext
@@ -606,13 +604,10 @@ class EvaluationHub:
                     "passed": sum(1 for r in results if r.passed),
                     "failed": sum(1 for r in results if not r.passed),
                     "average_score": sum(r.score for r in results) / len(results) if results else 0,
-                }
+                },
             }
         except Exception as e:
-            return {
-                "error": str(e),
-                "results": []
-            }
+            return {"error": str(e), "results": []}
 
     def get_results(self) -> list[EvaluationResult]:
         """获取评估结果"""

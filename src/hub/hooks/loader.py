@@ -14,6 +14,7 @@ import yaml
 
 class HookTrigger(str, Enum):
     """Hook 触发时机"""
+
     SESSION_START = "session_start"
     SESSION_END = "session_end"
     PRE_TASK = "pre_task"
@@ -24,6 +25,7 @@ class HookTrigger(str, Enum):
 
 class HookAction(str, Enum):
     """Hook 动作"""
+
     MEMORY_STORE = "memory_store"
     MEMORY_LOAD = "memory_load"
     CONTEXT_LOAD = "context_load"
@@ -50,6 +52,7 @@ class LearningHook:
         if self._evolver is None:
             try:
                 from src.evolver.engine import EvolutionEngine
+
                 self._evolver = EvolutionEngine()
             except Exception as e:
                 print(f"[LearningHook] Evolver init failed: {e}")
@@ -158,6 +161,7 @@ class LearningHook:
 @dataclass
 class HookConfig:
     """Hook 配置"""
+
     name: str
     trigger: str
     action: str
@@ -182,7 +186,9 @@ class HooksLoader:
                 package_yaml = item / "package.yaml"
                 hooks_json = item / "hooks.json"
 
-                if hooks_json.exists() or (package_yaml.exists() and self._is_hooks_package(package_yaml)):
+                if hooks_json.exists() or (
+                    package_yaml.exists() and self._is_hooks_package(package_yaml)
+                ):
                     hooks.append(item.name)
 
         return hooks

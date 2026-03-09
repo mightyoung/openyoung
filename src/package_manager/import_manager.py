@@ -16,14 +16,16 @@ from .registry import AgentRegistry
 
 class ImportStrategy(Enum):
     """导入策略"""
-    CLONE_FULL = "clone_full"     # 完整克隆
-    CLONE_LAZY = "clone_lazy"   # 延迟克隆
-    API_ONLY = "api_only"         # 仅 API 获取
+
+    CLONE_FULL = "clone_full"  # 完整克隆
+    CLONE_LAZY = "clone_lazy"  # 延迟克隆
+    API_ONLY = "api_only"  # 仅 API 获取
 
 
 @dataclass
 class ImportRequest:
     """导入请求"""
+
     url: str
     agent_name: str | None = None
     strategy: ImportStrategy = ImportStrategy.CLONE_FULL
@@ -34,6 +36,7 @@ class ImportRequest:
 @dataclass
 class ImportResult:
     """导入结果"""
+
     success: bool
     agent_name: str
     version: str
@@ -46,6 +49,7 @@ class ImportResult:
 @dataclass
 class UpdateResult:
     """更新结果"""
+
     agent_name: str
     updated: bool
     old_version: str
@@ -65,9 +69,7 @@ class ImportManager:
     """
 
     def __init__(
-        self,
-        packages_dir: str = "packages",
-        registry_path: str = ".young/agent_registry.json"
+        self, packages_dir: str = "packages", registry_path: str = ".young/agent_registry.json"
     ):
         self.packages_dir = Path(packages_dir)
         self.registry_path = Path(registry_path)
@@ -105,16 +107,14 @@ class ImportManager:
                 agent_name=agent_name,
                 version=existing.get("version", "unknown"),
                 source_url=request.url,
-                message=f"Agent '{agent_name}' already exists. Use --force to overwrite."
+                message=f"Agent '{agent_name}' already exists. Use --force to overwrite.",
             )
 
         # 3. 执行导入
         try:
-            use_git_clone = (request.strategy == ImportStrategy.CLONE_FULL)
+            use_git_clone = request.strategy == ImportStrategy.CLONE_FULL
             import_result = self._importer.import_from_url(
-                url=request.url,
-                agent_name=agent_name,
-                use_git_clone=use_git_clone
+                url=request.url, agent_name=agent_name, use_git_clone=use_git_clone
             )
 
             if "error" in import_result:
@@ -123,7 +123,7 @@ class ImportManager:
                     agent_name=agent_name,
                     version="",
                     source_url=request.url,
-                    message=import_result.get("error", "Unknown error")
+                    message=import_result.get("error", "Unknown error"),
                 )
 
             # 4. 获取版本
@@ -132,31 +132,30 @@ class ImportManager:
             # 5. 质量评估
             quality_report = None
             if request.evaluate:
-                report = await self._evaluator.evaluate(
-                    self.packages_dir / agent_name
-                )
+                report = await self._evaluator.evaluate(self.packages_dir / agent_name)
                 quality_report = {
                     "overall_score": report.overall_score,
                     "passed": report.passed,
                     "warnings": report.warnings,
                     "dimensions": [
-                        {
-                            "dimension": d.dimension.value,
-                            "score": d.score,
-                            "passed": d.passed
-                        }
+                        {"dimension": d.dimension.value, "score": d.score, "passed": d.passed}
                         for d in report.dimensions
-                    ]
+                    ],
                 }
 
             # 6. 更新注册表
-            self._update_registry(agent_name, {
-                "version": version,
-                "source_url": request.url,
-                "last_updated": datetime.datetime.now().isoformat(),
-                "import_strategy": request.strategy.value,
-                "quality_score": quality_report.get("overall_score") if quality_report else None
-            })
+            self._update_registry(
+                agent_name,
+                {
+                    "version": version,
+                    "source_url": request.url,
+                    "last_updated": datetime.datetime.now().isoformat(),
+                    "import_strategy": request.strategy.value,
+                    "quality_score": quality_report.get("overall_score")
+                    if quality_report
+                    else None,
+                },
+            )
 
             return ImportResult(
                 success=True,
@@ -165,7 +164,7 @@ class ImportManager:
                 source_url=request.url,
                 quality_report=quality_report,
                 message="Import successful",
-                warnings=quality_report.get("warnings", []) if quality_report else []
+                warnings=quality_report.get("warnings", []) if quality_report else [],
             )
 
         except Exception as e:
@@ -174,7 +173,7 @@ class ImportManager:
                 agent_name=agent_name,
                 version="",
                 source_url=request.url,
-                message=f"Import failed: {str(e)}"
+                message=f"Import failed: {str(e)}",
             )
 
     async def update_agent(self, agent_name: str) -> UpdateResult:
@@ -191,11 +190,7 @@ class ImportManager:
         entry = self._get_registry_entry(agent_name)
         if not entry:
             return UpdateResult(
-                agent_name=agent_name,
-                updated=False,
-                old_version="",
-                new_version="",
-                changes=[]
+                agent_name=agent_name, updated=False, old_version="", new_version="", changes=[]
             )
 
         old_version = entry.get("version", "unknown")
@@ -206,7 +201,7 @@ class ImportManager:
             url=source_url,
             agent_name=agent_name,
             force=True,
-            evaluate=False  # 更新时跳过评估
+            evaluate=False,  # 更新时跳过评估
         )
 
         result = await self.import_agent(request)
@@ -222,7 +217,7 @@ class ImportManager:
                 updated=True,
                 old_version=old_version,
                 new_version=new_version,
-                changes=changes
+                changes=changes,
             )
 
         return UpdateResult(
@@ -230,7 +225,7 @@ class ImportManager:
             updated=False,
             old_version=old_version,
             new_version=old_version,
-            changes=[]
+            changes=[],
         )
 
     async def search(self, query: str, limit: int = 10) -> list[dict]:
@@ -251,9 +246,9 @@ class ImportManager:
         for a in result.agents:
             item = {
                 "name": a.name,
-                "description": getattr(a, 'description', ''),
+                "description": getattr(a, "description", ""),
                 "version": a.version,
-                "quality_score": getattr(a, 'quality_score', None),
+                "quality_score": getattr(a, "quality_score", None),
             }
             # 添加注册表信息
             registry_info = self._get_registry_entry(a.name) or {}
@@ -274,7 +269,7 @@ class ImportManager:
             item = {
                 "name": a.name,
                 "version": a.version,
-                "description": getattr(a, 'description', ''),
+                "description": getattr(a, "description", ""),
             }
             registry_info = self._get_registry_entry(a.name) or {}
             item.update(registry_info)
@@ -303,7 +298,7 @@ class ImportManager:
         """加载注册表"""
         if self.registry_path.exists():
             try:
-                self._registry_cache = json.loads(self.registry_path.read_text(encoding='utf-8'))
+                self._registry_cache = json.loads(self.registry_path.read_text(encoding="utf-8"))
             except:
                 self._registry_cache = {}
         else:
@@ -313,8 +308,7 @@ class ImportManager:
         """保存注册表"""
         self.registry_path.parent.mkdir(parents=True, exist_ok=True)
         self.registry_path.write_text(
-            json.dumps(self._registry_cache, indent=2, ensure_ascii=False),
-            encoding='utf-8'
+            json.dumps(self._registry_cache, indent=2, ensure_ascii=False), encoding="utf-8"
         )
 
     def _get_registry_entry(self, name: str) -> dict | None:
@@ -340,7 +334,8 @@ class ImportManager:
         if agent_yaml.exists():
             try:
                 import yaml
-                config = yaml.safe_load(agent_yaml.read_text(encoding='utf-8'))
+
+                config = yaml.safe_load(agent_yaml.read_text(encoding="utf-8"))
                 return config.get("version", "1.0.0") if config else "1.0.0"
             except:
                 return "1.0.0"
@@ -349,9 +344,9 @@ class ImportManager:
 
 # ========== 便捷函数 ==========
 
+
 def create_import_manager(
-    packages_dir: str = "packages",
-    registry_path: str = ".young/agent_registry.json"
+    packages_dir: str = "packages", registry_path: str = ".young/agent_registry.json"
 ) -> ImportManager:
     """创建 ImportManager 实例"""
     return ImportManager(packages_dir, registry_path)

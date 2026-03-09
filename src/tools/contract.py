@@ -20,6 +20,7 @@ from typing import Any
 
 class ToolType(Enum):
     """工具类型"""
+
     BASH = "bash"
     READ = "read"
     WRITE = "write"
@@ -34,6 +35,7 @@ class ToolType(Enum):
 @dataclass
 class FieldSchema:
     """字段模式定义"""
+
     name: str
     type: str  # "string", "integer", "boolean", "array", "object"
     description: str = ""
@@ -48,6 +50,7 @@ class FieldSchema:
 @dataclass
 class ToolContract:
     """工具合约定义"""
+
     name: str
     description: str
     input_schema: list[FieldSchema] = field(default_factory=list)
@@ -76,13 +79,25 @@ class ToolContract:
             # 类型检查
             expected_type = field_schema.type
             if expected_type == "string" and not isinstance(value, str):
-                return False, f"Field '{field_schema.name}' must be string, got {type(value).__name__}"
+                return (
+                    False,
+                    f"Field '{field_schema.name}' must be string, got {type(value).__name__}",
+                )
             elif expected_type == "integer" and not isinstance(value, int):
-                return False, f"Field '{field_schema.name}' must be integer, got {type(value).__name__}"
+                return (
+                    False,
+                    f"Field '{field_schema.name}' must be integer, got {type(value).__name__}",
+                )
             elif expected_type == "boolean" and not isinstance(value, bool):
-                return False, f"Field '{field_schema.name}' must be boolean, got {type(value).__name__}"
+                return (
+                    False,
+                    f"Field '{field_schema.name}' must be boolean, got {type(value).__name__}",
+                )
             elif expected_type == "array" and not isinstance(value, list):
-                return False, f"Field '{field_schema.name}' must be array, got {type(value).__name__}"
+                return (
+                    False,
+                    f"Field '{field_schema.name}' must be array, got {type(value).__name__}",
+                )
 
             # 枚举检查
             if field_schema.enum and value not in field_schema.enum:
@@ -91,7 +106,10 @@ class ToolContract:
             # 正则验证
             if field_schema.pattern and isinstance(value, str):
                 if not re.match(field_schema.pattern, value):
-                    return False, f"Field '{field_schema.name}' does not match pattern: {field_schema.pattern}"
+                    return (
+                        False,
+                        f"Field '{field_schema.name}' does not match pattern: {field_schema.pattern}",
+                    )
 
             # 范围检查
             if field_schema.min_value is not None:
@@ -115,92 +133,133 @@ class ToolContractRegistry:
         """设置默认工具合约"""
 
         # Bash 工具合约
-        self.register(ToolContract(
-            name="bash",
-            description="Execute shell command",
-            input_schema=[
-                FieldSchema("command", "string", "Shell command to execute", required=True),
-                FieldSchema("description", "string", "Command description", required=False),
-            ],
-            required_permissions=["bash"],
-        ))
+        self.register(
+            ToolContract(
+                name="bash",
+                description="Execute shell command",
+                input_schema=[
+                    FieldSchema("command", "string", "Shell command to execute", required=True),
+                    FieldSchema("description", "string", "Command description", required=False),
+                ],
+                required_permissions=["bash"],
+            )
+        )
 
         # Write 工具合约
-        self.register(ToolContract(
-            name="write",
-            description="Write content to file",
-            input_schema=[
-                FieldSchema("filePath", "string", "File path to write", required=True),
-                FieldSchema("content", "string", "Content to write", required=True),
-            ],
-            allowed_paths=["**/src/**", "**/tests/**", "**/output/**", "**/docs/**", "**/config/**"],
-        ))
+        self.register(
+            ToolContract(
+                name="write",
+                description="Write content to file",
+                input_schema=[
+                    FieldSchema("filePath", "string", "File path to write", required=True),
+                    FieldSchema("content", "string", "Content to write", required=True),
+                ],
+                allowed_paths=[
+                    "**/src/**",
+                    "**/tests/**",
+                    "**/output/**",
+                    "**/docs/**",
+                    "**/config/**",
+                ],
+            )
+        )
 
         # Edit 工具合约
-        self.register(ToolContract(
-            name="edit",
-            description="Edit file content",
-            input_schema=[
-                FieldSchema("filePath", "string", "File path to edit", required=True),
-                FieldSchema("old_content", "string", "Content to replace", required=True),
-                FieldSchema("new_content", "string", "New content", required=True),
-            ],
-            allowed_paths=["**/src/**", "**/tests/**", "**/docs/**"],
-        ))
+        self.register(
+            ToolContract(
+                name="edit",
+                description="Edit file content",
+                input_schema=[
+                    FieldSchema("filePath", "string", "File path to edit", required=True),
+                    FieldSchema("old_content", "string", "Content to replace", required=True),
+                    FieldSchema("new_content", "string", "New content", required=True),
+                ],
+                allowed_paths=["**/src/**", "**/tests/**", "**/docs/**"],
+            )
+        )
 
         # Read 工具合约
-        self.register(ToolContract(
-            name="read",
-            description="Read file content",
-            input_schema=[
-                FieldSchema("filePath", "string", "File path to read", required=True),
-                FieldSchema("limit", "integer", "Max lines to read", required=False, min_value=1, max_value=10000),
-                FieldSchema("offset", "integer", "Line offset to start", required=False, min_value=1),
-            ],
-            allowed_paths=["**"],  # 允许读取所有文件
-        ))
+        self.register(
+            ToolContract(
+                name="read",
+                description="Read file content",
+                input_schema=[
+                    FieldSchema("filePath", "string", "File path to read", required=True),
+                    FieldSchema(
+                        "limit",
+                        "integer",
+                        "Max lines to read",
+                        required=False,
+                        min_value=1,
+                        max_value=10000,
+                    ),
+                    FieldSchema(
+                        "offset", "integer", "Line offset to start", required=False, min_value=1
+                    ),
+                ],
+                allowed_paths=["**"],  # 允许读取所有文件
+            )
+        )
 
         # Glob 工具合约
-        self.register(ToolContract(
-            name="glob",
-            description="Find files by pattern",
-            input_schema=[
-                FieldSchema("pattern", "string", "Glob pattern", required=True),
-            ],
-        ))
+        self.register(
+            ToolContract(
+                name="glob",
+                description="Find files by pattern",
+                input_schema=[
+                    FieldSchema("pattern", "string", "Glob pattern", required=True),
+                ],
+            )
+        )
 
         # Grep 工具合约
-        self.register(ToolContract(
-            name="grep",
-            description="Search in files",
-            input_schema=[
-                FieldSchema("pattern", "string", "Regex pattern", required=True),
-                FieldSchema("path", "string", "Search path", required=False, default="."),
-                FieldSchema("include", "string", "File include filter", required=False),
-            ],
-        ))
+        self.register(
+            ToolContract(
+                name="grep",
+                description="Search in files",
+                input_schema=[
+                    FieldSchema("pattern", "string", "Regex pattern", required=True),
+                    FieldSchema("path", "string", "Search path", required=False, default="."),
+                    FieldSchema("include", "string", "File include filter", required=False),
+                ],
+            )
+        )
 
         # Web Fetch 工具合约
-        self.register(ToolContract(
-            name="web_fetch",
-            description="Fetch web content",
-            input_schema=[
-                FieldSchema("url", "string", "URL to fetch", required=True,
-                           pattern=r"^https?://"),
-                FieldSchema("selector", "string", "CSS selector for content extraction", required=False),
-            ],
-        ))
+        self.register(
+            ToolContract(
+                name="web_fetch",
+                description="Fetch web content",
+                input_schema=[
+                    FieldSchema(
+                        "url", "string", "URL to fetch", required=True, pattern=r"^https?://"
+                    ),
+                    FieldSchema(
+                        "selector", "string", "CSS selector for content extraction", required=False
+                    ),
+                ],
+            )
+        )
 
         # Git 工具合约
-        self.register(ToolContract(
-            name="git",
-            description="Execute git command",
-            input_schema=[
-                FieldSchema("command", "string", "Git command (status, log, diff, etc.)",
-                           required=True, enum=["status", "log", "diff", "branch", "pull", "fetch"]),
-                FieldSchema("repo_path", "string", "Repository path", required=False, default="."),
-            ],
-        ))
+        self.register(
+            ToolContract(
+                name="git",
+                description="Execute git command",
+                input_schema=[
+                    FieldSchema(
+                        "command",
+                        "string",
+                        "Git command (status, log, diff, etc.)",
+                        required=True,
+                        enum=["status", "log", "diff", "branch", "pull", "fetch"],
+                    ),
+                    FieldSchema(
+                        "repo_path", "string", "Repository path", required=False, default="."
+                    ),
+                ],
+            )
+        )
 
     def register(self, contract: ToolContract):
         """注册工具合约"""

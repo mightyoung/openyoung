@@ -167,17 +167,13 @@ class EvalSubAgent:
             )
 
         # 3. 并行执行评估器
-        results = await self._execute_parallel(
-            evaluators, input_data, context or {}
-        )
+        results = await self._execute_parallel(evaluators, input_data, context or {})
 
         # 4. 聚合结果
         overall_score, passed, blocking_failed = self._aggregate(results)
 
         # 计算执行时间
-        total_time_ms = int(
-            (datetime.now() - start_time).total_seconds() * 1000
-        )
+        total_time_ms = int((datetime.now() - start_time).total_seconds() * 1000)
 
         return EvaluationReport(
             request_id=str(uuid.uuid4()),
@@ -340,10 +336,7 @@ class EvalSubAgent:
         # 正确性或安全性维度失败视为阻塞性
         blocking_dimensions = {"correctness", "safety"}
         blocking_failed = any(
-            r.dimension in blocking_dimensions
-            and not r.passed
-            and r.error is None
-            for r in results
+            r.dimension in blocking_dimensions and not r.passed and r.error is None for r in results
         )
 
         return overall_score, passed, blocking_failed
@@ -355,9 +348,7 @@ class EvalSubAgent:
         start_time: datetime,
     ) -> EvaluationReport:
         """创建空的评估报告"""
-        total_time_ms = int(
-            (datetime.now() - start_time).total_seconds() * 1000
-        )
+        total_time_ms = int((datetime.now() - start_time).total_seconds() * 1000)
 
         return EvaluationReport(
             request_id=str(uuid.uuid4()),

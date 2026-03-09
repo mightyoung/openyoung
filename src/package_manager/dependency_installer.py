@@ -17,6 +17,7 @@ from src.package_manager.dependency_resolver import (
 @dataclass
 class InstallResult:
     """安装结果"""
+
     success: bool
     name: str
     type: str
@@ -135,6 +136,7 @@ class DependencyInstaller:
                     content = data.get("content", "")
                     if content:
                         import base64
+
                         try:
                             content = base64.b64decode(content).decode("utf-8")
                         except:
@@ -341,6 +343,7 @@ class DependencyInstaller:
 
 
 # ========== 便捷函数 ==========
+
 
 async def install_agent_dependencies(agent_path: str) -> dict[str, list[InstallResult]]:
     """安装 Agent 的所有依赖"""

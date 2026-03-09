@@ -19,14 +19,16 @@ from typing import Any, Callable, Optional
 
 class ErrorSeverity(Enum):
     """错误严重程度"""
-    LOW = "low"           # 可忽略
-    MEDIUM = "medium"    # 需要注意
-    HIGH = "high"        # 需要处理
+
+    LOW = "low"  # 可忽略
+    MEDIUM = "medium"  # 需要注意
+    HIGH = "high"  # 需要处理
     CRITICAL = "critical"  # 系统级错误
 
 
 class Recoverability(Enum):
     """异常可恢复性"""
+
     RECOVERABLE = "recoverable"
     NON_RECOVERABLE = "non_recoverable"
 
@@ -34,6 +36,7 @@ class Recoverability(Enum):
 @dataclass
 class ExceptionContext:
     """异常上下文"""
+
     timestamp: datetime = field(default_factory=datetime.now)
     module: str = ""
     function: str = ""
@@ -131,7 +134,7 @@ class ExceptionHandler:
         *args,
         context: Optional[ExceptionContext] = None,
         default: Any = None,
-        **kwargs
+        **kwargs,
     ) -> Any:
         """安全执行函数，捕获并处理异常
 
@@ -148,10 +151,7 @@ class ExceptionHandler:
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            ctx = context or ExceptionContext(
-                function=func.__name__,
-                module=func.__module__
-            )
+            ctx = context or ExceptionContext(function=func.__name__, module=func.__module__)
             self.handle_exception(e, ctx, reraise=False, convert=True)
             return default
 
@@ -161,7 +161,7 @@ class ExceptionHandler:
         *args,
         context: Optional[ExceptionContext] = None,
         default: Any = None,
-        **kwargs
+        **kwargs,
     ) -> Any:
         """安全执行异步函数
 
@@ -178,10 +178,7 @@ class ExceptionHandler:
         try:
             return await func(*args, **kwargs)
         except Exception as e:
-            ctx = context or ExceptionContext(
-                function=func.__name__,
-                module=func.__module__
-            )
+            ctx = context or ExceptionContext(function=func.__name__, module=func.__module__)
             self.handle_exception(e, ctx, reraise=False, convert=True)
             return default
 
@@ -194,14 +191,12 @@ class ExceptionHandler:
                 module=frame.f_code.co_filename,
                 function=frame.f_code.co_name,
                 line_number=tb.tb_lineno,
-                stack_trace=traceback.format_exc()
+                stack_trace=traceback.format_exc(),
             )
         return ExceptionContext()
 
     def _convert_exception(
-        self,
-        exception: Exception,
-        context: ExceptionContext
+        self, exception: Exception, context: ExceptionContext
     ) -> "OpenYoungError":
         """转换异常为统一异常
 
@@ -235,11 +230,13 @@ class ExceptionHandler:
             PermissionError: lambda e: PermissionDeniedError(str(e)),
             TimeoutError: lambda e: AgentTimeoutError(
                 context.additional_data.get("agent_name", "unknown"),
-                int(str(e).split()[0]) if str(e).split else 60
+                int(str(e).split()[0]) if str(e).split else 60,
             ),
             FileNotFoundError: lambda e: DataNotFoundError("file", str(e)),
             NotADirectoryError: lambda e: DataNotFoundError("directory", str(e)),
-            IsADirectoryError: lambda e: DataValidationError("path", "Expected file, got directory"),
+            IsADirectoryError: lambda e: DataValidationError(
+                "path", "Expected file, got directory"
+            ),
             ValueError: lambda e: ConfigValidationError("value", str(e)),
             KeyError: lambda e: DataNotFoundError("key", str(e)),
             TypeError: lambda e: ConfigValidationError("type", str(e)),
@@ -255,17 +252,10 @@ class ExceptionHandler:
         # 默认转换为通用 ExecutionError
         return ExecutionError(str(exception))
 
-    def _log_exception(
-        self,
-        exception: Exception,
-        context: ExceptionContext
-    ):
+    def _log_exception(self, exception: Exception, context: ExceptionContext):
         """记录异常日志"""
         if self._logger:
-            self._logger.error(
-                f"[{type(exception).__name__}] {exception}",
-                extra=context.to_dict()
-            )
+            self._logger.error(f"[{type(exception).__name__}] {exception}", extra=context.to_dict())
         else:
             print(f"[ERROR] {type(exception).__name__}: {exception}")
             print(f"  Module: {context.module}")
@@ -295,10 +285,7 @@ def set_exception_handler(handler: ExceptionHandler):
 
 # 便捷装饰器
 def handle_exceptions(
-    reraise: bool = True,
-    convert: bool = True,
-    default: Any = None,
-    context: Optional[dict] = None
+    reraise: bool = True, convert: bool = True, default: Any = None, context: Optional[dict] = None
 ):
     """异常处理装饰器
 
@@ -313,6 +300,7 @@ def handle_exceptions(
         async def my_function():
             ...
     """
+
     def decorator(func: Callable):
         async def async_wrapper(*args, **kwargs):
             handler = get_exception_handler()
@@ -320,13 +308,9 @@ def handle_exceptions(
                 return await func(*args, **kwargs)
             except Exception as e:
                 ctx = ExceptionContext(
-                    function=func.__name__,
-                    module=func.__module__,
-                    additional_data=context or {}
+                    function=func.__name__, module=func.__module__, additional_data=context or {}
                 )
-                return handler.handle_exception(
-                    e, ctx, reraise=reraise, convert=convert
-                ) or default
+                return handler.handle_exception(e, ctx, reraise=reraise, convert=convert) or default
 
         def sync_wrapper(*args, **kwargs):
             handler = get_exception_handler()
@@ -334,15 +318,12 @@ def handle_exceptions(
                 return func(*args, **kwargs)
             except Exception as e:
                 ctx = ExceptionContext(
-                    function=func.__name__,
-                    module=func.__module__,
-                    additional_data=context or {}
+                    function=func.__name__, module=func.__module__, additional_data=context or {}
                 )
-                return handler.handle_exception(
-                    e, ctx, reraise=reraise, convert=convert
-                ) or default
+                return handler.handle_exception(e, ctx, reraise=reraise, convert=convert) or default
 
         import asyncio
+
         if asyncio.iscoroutinefunction(func):
             return async_wrapper
         return sync_wrapper

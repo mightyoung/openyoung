@@ -11,6 +11,7 @@ from typing import Any
 # 尝试加载 dotenv
 try:
     from dotenv import load_dotenv
+
     load_dotenv()
 except ImportError:
     pass
@@ -29,9 +30,9 @@ class LLMClient:
     def __init__(self, model: str | None = None):
         # 优先使用环境变量中的 API Key
         api_key = (
-            os.getenv("OPENAI_API_KEY") or
-            os.getenv("DEEPSEEK_API_KEY") or
-            os.getenv("ANTHROPIC_API_KEY")
+            os.getenv("OPENAI_API_KEY")
+            or os.getenv("DEEPSEEK_API_KEY")
+            or os.getenv("ANTHROPIC_API_KEY")
         )
 
         # 默认模型
@@ -59,7 +60,7 @@ class LLMClient:
         max_tokens: int | None = None,
         model: str | None = None,  # 新接口专用
         messages: list[dict[str, str]] | None = None,  # 支持 keyword argument
-        **kwargs
+        **kwargs,
     ) -> dict[str, Any]:
         """发送聊天请求 - 支持两种接口:
 
@@ -97,16 +98,13 @@ class LLMClient:
         model: str | None = None,
         temperature: float = 0.7,
         max_tokens: int | None = None,
-        **kwargs
+        **kwargs,
     ) -> dict[str, Any]:
         """内部实现"""
         model = model or self.model
 
         # 转换消息格式
-        unified_messages = [
-            UnifiedMessage(role=m["role"], content=m["content"])
-            for m in messages
-        ]
+        unified_messages = [UnifiedMessage(role=m["role"], content=m["content"]) for m in messages]
 
         # 调用统一客户端
         response = await self._client.chat(
@@ -114,7 +112,7 @@ class LLMClient:
             messages=unified_messages,
             temperature=temperature,
             max_tokens=max_tokens,
-            **kwargs
+            **kwargs,
         )
 
         # 转换为旧接口格式
@@ -126,21 +124,15 @@ class LLMClient:
         messages: list[dict[str, str]],
         model: str | None = None,
         thinking_budget: int | None = None,
-        **kwargs
+        **kwargs,
     ) -> dict[str, Any]:
         """发送带 Thinking 的请求"""
         model = model or self.model
 
-        unified_messages = [
-            UnifiedMessage(role=m["role"], content=m["content"])
-            for m in messages
-        ]
+        unified_messages = [UnifiedMessage(role=m["role"], content=m["content"]) for m in messages]
 
         response = await self._client.chat_with_thinking(
-            model=model,
-            messages=unified_messages,
-            thinking_budget=thinking_budget,
-            **kwargs
+            model=model, messages=unified_messages, thinking_budget=thinking_budget, **kwargs
         )
 
         self._last_response = response
@@ -157,7 +149,7 @@ class LLMClient:
         }
 
         # 如果有 tool_calls，也包含在内（从 reasoning 或其他字段解析）
-        if hasattr(response, 'tool_calls') and response.tool_calls:
+        if hasattr(response, "tool_calls") and response.tool_calls:
             message["tool_calls"] = response.tool_calls
 
         return {
@@ -177,7 +169,7 @@ class LLMClient:
 
     async def close(self):
         """关闭客户端连接"""
-        if hasattr(self._client, 'close'):
+        if hasattr(self._client, "close"):
             await self._client.close()
 
 

@@ -21,7 +21,9 @@ from src.config.loader import ConfigLoader
 )
 @click.option("--eval/--no-eval", default=True, help="Enable evaluation")
 @click.option("--verbose", "-v", is_flag=True, help="Verbose output")
-def run_agent(agent_name: str, task: str, interactive: bool, github_url: str, eval: bool, verbose: bool):
+def run_agent(
+    agent_name: str, task: str, interactive: bool, github_url: str, eval: bool, verbose: bool
+):
     """Run an agent
 
     Examples:
@@ -32,7 +34,9 @@ def run_agent(agent_name: str, task: str, interactive: bool, github_url: str, ev
     asyncio.run(_run_agent(agent_name, task, interactive, github_url, eval, verbose))
 
 
-async def _run_agent(agent_name: str, task: str, interactive: bool, github_url: str, eval: bool, verbose: bool):
+async def _run_agent(
+    agent_name: str, task: str, interactive: bool, github_url: str, eval: bool, verbose: bool
+):
     """Async implementation of run command"""
     # 保存原始任务
     user_task = task or ""

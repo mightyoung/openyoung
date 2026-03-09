@@ -98,7 +98,7 @@ class AuditLogger:
         logger.log(
             log_level,
             f"Audit: {event.event_type} sandbox={event.sandbox_id} "
-            f"blocked={event.blocked} exit={event.exit_code}"
+            f"blocked={event.blocked} exit={event.exit_code}",
         )
 
     def log_execute(
@@ -241,7 +241,9 @@ class AuditLogger:
 
         # 平均执行时间
         exec_events = [e for e in events if e.event_type == "execute" and e.duration_ms > 0]
-        avg_duration = sum(e.duration_ms for e in exec_events) / len(exec_events) if exec_events else 0
+        avg_duration = (
+            sum(e.duration_ms for e in exec_events) / len(exec_events) if exec_events else 0
+        )
 
         return {
             "total_events": total,

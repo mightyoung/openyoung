@@ -26,7 +26,7 @@ class IClient(Protocol):
         model: str | None = None,
         temperature: float = 0.7,
         max_tokens: int | None = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> Any:
         """Send a chat request to the LLM.
 
@@ -77,11 +77,7 @@ class ICheckpointManager(Protocol):
     Implement this protocol to create custom checkpoint managers.
     """
 
-    async def create_checkpoint(
-        self,
-        file_path: str,
-        reason: str = "edit"
-    ) -> str | None:
+    async def create_checkpoint(self, file_path: str, reason: str = "edit") -> str | None:
         """Create a checkpoint.
 
         Args:
@@ -93,11 +89,7 @@ class ICheckpointManager(Protocol):
         """
         ...
 
-    async def restore_checkpoint(
-        self,
-        checkpoint_id: str,
-        target_path: str | None = None
-    ) -> bool:
+    async def restore_checkpoint(self, checkpoint_id: str, target_path: str | None = None) -> bool:
         """Restore from a checkpoint.
 
         Args:
@@ -116,12 +108,7 @@ class IEvaluationHub(Protocol):
     Defines the interface for evaluation.
     """
 
-    async def evaluate(
-        self,
-        metric: str,
-        input_data: str,
-        **kwargs: Any
-    ) -> Any:
+    async def evaluate(self, metric: str, input_data: str, **kwargs: Any) -> Any:
         """Evaluate input data.
 
         Args:

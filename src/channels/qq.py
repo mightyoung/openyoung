@@ -36,6 +36,7 @@ class QQChannel(BaseChannel):
         """连接到 CQHTTP"""
         try:
             import aiohttp
+
             self._http_client = aiohttp.ClientSession()
 
             # 测试连接
@@ -66,17 +67,12 @@ class QQChannel(BaseChannel):
         print("[QQ] Disconnected")
         return True
 
-    async def send_message(
-        self,
-        message: ChannelMessage,
-        reply_to: str | None = None
-    ) -> bool:
+    async def send_message(self, message: ChannelMessage, reply_to: str | None = None) -> bool:
         """发送消息到 QQ"""
         if not self._connected or not self._http_client:
             return False
 
         try:
-
             url = f"http://{self._http_host}:{self._http_port}/send_private_msg"
             data = {
                 "user_id": int(message.user_id),
@@ -98,11 +94,7 @@ class QQChannel(BaseChannel):
             print(f"[QQ] Send error: {e}")
             return False
 
-    async def send_markdown(
-        self,
-        message: ChannelMessage,
-        reply_to: str | None = None
-    ) -> bool:
+    async def send_markdown(self, message: ChannelMessage, reply_to: str | None = None) -> bool:
         """发送 Markdown 消息 (CQ 码)"""
         if not self._connected:
             return False
@@ -113,17 +105,12 @@ class QQChannel(BaseChannel):
         message.content = cq_message
         return await self.send_message(message, reply_to)
 
-    async def send_image(
-        self,
-        message: ChannelMessage,
-        image_url: str
-    ) -> bool:
+    async def send_image(self, message: ChannelMessage, image_url: str) -> bool:
         """发送图片消息"""
         if not self._connected or not self._http_client:
             return False
 
         try:
-
             url = f"http://{self._http_host}:{self._http_port}/send_private_msg"
             # CQ 码格式发送图片
             cq_image = f"[CQ:image,file={image_url}]"

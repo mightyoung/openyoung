@@ -37,6 +37,7 @@ MODEL_PRICING = {
 @dataclass
 class TokenRecord:
     """Token 使用记录"""
+
     token_id: str
     run_id: str
     step_id: str | None
@@ -75,14 +76,14 @@ class TokenTracker(BaseStorage):
                 "latency_ms": "INTEGER DEFAULT 0",
                 "timestamp": "TEXT NOT NULL",
                 "metadata": "TEXT",
-                "created_at": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+                "created_at": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
             },
             indexes=[
                 ("idx_run", "run_id"),
                 ("idx_step", "step_id"),
                 ("idx_model", "model"),
-                ("idx_timestamp", "timestamp")
-            ]
+                ("idx_timestamp", "timestamp"),
+            ],
         )
 
     def _get_model_price(self, model: str) -> dict:
@@ -98,11 +99,7 @@ class TokenTracker(BaseStorage):
         return MODEL_PRICING["default"]
 
     def _calculate_cost(
-        self,
-        model: str,
-        input_tokens: int,
-        output_tokens: int,
-        reasoning_tokens: int = 0
+        self, model: str, input_tokens: int, output_tokens: int, reasoning_tokens: int = 0
     ) -> float:
         """计算调用成本（美元）"""
         price = self._get_model_price(model)
@@ -121,7 +118,7 @@ class TokenTracker(BaseStorage):
         step_id: str = None,
         reasoning_tokens: int = 0,
         latency_ms: int = 0,
-        metadata: dict = None
+        metadata: dict = None,
     ) -> str:
         """记录一次 LLM 调用的 token 使用
 
@@ -171,8 +168,8 @@ class TokenTracker(BaseStorage):
                 cost,
                 latency_ms,
                 datetime.now().isoformat(),
-                self._json_serialize(metadata or {})
-            )
+                self._json_serialize(metadata or {}),
+            ),
         )
 
         return token_id
@@ -189,11 +186,14 @@ class TokenTracker(BaseStorage):
         if not run_id:
             raise ValueError("run_id cannot be empty")
 
-        return self._execute(
-            "SELECT * FROM tokens WHERE run_id = ? ORDER BY timestamp ASC",
-            (run_id,),
-            fetch=True
-        ) or []
+        return (
+            self._execute(
+                "SELECT * FROM tokens WHERE run_id = ? ORDER BY timestamp ASC",
+                (run_id,),
+                fetch=True,
+            )
+            or []
+        )
 
     def get_by_step(self, step_id: str) -> list[dict]:
         """获取某个 Step 的 token 记录
@@ -207,11 +207,14 @@ class TokenTracker(BaseStorage):
         if not step_id:
             raise ValueError("step_id cannot be empty")
 
-        return self._execute(
-            "SELECT * FROM tokens WHERE step_id = ? ORDER BY timestamp ASC",
-            (step_id,),
-            fetch=True
-        ) or []
+        return (
+            self._execute(
+                "SELECT * FROM tokens WHERE step_id = ? ORDER BY timestamp ASC",
+                (step_id,),
+                fetch=True,
+            )
+            or []
+        )
 
     def get_summary(self, run_id: str = None) -> dict:
         """获取 token 使用摘要
@@ -243,7 +246,7 @@ class TokenTracker(BaseStorage):
             {where_clause}
             """,
             params,
-            fetch=True
+            fetch=True,
         )
 
         if not total or total[0]["total_calls"] == 0:
@@ -253,7 +256,7 @@ class TokenTracker(BaseStorage):
                 "total_output_tokens": 0,
                 "total_reasoning_tokens": 0,
                 "total_cost_usd": 0.0,
-                "avg_latency_ms": 0
+                "avg_latency_ms": 0,
             }
 
         row = total[0]
@@ -263,7 +266,7 @@ class TokenTracker(BaseStorage):
             "total_output_tokens": row["total_output"],
             "total_reasoning_tokens": row["total_reasoning"],
             "total_cost_usd": round(row["total_cost"], 6),
-            "avg_latency_ms": round(row["avg_latency"], 2)
+            "avg_latency_ms": round(row["avg_latency"], 2),
         }
 
     def get_by_model(self, run_id: str = None) -> list[dict]:
@@ -282,8 +285,9 @@ class TokenTracker(BaseStorage):
             where_clause = ""
             params = None
 
-        return self._execute(
-            f"""
+        return (
+            self._execute(
+                f"""
             SELECT
                 model,
                 provider,
@@ -296,15 +300,14 @@ class TokenTracker(BaseStorage):
             GROUP BY model
             ORDER BY total_cost DESC
             """,
-            params,
-            fetch=True
-        ) or []
+                params,
+                fetch=True,
+            )
+            or []
+        )
 
     def check_budget(
-        self,
-        run_id: str = None,
-        budget_usd: float = None,
-        budget_tokens: int = None
+        self, run_id: str = None, budget_usd: float = None, budget_tokens: int = None
     ) -> dict:
         """检查是否超出预算
 
@@ -322,12 +325,12 @@ class TokenTracker(BaseStorage):
             "within_budget": True,
             "total_cost_usd": summary["total_cost_usd"],
             "total_tokens": (
-                summary["total_input_tokens"] +
-                summary["total_output_tokens"] +
-                summary["total_reasoning_tokens"]
+                summary["total_input_tokens"]
+                + summary["total_output_tokens"]
+                + summary["total_reasoning_tokens"]
             ),
             "budget_usd": budget_usd,
-            "budget_tokens": budget_tokens
+            "budget_tokens": budget_tokens,
         }
 
         if budget_usd is not None and summary["total_cost_usd"] > budget_usd:
@@ -350,8 +353,9 @@ class TokenTracker(BaseStorage):
         Returns:
             每日统计列表
         """
-        return self._execute(
-            """
+        return (
+            self._execute(
+                """
             SELECT
                 DATE(timestamp) as date,
                 COUNT(*) as call_count,
@@ -363,9 +367,11 @@ class TokenTracker(BaseStorage):
             GROUP BY DATE(timestamp)
             ORDER BY date ASC
             """,
-            (f"-{days} days",),
-            fetch=True
-        ) or []
+                (f"-{days} days",),
+                fetch=True,
+            )
+            or []
+        )
 
     def delete_by_run(self, run_id: str) -> int:
         """删除某个 Run 的所有 token 记录
@@ -379,16 +385,9 @@ class TokenTracker(BaseStorage):
         if not run_id:
             raise ValueError("run_id cannot be empty")
 
-        cursor = self._execute(
-            "DELETE FROM tokens WHERE run_id = ?",
-            (run_id,),
-            fetch=False
-        )
+        cursor = self._execute("DELETE FROM tokens WHERE run_id = ?", (run_id,), fetch=False)
         # 返回受影响的行数需要特殊处理
-        result = self._execute(
-            "SELECT changes() as cnt",
-            fetch=True
-        )
+        result = self._execute("SELECT changes() as cnt", fetch=True)
         return result[0]["cnt"] if result else 0
 
 

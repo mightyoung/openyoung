@@ -15,6 +15,7 @@ from .base import BaseChannel, ChannelMessage
 @dataclass
 class MessageContext:
     """消息上下文"""
+
     message: ChannelMessage
     platform: str
     channel_id: str

@@ -95,7 +95,7 @@ class UnifiedLLMClient:
         messages: list[Message] | None = None,
         temperature: float = 0.7,
         max_tokens: int | None = None,
-        **kwargs
+        **kwargs,
     ) -> LLMResponse:
         """发送聊天请求
 
@@ -114,11 +114,7 @@ class UnifiedLLMClient:
 
         provider = self._get_provider(model)
         return await provider.chat(
-            messages=messages,
-            model=model,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            **kwargs
+            messages=messages, model=model, temperature=temperature, max_tokens=max_tokens, **kwargs
         )
 
     async def chat_with_thinking(
@@ -126,7 +122,7 @@ class UnifiedLLMClient:
         model: str | None = None,
         messages: list[Message] | None = None,
         thinking_budget: int | None = None,
-        **kwargs
+        **kwargs,
     ) -> LLMResponse:
         """发送带 Thinking 的请求
 
@@ -143,17 +139,11 @@ class UnifiedLLMClient:
 
         provider = self._get_provider(model)
         return await provider.chat_with_thinking(
-            messages=messages,
-            model=model,
-            thinking_budget=thinking_budget,
-            **kwargs
+            messages=messages, model=model, thinking_budget=thinking_budget, **kwargs
         )
 
     async def stream_chat(
-        self,
-        model: str | None = None,
-        messages: list[Message] | None = None,
-        **kwargs
+        self, model: str | None = None, messages: list[Message] | None = None, **kwargs
     ) -> AsyncIterator[str]:
         """流式聊天"""
         model = model or self.default_model
@@ -180,18 +170,13 @@ class UnifiedLLMClient:
 
 # ========== 便捷函数 ==========
 
+
 def create_client(
-    model: str | None = None,
-    api_key: str | None = None,
-    **kwargs
+    model: str | None = None, api_key: str | None = None, **kwargs
 ) -> UnifiedLLMClient:
     """创建统一客户端的便捷函数"""
     # 从环境变量获取 API Key
     if not api_key:
         api_key = os.getenv("OPENAI_API_KEY") or os.getenv("DEEPSEEK_API_KEY")
 
-    return UnifiedLLMClient(
-        api_key=api_key,
-        default_model=model or "deepseek-chat",
-        **kwargs
-    )
+    return UnifiedLLMClient(api_key=api_key, default_model=model or "deepseek-chat", **kwargs)

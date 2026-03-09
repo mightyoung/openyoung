@@ -12,6 +12,7 @@ from typing import Any
 
 class ExecutionStatus:
     """执行状态常量"""
+
     PENDING = "pending"
     RUNNING = "running"
     SUCCESS = "success"
@@ -155,7 +156,7 @@ class RecordAdapter:
             completion_tokens=record.completion_tokens,
             total_tokens=record.total_tokens,
             cost_usd=record.cost_usd,
-            status=record.status.value if hasattr(record.status, 'value') else str(record.status),
+            status=record.status.value if hasattr(record.status, "value") else str(record.status),
             error=record.error,
             metadata=record.metadata,
         )

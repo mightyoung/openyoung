@@ -26,6 +26,7 @@ from src.evaluation.planner import EvalPlanner
 @dataclass
 class EvaluationContext:
     """评估上下文"""
+
     task_description: str
     task_result: str
     duration_ms: int = 0
@@ -37,6 +38,7 @@ class EvaluationContext:
 @dataclass
 class EvaluationReport:
     """评估报告"""
+
     score: float  # 0-1 综合评分
     base_score: float  # LLMJudge 基础分
     completion_rate: float  # 任务完成度
@@ -119,7 +121,7 @@ class EvaluationCoordinator:
             judge_result = await judge.evaluate(
                 input_text=context.task_description,
                 output_text=context.task_result,
-                expected_output=None
+                expected_output=None,
             )
         except Exception as e:
             # 异常转换
@@ -143,7 +145,9 @@ class EvaluationCoordinator:
 
         # LLMJudge 返回 1-5 分，转换为 0-1
         base_score = judge_result.get("average_score", 3.0) / 5.0
-        print(f"[LLMJudge] Score: {base_score:.2f} (raw: {judge_result.get('average_score', 'N/A')})")
+        print(
+            f"[LLMJudge] Score: {base_score:.2f} (raw: {judge_result.get('average_score', 'N/A')})"
+        )
 
         # 3. 计算任务完成度
         completion_rate = self._calculate_completion_rate(
@@ -199,8 +203,7 @@ class EvaluationCoordinator:
 
         # 检查是否需要文件创建
         requires_file_creation = any(
-            "文件" in c or "保存" in c or "保存到" in c
-            for c in eval_plan.success_criteria
+            "文件" in c or "保存" in c or "保存到" in c for c in eval_plan.success_criteria
         )
 
         task_type = eval_plan.task_type or "general"
@@ -213,7 +216,7 @@ class EvaluationCoordinator:
             for criterion in eval_plan.success_criteria:
                 matched = False
                 # 提取关键词
-                keywords = re.findall(r'[\u4e00-\u9fa5a-zA-Z0-9]{2,}', criterion)
+                keywords = re.findall(r"[\u4e00-\u9fa5a-zA-Z0-9]{2,}", criterion)
                 for kw in keywords:
                     if len(kw) >= 2 and kw.lower() in result_lower:
                         matched = True
@@ -221,7 +224,7 @@ class EvaluationCoordinator:
 
                 # 针对特定任务类型的特殊匹配
                 if eval_plan.task_type == "web_scraping":
-                    nums = re.findall(r'\d+', criterion)
+                    nums = re.findall(r"\d+", criterion)
                     if nums and any(n in task_result for n in nums):
                         matched = True
                     if "保存" in criterion or "位置" in criterion:
@@ -295,11 +298,13 @@ class EvaluationCoordinator:
             if dimension in self.DIMENSION_THRESHOLDS:
                 config = self.DIMENSION_THRESHOLDS[dimension]
                 if score_value < config["threshold"]:
-                    violations.append({
-                        "dimension": dimension,
-                        "score": score_value,
-                        "threshold": config["threshold"],
-                        "blocking": config["blocking"],
-                    })
+                    violations.append(
+                        {
+                            "dimension": dimension,
+                            "score": score_value,
+                            "threshold": config["threshold"],
+                            "blocking": config["blocking"],
+                        }
+                    )
 
         return violations

@@ -15,6 +15,7 @@ from .base_storage import BaseStorage
 @dataclass
 class StepRecord:
     """步骤记录"""
+
     step_id: str
     run_id: str
     step_name: str
@@ -50,12 +51,9 @@ class StepRecorder(BaseStorage):
                 "latency_ms": "INTEGER DEFAULT 0",
                 "status": "TEXT DEFAULT 'pending'",
                 "error": "TEXT",
-                "created_at": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+                "created_at": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
             },
-            indexes=[
-                ("idx_run", "run_id"),
-                ("idx_order", "step_order")
-            ]
+            indexes=[("idx_run", "run_id"), ("idx_order", "step_order")],
         )
 
     def start_step(
@@ -64,7 +62,7 @@ class StepRecorder(BaseStorage):
         step_name: str,
         step_order: int,
         tool_name: str = "",
-        input_data: dict = None
+        input_data: dict = None,
     ) -> str:
         """开始一个步骤"""
         # 输入验证
@@ -89,8 +87,8 @@ class StepRecorder(BaseStorage):
                 step_order,
                 tool_name,
                 self._json_serialize(input_data or {}),
-                "running"
-            )
+                "running",
+            ),
         )
 
         return step_id
@@ -101,7 +99,7 @@ class StepRecorder(BaseStorage):
         status: str = "success",
         output_data: dict = None,
         latency_ms: int = 0,
-        error: str = None
+        error: str = None,
     ) -> bool:
         """完成步骤"""
         self._execute(
@@ -110,13 +108,7 @@ class StepRecorder(BaseStorage):
             SET status = ?, output_data = ?, latency_ms = ?, error = ?
             WHERE step_id = ?
             """,
-            (
-                status,
-                self._json_serialize(output_data or {}),
-                latency_ms,
-                error,
-                step_id
-            )
+            (status, self._json_serialize(output_data or {}), latency_ms, error, step_id),
         )
 
         return True
@@ -127,11 +119,7 @@ class StepRecorder(BaseStorage):
 
     def get_step(self, step_id: str) -> dict | None:
         """获取步骤"""
-        result = self._execute(
-            "SELECT * FROM steps WHERE step_id = ?",
-            (step_id,),
-            fetch=True
-        )
+        result = self._execute("SELECT * FROM steps WHERE step_id = ?", (step_id,), fetch=True)
 
         if not result:
             return None
@@ -150,7 +138,7 @@ class StepRecorder(BaseStorage):
             ORDER BY step_order
             """,
             (run_id,),
-            fetch=True
+            fetch=True,
         )
 
         steps = []
@@ -175,11 +163,12 @@ class StepRecorder(BaseStorage):
             "success_steps": success_count,
             "failed_steps": failed_count,
             "total_latency_ms": total_latency,
-            "steps": steps
+            "steps": steps,
         }
 
 
 # ========== 便捷函数 ==========
+
 
 def get_step_recorder(db_path: str = ".young/steps.db") -> StepRecorder:
     """获取步骤记录器"""
