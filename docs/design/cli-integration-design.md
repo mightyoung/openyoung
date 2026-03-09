@@ -270,80 +270,79 @@ def package_list():
 # 运行 Agent
 openyoung run <agent> [task]           # 运行指定 Agent
 openyoung run default "任务描述"         # 使用默认 Agent
-openyoung run code "写一个排序算法"       # 运行 code 能力
 
 # Agent 管理
-openyoung agent list                     # 列出可用 Agent
-openyoung agent info <agent>            # 查看 Agent 信息
-openyoung agent search <query>          # 语义搜索 Agent
-openyoung agent compare <a> <b>         # 对比两个 Agent
+openyoung agent list                     # 列出可用 Agent (P0 ✅)
+openyoung agent info <agent>            # 查看 Agent 信息 (P0 ✅)
+openyoung agent search <query>          # 语义搜索 Agent (P0 ✅)
+openyoung agent compare <a> <b>         # 对比两个 Agent (P0 ✅)
 openyoung agent evaluate <agent>         # 评估 Agent 质量
 openyoung agent intent <query>          # 意图分析
-openyoung agent stats                   # 使用统计
-openyoung agent versions <agent>        # 版本历史
-openyoung agent version-add <agent> <v>  # 添加版本
 
 # Package 管理
 openyoung install <package>             # 安装 Package
-openyoung package list                  # 列出已安装
+openyoung package list                  # 列出已安装 (P0 ✅)
 openyoung package search <query>         # 搜索 Package
 openyoung package info <package>         # 查看 Package 信息
-openyoung package uninstall <package>    # 卸载
-openyoung package update [package]       # 更新
 
 # 导入命令
 openyoung import github <repo>          # 从 GitHub 导入
 openyoung import <source> [args]        # 从其他源导入
 
-# 评估命令
-openyoung eval run <task>               # 运行评估
-openyoung eval compare                   # 对比评估结果
-openyoung eval dashboard                # 评估仪表板
+# 评估命令 (实际可用)
+openyoung eval list                     # 列出评估指标 (P0 ✅)
+openyoung eval trend <agent>           # 查看评估趋势 (P0 ✅)
+openyoung eval server                  # 启动评估 API 服务器
+# 注意: eval run 命令当前不可用
 
 # 配置命令
-openyoung config get <key>              # 获取配置
-openyoung config set <key> <value>      # 设置配置
-openyoung config list                   # 列出配置
+openyoung config list                   # 列出配置 (P0 ✅)
+openyoung config get <key>            # 获取配置 (P0 ✅)
+openyoung config set <key> <value>    # 设置配置
 
-# 数据命令
-openyoung data list                     # 列出数据
+# 数据命令 (实际可用)
+openyoung data runs                    # 列出运行记录 (P0 ✅)
+openyoung data stats                   # 运行统计
+openyoung data steps <run_id>          # 运行步骤
+openyoung data dashboard               # 数据仪表板
 openyoung data export                   # 导出数据
-openyoung data import                   # 导入数据
+openyoung data license                  # 许可证管理
+openyoung data team                     # 团队管理
+openyoung data access                   # 访问日志
+# 注意: data list 命令不存在，用 data runs 代替
 
 # LLM 命令
-openyoung llm list                      # 列出可用 LLM
-openyoung llm providers                  # 列出 LLM 提供商
-openyoung llm test                       # 测试 LLM 连接
+openyoung llm list                      # 列出可用 LLM (P0 ✅)
+openyoung llm use <provider>          # 设置默认 LLM
+openyoung llm add <provider>           # 添加 LLM 提供商
+openyoung llm remove <provider>        # 移除 LLM 提供商
 
 # MCP 命令
-openyoung mcp list                      # 列出 MCP 服务器
-openyoung mcp add <server>              # 添加 MCP 服务器
-openyoung mcp remove <server>           # 移除 MCP 服务器
+openyoung mcp servers                   # 列出 MCP 服务器 (P0 ✅)
+openyoung mcp start <server>          # 启动 MCP 服务器
+openyoung mcp stop <server>            # 停止 MCP 服务器
 
 # Memory 命令
-openyoung memory list                   # 列出记忆
-openyoung memory search <query>         # 搜索记忆
-openyoung memory clear                   # 清除记忆
+openyoung memory list                   # 列出记忆 (P0 ✅)
+openyoung memory search <query>       # 搜索记忆 (P0 ✅)
+openyoung memory stats                 # 记忆统计 (P0 ✅)
 
 # Skills 命令
-openyoung skills list                   # 列出可用 Skills
-openyoung skills info <skill>           # 查看 Skill 信息
+openyoung skills list                   # 列出可用 Skills (P0 ✅)
+openyoung skills create <name>         # 创建 Skill
 
 # Channel 命令
-openyoung channel list                  # 列出 Channel
-openyoung channel add <name>            # 添加 Channel
+openyoung channel list                  # 列出 Channel (P0 ✅)
 
 # Source 命令
-openyoung source list                    # 列出数据源
-openyoung source add <name>             # 添加数据源
+openyoung source list                   # 列出数据源 (P0 ✅)
 
 # Subagent 命令
-openyoung subagent list                  # 列出 Subagent
-openyoung subagent create <name>        # 创建 Subagent
+openyoung subagent list                 # 列出 Subagent
+openyoung subagent create <name>       # 创建 Subagent
 
 # Templates 命令
-openyoung templates list                # 列出模板
-openyoung templates create <name>       # 创建模板
+openyoung templates list                # 列出模板 (P0 ✅)
 
 # Test 命令
 openyoung test run                      # 运行测试
@@ -352,6 +351,8 @@ openyoung test coverage                 # 测试覆盖率
 # 初始化命令
 openyoung init                          # 初始化项目
 ```
+
+> 📝 **测试状态标注**: (P0 ✅) 表示已通过 P0 测试用例
 
 #### 命令行选项
 
@@ -377,10 +378,18 @@ openyoung agent list
   --stats                              # 显示统计
 
 # Eval 命令选项
-openyoung eval run <task>
-  --metrics <m1,m2>                   # 指定评估指标
-  --output <file>                      # 输出文件
-  --format <json|html>                 # 输出格式
+openyoung eval trend <agent>
+  --metric, -m <metric>               # 指定评估指标
+
+# Config 命令选项
+openyoung config list
+  --category <cat>                    # 分类显示
+
+# Memory 命令选项
+openyoung memory list
+  --type <type>                       # 分类显示
+  --page <num>                        # 分页
+  --size <num>                        # 每页数量
 ```
 
 ### 5.3 命令分组结构
@@ -535,3 +544,63 @@ openyoung/
                            ▼
                     输出结果
 ```
+
+## 8. 测试结果 (2026-03-09)
+
+### 8.1 P0 测试通过的命令
+
+| 命令组 | 命令 | 状态 |
+|--------|------|------|
+| **agent** | list | ✅ |
+| | info | ✅ |
+| | search | ✅ |
+| | compare | ✅ |
+| **config** | list | ✅ |
+| | get | ✅ |
+| **memory** | list | ✅ |
+| | search | ✅ |
+| | stats | ✅ |
+| **eval** | list | ✅ |
+| | trend | ✅ |
+| **llm** | list | ✅ |
+| **mcp** | servers | ✅ |
+| **skills** | list | ✅ |
+| **package** | list | ✅ |
+| **source** | list | ✅ |
+| **channel** | list | ✅ |
+| **run** | default "task" | ✅ |
+
+### 8.2 已修复的问题
+
+1. **EvaluationHub.get_trend()** - 方法重复定义导致 CLI 调用失败，已重命名重复方法
+2. **MCP servers 显示** - 已修复同时读取 mcp.json 和 package.yaml，现在正确显示 10 个服务器
+
+### 8.3 已知限制
+
+| 命令 | 状态 | 说明 |
+|------|------|------|
+| eval run | ❌ | 命令不存在 |
+| data list | ❌ | 命令不存在，用 data runs 代替 |
+| memory search | ⚠️ | 需要 API 密钥才能返回语义搜索结果 |
+| eval server | ℹ️ | 启动 REST API 服务器 |
+
+### 8.4 测试覆盖率目标
+
+| 模块 | 目标覆盖率 | 实际测试数 |
+|------|-----------|-----------|
+| run 命令 | 90% | 1/21 |
+| agent 命令 | 85% | 4/18 |
+| config 命令 | 90% | 2/6 |
+| memory 命令 | 85% | 3/6 |
+| eval 命令 | 85% | 2/7 |
+| llm 命令 | 80% | 1/5 |
+| mcp 命令 | 75% | 1/2 |
+
+---
+
+## 附录：版本历史
+
+| 日期 | 版本 | 说明 |
+|------|------|------|
+| 2026-03-09 | 1.0.0 | 初始版本，82 个测试用例 |
+| 2026-03-09 | 1.0.1 | 更新测试结果，添加 P0 通过标记 |
