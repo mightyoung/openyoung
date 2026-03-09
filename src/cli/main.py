@@ -1797,6 +1797,40 @@ def memory():
     pass
 
 
+@memory.command("list")
+@click.option("--namespace", "-n", default=None, help="Filter by namespace")
+@click.option("--limit", "-l", default=20, help="Maximum results")
+def memory_list(namespace: str = None, limit: int = 20):
+    """List all memory entries"""
+    from src.memory.vector_store import get_vector_store
+
+    store = get_vector_store()
+
+    if namespace:
+        results = store.list(namespace=namespace, limit=limit)
+    else:
+        # List all namespaces
+        stats = store.get_stats()
+        namespaces = stats.get("namespace_list", [])
+        if not namespaces:
+            click.echo("No namespaces found")
+            return
+
+        click.echo("=== Namespaces ===")
+        for ns in namespaces:
+            click.echo(f"  - {ns}")
+
+        # Also show first few entries from each namespace
+        click.echo("\n=== Recent Entries ===")
+        for ns in namespaces[:3]:
+            results = store.list(namespace=ns, limit=3)
+            if results:
+                click.echo(f"\n[{ns}]:")
+                for r in results:
+                    content = r.get("content", "")[:100]
+                    click.echo(f"  - {content}...")
+
+
 @memory.command("search")
 @click.argument("query")
 @click.option("--namespace", "-n", default="default", help="Namespace to search in")
@@ -1847,7 +1881,22 @@ def memory_stats():
 @click.option(
     "--github", "-g", "github_url", default=None, help="GitHub URL to clone and analyze first"
 )
-def run_agent(agent_name: str, task: str = None, interactive: bool = False, github_url: str = None):
+@click.option("--sandbox", "-s", is_flag=True, help="Enable AI Docker sandbox execution")
+@click.option(
+    "--allow-network", "-n", is_flag=True, help="Allow network access in sandbox"
+)
+@click.option("--max-memory", default=512, help="Max memory in MB for sandbox")
+@click.option("--max-time", default=300, help="Max execution time in seconds")
+def run_agent(
+    agent_name: str,
+    task: str = None,
+    interactive: bool = False,
+    github_url: str = None,
+    sandbox: bool = False,
+    allow_network: bool = False,
+    max_memory: int = 512,
+    max_time: int = 300,
+):
     """Run an agent
 
     Examples:
@@ -1925,6 +1974,18 @@ def run_agent(agent_name: str, task: str = None, interactive: bool = False, gith
 
         # Create agent
         agent = YoungAgent(config)
+
+        # Enable sandbox if requested
+        if sandbox:
+            try:
+                agent.enable_sandbox(
+                    max_memory_mb=max_memory,
+                    max_execution_time_seconds=max_time,
+                    allow_network=allow_network,
+                )
+                click.echo(f"[Sandbox] Enabled: max_memory={max_memory}MB, max_time={max_time}s, allow_network={allow_network}")
+            except Exception as e:
+                click.echo(f"[Warning] Sandbox init failed: {e}", err=True)
 
         if interactive:
             click.echo(f"Interactive mode with {agent_name}. Type 'exit' to quit.")
