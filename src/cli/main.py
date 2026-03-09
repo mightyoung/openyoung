@@ -1517,15 +1517,14 @@ def import_github(
         openyoung import github https://github.com/anthropics/claude-code claude-code --no-lazy
     """
     if enhanced:
-        from src.package_manager.enhanced_importer import EnhancedGitHubImporter
+        from src.package_manager.enhanced_importer import import_github_enhanced
 
         click.echo(f"[Enhanced] Importing from: {github_url}")
         if lazy:
             click.echo("[Mode] Lazy clone (fast, partial)")
 
-        importer = EnhancedGitHubImporter()
-        result = importer.import_from_url(
-            github_url, agent_name, lazy_clone=lazy, validate=validate
+        result = import_github_enhanced(
+            github_url, agent_name=agent_name, validate=validate
         )
 
         if "error" in result:
