@@ -406,18 +406,71 @@ class YoungAgent:
             else:
                 print(f"[Skill] Not found (always): {skill_name}")
 
-        # 2. 加载配置的 skills (从 packages/ 目录)
+        # 2. 加载配置的 skills (支持完整路径或名称)
         if not hasattr(self.config, "skills") or not self.config.skills:
             return
 
-        for skill_name in self.config.skills:
-            # 尝试从 packages/ 目录加载 (skill-xxx 或 xxx)
+        for skill_ref in self.config.skills:
+            # 支持两种格式:
+            # 1. 完整路径: packages/deer-flow/original/skills/public/chart-visualization/SKILL.md
+            # 2. skill名称: chart-visualization 或 skill-chart-visualization
+            skill_name = None
+            skill_path = None
+
+            # 检查是否是完整路径
+            skill_ref_str = str(skill_ref)
+            if skill_ref_str.startswith("packages/") or skill_ref_str.startswith("./"):
+                # 完整路径 - 直接作为 SKILL.md 路径
+                full_path = Path(skill_ref_str)
+                if full_path.exists():
+                    # 尝试读取 SKILL.md 或 skill.yaml
+                    if full_path.name == "SKILL.md" and full_path.parent.exists():
+                        skill_dir = full_path.parent
+                        skill_name = skill_dir.name
+                        content = full_path.read_text(encoding="utf-8")
+                        self._loaded_skills[skill_name] = {
+                            "config": {"name": skill_name, "type": "markdown"},
+                            "content": content,
+                            "path": str(skill_dir),
+                        }
+                        print(f"[Skill] Loaded: {skill_name} (from path)")
+                        continue
+                    elif full_path.is_dir() and (full_path / "SKILL.md").exists():
+                        skill_dir = full_path
+                        skill_name = skill_dir.name
+                        content = (full_path / "SKILL.md").read_text(encoding="utf-8")
+                        self._loaded_skills[skill_name] = {
+                            "config": {"name": skill_name, "type": "markdown"},
+                            "content": content,
+                            "path": str(skill_dir),
+                        }
+                        print(f"[Skill] Loaded: {skill_name} (from dir)")
+                        continue
+                # 尝试作为 skill.yaml 路径
+                yaml_path = Path(skill_ref_str)
+                if yaml_path.name == "skill.yaml" and yaml_path.exists():
+                    skill_dir = yaml_path.parent
+                    skill_name = skill_dir.name
+                    with open(yaml_path, encoding="utf-8") as f:
+                        skill_config = yaml.safe_load(f)
+                    entry = skill_config.get("entry", "SKILL.md")
+                    content_file = skill_dir / entry
+                    content = content_file.read_text(encoding="utf-8") if content_file.exists() else ""
+                    self._loaded_skills[skill_name] = {
+                        "config": skill_config,
+                        "content": content,
+                        "path": str(skill_dir),
+                    }
+                    print(f"[Skill] Loaded: {skill_name} (from yaml)")
+                    continue
+
+            # 否则作为 skill 名称处理
+            skill_name = skill_ref_str
             skill_paths = [
                 packages_dir / f"skill-{skill_name}",
                 packages_dir / skill_name,
             ]
 
-            skill_path = None
             for sp in skill_paths:
                 if sp.exists() and (sp / "skill.yaml").exists():
                     skill_path = sp / "skill.yaml"
