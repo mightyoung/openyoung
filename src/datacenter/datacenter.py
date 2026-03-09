@@ -10,6 +10,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
+from src.datacenter.checkpoint import Checkpoint
+
 # CheckpointManager 导入（从 memory.checkpoint）
 from src.memory.checkpoint import CheckpointManager
 

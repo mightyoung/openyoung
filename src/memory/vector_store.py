@@ -95,6 +95,22 @@ class VectorStore:
             print(f"[VectorStore] List namespaces error: {e}")
             return []
 
+    def list(self, namespace: str = "default", limit: int = 10) -> list[dict[str, Any]]:
+        """列出命名空间中的记忆条目"""
+        if not self._storage:
+            return []
+
+        try:
+            # 直接查询数据库获取记忆条目
+            results = self._storage.search_memory(
+                namespace=namespace,
+                limit=limit,
+            )
+            return results
+        except Exception as e:
+            print(f"[VectorStore] List error: {e}")
+            return []
+
     def get_stats(self) -> dict[str, Any]:
         """获取统计信息"""
         if not self._storage:

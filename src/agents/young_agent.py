@@ -7,30 +7,30 @@ import uuid
 from datetime import datetime
 from typing import Any
 
+from src.agents.components import (
+    DEFAULT_WEIGHTS,
+    DIMENSION_THRESHOLDS,
+    TASK_TYPE_WEIGHTS,
+    calculate_weighted_score,
+    check_threshold_violations,
+)
 from src.agents.dispatcher import TaskDispatcher
 from src.agents.evaluation_coordinator import EvaluationContext, EvaluationCoordinator
 from src.agents.permission import PermissionEvaluator
-from src.agents.ralph_loop import RalphLoop, AgentCategory, RalphLoopConfig
+from src.agents.ralph_loop import AgentCategory, RalphLoop, RalphLoopConfig
 from src.agents.sub_agent import SubAgent
-from src.evaluation.planner import EvalPlanner
 from src.core.types import (
     Message,
     MessageRole,
     SubAgentConfig,
     Task,
 )
+from src.evaluation.planner import EvalPlanner
 from src.package_manager.manager import PackageManager
-from src.tools.executor import ToolExecutor
-# AI Docker - Runtime
-from src.runtime import AISandbox, SandboxPool, SandboxConfig, PoolConfig
 
-from src.agents.components import (
-    TASK_TYPE_WEIGHTS,
-    DEFAULT_WEIGHTS,
-    DIMENSION_THRESHOLDS,
-    calculate_weighted_score,
-    check_threshold_violations,
-)
+# AI Docker - Runtime
+from src.runtime import AISandbox, PoolConfig, SandboxConfig, SandboxPool
+from src.tools.executor import ToolExecutor
 
 
 def validate_file_creation(task_description: str, agent_result: str) -> dict:
@@ -283,7 +283,7 @@ class YoungAgent:
 
         # EvalPlanner - 评估计划生成器
         self._eval_planner = EvalPlanner()
-        print(f"[EvalPlanner] Initialized for dynamic evaluation planning")
+        print("[EvalPlanner] Initialized for dynamic evaluation planning")
 
         # EvolEngine - use injected or create internally
         if not self._evolver_injected:
@@ -649,8 +649,9 @@ class YoungAgent:
     def _init_telemetry(self):
         """初始化 OpenTelemetry 遥测"""
         try:
-            from src.telemetry import init_telemetry, OPENTELEMETRY_AVAILABLE
             import os
+
+            from src.telemetry import OPENTELEMETRY_AVAILABLE, init_telemetry
 
             # 检查是否启用遥测
             enabled = os.getenv("OPENYOUNG_TELEMETRY", "false").lower() == "true"

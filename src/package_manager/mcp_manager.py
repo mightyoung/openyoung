@@ -52,7 +52,11 @@ class MCPServerManager:
             if not item.is_dir():
                 continue
 
-            # 查找 mcp.json
+            # 跳过非 MCP 包
+            if not item.name.startswith("mcp-"):
+                continue
+
+            # 方法1: 查找 mcp.json
             mcp_json = item / "mcp.json"
             if mcp_json.exists():
                 try:
@@ -64,14 +68,48 @@ class MCPServerManager:
                         args = server_config.get("args", [])
                         env = server_config.get("env", {})
 
-                        servers[name] = MCPServerConfig(
+                        servers[name] = [MCPServerConfig(
                             name=name,
                             command=cmd,
                             args=args,
                             env=env,
-                        )
+                        )]
                 except Exception as e:
                     print(f"[Warning] Failed to parse mcp.json in {item.name}: {e}")
+
+            # 方法2: 查找 package.yaml
+            package_yaml = item / "package.yaml"
+            if package_yaml.exists():
+                try:
+                    import yaml
+                    config = yaml.safe_load(package_yaml.read_text(encoding="utf-8"))
+                    mcp_config = config.get("mcp", {})
+
+                    if mcp_config:
+                        # 从 package name 提取 server 名称
+                        package_name = config.get("name", item.name)
+                        # 提取最后一部分，如 @openyoung/mcp-filesystem -> filesystem
+                        server_name = package_name.split("/")[-1].replace("mcp-", "")
+
+                        command = mcp_config.get("command", [])
+                        if isinstance(command, list):
+                            cmd = command[0] if command else ""
+                            args = command[1:] if len(command) > 1 else []
+                        else:
+                            cmd = str(command)
+                            args = mcp_config.get("args", [])
+
+                        if cmd:  # 只添加有效的配置
+                            servers[server_name] = [MCPServerConfig(
+                                name=server_name,
+                                command=cmd,
+                                args=args,
+                            )]
+                except ImportError:
+                    # 没有 yaml 库，跳过 package.yaml
+                    pass
+                except Exception as e:
+                    print(f"[Warning] Failed to parse package.yaml in {item.name}: {e}")
 
         return servers
 

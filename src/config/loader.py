@@ -6,7 +6,7 @@ Config Loader - 配置文件加载器
 import json
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, List
 
 import yaml
 

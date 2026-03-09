@@ -19,16 +19,27 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # 导入配置管理和加载器
+from src.agents.young_agent import YoungAgent
 from src.cli.config_manager import (
-    load_config as _load_config,
-    save_config as _save_config,
-    get_config as _get_config,
-    set_config as _set_config,
     _CONFIG_FILE,
 )
-from src.cli.loader import AgentLoader
+from src.cli.config_manager import (
+    get_config as _get_config,
+)
+from src.cli.config_manager import (
+    load_config as _load_config,
+)
+from src.cli.config_manager import (
+    save_config as _save_config,
+)
+from src.cli.config_manager import (
+    set_config as _set_config,
+)
 
-from src.agents.young_agent import YoungAgent
+# ========================
+# Agent Loader
+# ========================
+from src.cli.loader import AgentLoader
 from src.core.types import (
     AgentConfig,
     AgentMode,
@@ -41,13 +52,6 @@ from src.core.types import (
 from src.evaluation import EvaluationHub
 from src.package_manager.manager import PackageManager
 from src.package_manager.registry import AgentRegistry
-
-# ========================
-# Agent Loader
-# ========================
-
-from src.cli.loader import AgentLoader
-
 
 # ========================
 # Agent Runner
@@ -145,6 +149,7 @@ def skills_create(name: str, template: str, output: str):
     """Create a new skill from template"""
     try:
         from pathlib import Path
+
         from src.skills.creator import create_skill
 
         click.echo(f"Creating skill '{name}' from template '{template}'...")
@@ -938,7 +943,17 @@ def eval():
     pass
 
 
-@eval.command("history")
+@eval.command("list")
+def eval_list():
+    """List available evaluation metrics"""
+    from src.evaluation.hub import EvaluationHub
+
+    hub = EvaluationHub()
+    metrics = hub.list_metrics()
+
+    click.echo("Available Evaluation Metrics:")
+    for m in metrics:
+        click.echo(f"  • {m}")
 @click.argument("agent_name", default="default")
 @click.option("--limit", "-n", default=10, help="Number of records to show")
 def eval_history(agent_name: str, limit: int):
@@ -985,6 +1000,7 @@ def eval_trend(agent_name: str, metric: str):
 def eval_server(host: str, port: int):
     """Start EvalHub REST API server"""
     import asyncio
+
     from src.evaluation.api import run_server
 
     click.echo(f"Starting EvalHub server on {host}:{port}")
@@ -1012,7 +1028,7 @@ def source_list():
     """List configured sources"""
     click.echo("Configured sources:")
     click.echo("  • default (PyPI)")
-    click.echo("Note: Source configuration not yet implemented")
+    # Note: Full source management coming soon
 
 
 @source.command("add")
@@ -2009,6 +2025,14 @@ def run_agent(
 
             result = await agent.run(user_task)
             click.echo(result)
+
+            # Track agent usage
+            try:
+                from src.package_manager.registry import AgentRegistry
+                registry = AgentRegistry("packages")
+                registry.track_usage(agent_name)
+            except Exception:
+                pass  # Silently ignore tracking errors
 
             # Show stats
             stats = agent.get_all_stats()
