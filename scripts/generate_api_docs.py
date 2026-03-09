@@ -35,28 +35,28 @@ def get_public_api(module_path: Path) -> dict[str, Any]:
             # Skip private classes
             if not node.name.startswith("_"):
                 doc = extract_docstring(node)
-                classes.append({
-                    "name": node.name,
-                    "doc": doc,
-                    "methods": [
-                        n.name for n in node.body
-                        if isinstance(n, ast.FunctionDef) and not n.name.startswith("_")
-                    ]
-                })
+                classes.append(
+                    {
+                        "name": node.name,
+                        "doc": doc,
+                        "methods": [
+                            n.name
+                            for n in node.body
+                            if isinstance(n, ast.FunctionDef) and not n.name.startswith("_")
+                        ],
+                    }
+                )
         elif isinstance(node, ast.FunctionDef):
             # Skip private functions and dunder methods
             if not node.name.startswith("_") and not node.name.startswith("__"):
                 doc = extract_docstring(node)
-                functions.append({
-                    "name": node.name,
-                    "doc": doc
-                })
+                functions.append({"name": node.name, "doc": doc})
 
     return {
         "module": module_path.stem,
         "doc": module_doc,
         "classes": classes,
-        "functions": functions
+        "functions": functions,
     }
 
 

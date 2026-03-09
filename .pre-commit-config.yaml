@@ -32,3 +32,23 @@ repos:
   #       args: [--ignore-missing-imports, --no-error-summary]
   #       files: ^src/
   #       pass_filenames: false
+
+# Exclude generated files and directories
+default_install_hook_types: [pre-commit, commit-msg]
+default_stages: [pre-commit]
+
+# Files to exclude from all hooks
+exclude: |
+  (?x)^(
+    \.claude/|
+    \.github/|
+    \.swarm/|
+    \.claude-flow/|
+    scripts/output/|
+    scripts/weibo_|
+    skills/|
+    evals/|
+    debug_|
+    github-import-workspace/|
+    \.openyoung/
+  )

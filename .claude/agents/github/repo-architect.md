@@ -101,7 +101,7 @@ mcp__github__push_files {
       content: "[GitHub modes template]"
     },
     {
-      path: ".claude/commands/sparc/sparc-modes.md", 
+      path: ".claude/commands/sparc/sparc-modes.md",
       content: "[SPARC modes template]"
     },
     {
@@ -117,7 +117,7 @@ mcp__github__push_files {
         },
         hooks: {
           pre_task: "npx claude-flow@v3alpha hook pre-task",
-          post_edit: "npx claude-flow@v3alpha hook post-edit", 
+          post_edit: "npx claude-flow@v3alpha hook post-edit",
           notification: "npx claude-flow@v3alpha hook notification"
         }
       }, null, 2)
@@ -151,7 +151,7 @@ npx claude-flow start --ui
 
 ## Features
 - 🧠 ruv-swarm integration
-- 🎯 SPARC development modes  
+- 🎯 SPARC development modes
 - 🔧 GitHub workflow automation
 - 📊 Advanced coordination capabilities
 
@@ -167,7 +167,7 @@ See CLAUDE.md for complete integration instructions.`
 ```javascript
 // Synchronize structure across related repositories
 const repositories = [
-  "claude-code-flow", 
+  "claude-code-flow",
   "ruv-swarm",
   "claude-extensions"
 ]
@@ -206,20 +206,20 @@ jobs:
   mcp__claude-flow__agent_spawn { type: "optimizer", name: "Performance Optimizer" }
   mcp__claude-flow__agent_spawn { type: "researcher", name: "Best Practices Researcher" }
   mcp__claude-flow__agent_spawn { type: "coordinator", name: "Multi-Repo Coordinator" }
-  
+
   // Analyze current repository structures
   LS("/workspaces/ruv-FANN/claude-code-flow/claude-code-flow")
-  LS("/workspaces/ruv-FANN/ruv-swarm/npm") 
+  LS("/workspaces/ruv-FANN/ruv-swarm/npm")
   Read("/workspaces/ruv-FANN/claude-code-flow/claude-code-flow/package.json")
   Read("/workspaces/ruv-FANN/ruv-swarm/npm/package.json")
-  
+
   // Search for architectural patterns using gh CLI
   ARCH_PATTERNS=$(Bash(`gh search repos "language:javascript template architecture" \
     --limit 10 \
     --json fullName,description,stargazersCount \
     --sort stars \
     --order desc`))
-  
+
   // Create optimized structure files
   mcp__github__push_files {
     branch: "architecture/optimization",
@@ -243,7 +243,7 @@ jobs:
     ],
     message: "feat: Optimize repository architecture for scalability and maintainability"
   }
-  
+
   // Track architecture improvements
   TodoWrite { todos: [
     { id: "arch-analysis", content: "Analyze current repository structure", status: "completed", priority: "high" },
@@ -252,7 +252,7 @@ jobs:
     { id: "arch-workflows", content: "Implement improved workflows", status: "completed", priority: "medium" },
     { id: "arch-docs", content: "Document architecture decisions", status: "pending", priority: "medium" }
   ]}
-  
+
   // Store architecture analysis
   mcp__claude-flow__memory_usage {
     action: "store",
@@ -332,7 +332,7 @@ const integrationPattern = {
       provides: ["CLI", "workflows", "commands"]
     },
     "ruv-swarm": {
-      role: "coordination_engine", 
+      role: "coordination_engine",
       dependencies: [],
       provides: ["MCP_tools", "neural_networks", "memory"]
     }

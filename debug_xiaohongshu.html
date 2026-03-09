@@ -558,7 +558,7 @@ template {
 
         function getLayoutInfo() {
           const width = Math.min(window.innerWidth, 1728)
-          
+
     if (width >= 1424) {
       return { columns: 5, gapV: 16, gapH: 32, columnWidth: (width - (32 * 7)) / 6 }
     }
@@ -571,7 +571,7 @@ template {
     if (width >= 696) {
       return { columns: 3, gapV: 12, gapH: 24, columnWidth: (width - (24 * 4)) / 3 }
     }
-  
+
           return { columns: 2, gapV: 6, gapH: 12, columnWidth: Math.max(142, (width - (12 * 3)) / 2) }
         }
 

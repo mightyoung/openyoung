@@ -16,13 +16,13 @@ Concrete examples of well-formatted entries with all fields.
 Incorrectly assumed pytest fixtures are scoped to function by default
 
 ### Details
-When writing test fixtures, I assumed all fixtures were function-scoped. 
-User corrected that while function scope is the default, the codebase 
-convention uses module-scoped fixtures for database connections to 
+When writing test fixtures, I assumed all fixtures were function-scoped.
+User corrected that while function scope is the default, the codebase
+convention uses module-scoped fixtures for database connections to
 improve test performance.
 
 ### Suggested Action
-When creating fixtures that involve expensive setup (DB, network), 
+When creating fixtures that involve expensive setup (DB, network),
 check existing fixtures for scope patterns before defaulting to function scope.
 
 ### Metadata
@@ -82,8 +82,8 @@ Use `pnpm install` for this project.
 API responses must include correlation ID from request headers
 
 ### Details
-All API responses should echo back the X-Correlation-ID header from 
-the request. This is required for distributed tracing. Responses 
+All API responses should echo back the X-Correlation-ID header from
+the request. This is required for distributed tracing. Responses
 without this header break the observability pipeline.
 
 ### Suggested Action
@@ -209,7 +209,7 @@ Implement retry with exponential backoff. Consider circuit breaker pattern.
 Export analysis results to CSV format
 
 ### User Context
-User runs weekly reports and needs to share results with non-technical 
+User runs weekly reports and needs to share results with non-technical
 stakeholders in Excel. Currently copies output manually.
 
 ### Complexity Estimate

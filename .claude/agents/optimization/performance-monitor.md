@@ -25,34 +25,34 @@ class MetricsCollector {
     this.streams = new Map();
     this.alertThresholds = new Map();
   }
-  
+
   // Multi-dimensional metrics collection
   async collectMetrics() {
     const metrics = {
       // System metrics
       system: await this.collectSystemMetrics(),
-      
+
       // Agent-specific metrics
       agents: await this.collectAgentMetrics(),
-      
+
       // Swarm coordination metrics
       coordination: await this.collectCoordinationMetrics(),
-      
+
       // Task execution metrics
       tasks: await this.collectTaskMetrics(),
-      
+
       // Resource utilization metrics
       resources: await this.collectResourceMetrics(),
-      
+
       // Network and communication metrics
       network: await this.collectNetworkMetrics()
     };
-    
+
     // Real-time processing and analysis
     await this.processMetrics(metrics);
     return metrics;
   }
-  
+
   // System-level metrics
   async collectSystemMetrics() {
     return {
@@ -78,12 +78,12 @@ class MetricsCollector {
       }
     };
   }
-  
+
   // Agent performance metrics
   async collectAgentMetrics() {
     const agents = await mcp.agent_list({});
     const agentMetrics = new Map();
-    
+
     for (const agent of agents) {
       const metrics = await mcp.agent_metrics({ agentId: agent.id });
       agentMetrics.set(agent.id, {
@@ -93,7 +93,7 @@ class MetricsCollector {
         reliability: this.calculateReliability(metrics)
       });
     }
-    
+
     return agentMetrics;
   }
 }
@@ -112,22 +112,22 @@ class BottleneckAnalyzer {
       new CoordinationBottleneckDetector(),
       new TaskQueueBottleneckDetector()
     ];
-    
+
     this.patterns = new Map();
     this.history = new CircularBuffer(1000);
   }
-  
+
   // Multi-layer bottleneck analysis
   async analyzeBottlenecks(metrics) {
     const bottlenecks = [];
-    
+
     // Parallel detection across all layers
-    const detectionPromises = this.detectors.map(detector => 
+    const detectionPromises = this.detectors.map(detector =>
       detector.detect(metrics)
     );
-    
+
     const results = await Promise.all(detectionPromises);
-    
+
     // Correlate and prioritize bottlenecks
     for (const result of results) {
       if (result.detected) {
@@ -142,18 +142,18 @@ class BottleneckAnalyzer {
         });
       }
     }
-    
+
     // Pattern recognition for recurring bottlenecks
     await this.updatePatterns(bottlenecks);
-    
+
     return this.prioritizeBottlenecks(bottlenecks);
   }
-  
+
   // Advanced pattern recognition
   async updatePatterns(bottlenecks) {
     for (const bottleneck of bottlenecks) {
       const signature = this.createBottleneckSignature(bottleneck);
-      
+
       if (this.patterns.has(signature)) {
         const pattern = this.patterns.get(signature);
         pattern.frequency++;
@@ -184,7 +184,7 @@ class SLAMonitor {
     this.alertChannels = new Set();
     this.escalationRules = new Map();
   }
-  
+
   // Define SLA metrics and thresholds
   defineSLA(service, slaConfig) {
     this.slaDefinitions.set(service, {
@@ -193,11 +193,11 @@ class SLAMonitor {
       throughput: slaConfig.throughput || 100, // requests per second
       errorRate: slaConfig.errorRate || 0.1, // percentage
       recoveryTime: slaConfig.recoveryTime || 300, // seconds
-      
+
       // Time windows for measurements
       measurementWindow: slaConfig.measurementWindow || 300, // seconds
       evaluationInterval: slaConfig.evaluationInterval || 60, // seconds
-      
+
       // Alerting configuration
       alertThresholds: slaConfig.alertThresholds || {
         warning: 0.8, // 80% of SLA threshold
@@ -206,24 +206,24 @@ class SLAMonitor {
       }
     });
   }
-  
+
   // Continuous SLA monitoring
   async monitorSLA() {
     const violations = [];
-    
+
     for (const [service, sla] of this.slaDefinitions) {
       const metrics = await this.getServiceMetrics(service);
       const evaluation = this.evaluateSLA(service, sla, metrics);
-      
+
       if (evaluation.violated) {
         violations.push(evaluation);
         await this.handleViolation(service, evaluation);
       }
     }
-    
+
     return violations;
   }
-  
+
   // SLA evaluation logic
   evaluateSLA(service, sla, metrics) {
     const evaluation = {
@@ -232,7 +232,7 @@ class SLAMonitor {
       violated: false,
       violations: []
     };
-    
+
     // Availability check
     if (metrics.availability < sla.availability) {
       evaluation.violations.push({
@@ -243,7 +243,7 @@ class SLAMonitor {
       });
       evaluation.violated = true;
     }
-    
+
     // Response time check
     if (metrics.responseTime > sla.responseTime) {
       evaluation.violations.push({
@@ -254,9 +254,9 @@ class SLAMonitor {
       });
       evaluation.violated = true;
     }
-    
+
     // Additional SLA checks...
-    
+
     return evaluation;
   }
 }
@@ -275,22 +275,22 @@ class ResourceTracker {
       gpu: new GPUTracker(),
       agents: new AgentResourceTracker()
     };
-    
+
     this.forecaster = new ResourceForecaster();
     this.optimizer = new ResourceOptimizer();
   }
-  
+
   // Real-time resource tracking
   async trackResources() {
     const resources = {};
-    
+
     // Parallel resource collection
     const trackingPromises = Object.entries(this.trackers).map(
       async ([type, tracker]) => [type, await tracker.collect()]
     );
-    
+
     const results = await Promise.all(trackingPromises);
-    
+
     for (const [type, data] of results) {
       resources[type] = {
         ...data,
@@ -300,10 +300,10 @@ class ResourceTracker {
         forecast: await this.forecaster.forecast(type, data)
       };
     }
-    
+
     return resources;
   }
-  
+
   // Resource utilization analysis
   calculateUtilization(resourceData) {
     return {
@@ -318,16 +318,16 @@ class ResourceTracker {
       }
     };
   }
-  
+
   // Predictive resource forecasting
   async forecastResourceNeeds(timeHorizon = 3600) { // 1 hour default
     const currentResources = await this.trackResources();
     const forecasts = {};
-    
+
     for (const [type, data] of Object.entries(currentResources)) {
       forecasts[type] = await this.forecaster.forecast(type, data, timeHorizon);
     }
-    
+
     return {
       timeHorizon,
       forecasts,
@@ -353,10 +353,10 @@ const performanceIntegration = {
       this.monitorBottlenecks(),
       this.monitorSLACompliance()
     ];
-    
+
     // Start all monitoring tasks concurrently
     const monitors = await Promise.all(monitoringTasks);
-    
+
     return {
       swarmHealthMonitor: monitors[0],
       agentPerformanceMonitor: monitors[1],
@@ -365,13 +365,13 @@ const performanceIntegration = {
       slaMonitor: monitors[4]
     };
   },
-  
+
   // Swarm health monitoring
   async monitorSwarmHealth() {
     const healthMetrics = await mcp.health_check({
       components: ['swarm', 'coordination', 'communication']
     });
-    
+
     return {
       status: healthMetrics.overall,
       components: healthMetrics.components,
@@ -379,19 +379,19 @@ const performanceIntegration = {
       recommendations: healthMetrics.recommendations
     };
   },
-  
+
   // Agent performance monitoring
   async monitorAgentPerformance() {
     const agents = await mcp.agent_list({});
     const performanceData = new Map();
-    
+
     for (const agent of agents) {
       const metrics = await mcp.agent_metrics({ agentId: agent.id });
       const performance = await mcp.performance_report({
         format: 'detailed',
         timeframe: '24h'
       });
-      
+
       performanceData.set(agent.id, {
         ...metrics,
         performance,
@@ -399,14 +399,14 @@ const performanceIntegration = {
         bottlenecks: await mcp.bottleneck_analyze({ component: agent.id })
       });
     }
-    
+
     return performanceData;
   },
-  
+
   // Bottleneck monitoring and analysis
   async monitorBottlenecks() {
     const bottlenecks = await mcp.bottleneck_analyze({});
-    
+
     // Enhanced bottleneck analysis
     const analysis = {
       detected: bottlenecks.length > 0,
@@ -416,7 +416,7 @@ const performanceIntegration = {
       trends: await this.analyzeBottleneckTrends(bottlenecks),
       predictions: await this.predictBottlenecks(bottlenecks)
     };
-    
+
     return analysis;
   }
 };
@@ -433,14 +433,14 @@ class AnomalyDetector {
       time_series: new TimeSeriesAnomalyDetector(),
       behavioral: new BehavioralAnomalyDetector()
     };
-    
+
     this.ensemble = new EnsembleDetector(this.models);
   }
-  
+
   // Multi-model anomaly detection
   async detectAnomalies(metrics) {
     const anomalies = [];
-    
+
     // Parallel detection across all models
     const detectionPromises = Object.entries(this.models).map(
       async ([modelType, model]) => {
@@ -448,12 +448,12 @@ class AnomalyDetector {
         return { modelType, detected };
       }
     );
-    
+
     const results = await Promise.all(detectionPromises);
-    
+
     // Ensemble voting for final decision
     const ensembleResult = await this.ensemble.vote(results);
-    
+
     return {
       anomalies: ensembleResult.anomalies,
       confidence: ensembleResult.confidence,
@@ -461,13 +461,13 @@ class AnomalyDetector {
       individualResults: results
     };
   }
-  
+
   // Statistical anomaly detection
   detectStatisticalAnomalies(data) {
     const mean = this.calculateMean(data);
     const stdDev = this.calculateStandardDeviation(data, mean);
     const threshold = 3 * stdDev; // 3-sigma rule
-    
+
     return data.filter(point => Math.abs(point - mean) > threshold)
                .map(point => ({
                  value: point,
@@ -476,18 +476,18 @@ class AnomalyDetector {
                  probability: this.calculateProbability(point, mean, stdDev)
                }));
   }
-  
+
   // Time series anomaly detection
   async detectTimeSeriesAnomalies(timeSeries) {
     // LSTM-based anomaly detection
     const model = await this.loadTimeSeriesModel();
     const predictions = await model.predict(timeSeries);
-    
+
     const anomalies = [];
     for (let i = 0; i < timeSeries.length; i++) {
       const error = Math.abs(timeSeries[i] - predictions[i]);
       const threshold = this.calculateDynamicThreshold(timeSeries, i);
-      
+
       if (error > threshold) {
         anomalies.push({
           timestamp: i,
@@ -498,7 +498,7 @@ class AnomalyDetector {
         });
       }
     }
-    
+
     return anomalies;
   }
 }
@@ -515,7 +515,7 @@ class DashboardProvider {
     this.subscribers = new Set();
     this.dataBuffer = new CircularBuffer(1000);
   }
-  
+
   // Real-time dashboard data
   async provideDashboardData() {
     const dashboardData = {
@@ -526,7 +526,7 @@ class DashboardProvider {
         totalTasks: await this.getTotalTaskCount(),
         averageResponseTime: await this.getAverageResponseTime()
       },
-      
+
       // Performance metrics
       performance: {
         throughput: await this.getCurrentThroughput(),
@@ -534,7 +534,7 @@ class DashboardProvider {
         errorRate: await this.getCurrentErrorRate(),
         utilization: await this.getResourceUtilization()
       },
-      
+
       // Real-time charts data
       timeSeries: {
         cpu: this.getCPUTimeSeries(),
@@ -542,29 +542,29 @@ class DashboardProvider {
         network: this.getNetworkTimeSeries(),
         tasks: this.getTaskTimeSeries()
       },
-      
+
       // Alerts and notifications
       alerts: await this.getActiveAlerts(),
       notifications: await this.getRecentNotifications(),
-      
+
       // Agent status
       agents: await this.getAgentStatusSummary(),
-      
+
       timestamp: Date.now()
     };
-    
+
     // Broadcast to subscribers
     this.broadcast(dashboardData);
-    
+
     return dashboardData;
   }
-  
+
   // WebSocket subscription management
   subscribe(callback) {
     this.subscribers.add(callback);
     return () => this.subscribers.delete(callback);
   }
-  
+
   broadcast(data) {
     this.subscribers.forEach(callback => {
       try {
@@ -633,7 +633,7 @@ const analytics = {
       // Availability metrics
       uptime: this.calculateUptime(metrics),
       availability: this.calculateAvailability(metrics),
-      
+
       // Performance metrics
       responseTime: {
         average: this.calculateAverage(metrics.responseTimes),
@@ -642,21 +642,21 @@ const analytics = {
         p95: this.calculatePercentile(metrics.responseTimes, 95),
         p99: this.calculatePercentile(metrics.responseTimes, 99)
       },
-      
+
       // Throughput metrics
       throughput: this.calculateThroughput(metrics),
-      
+
       // Error metrics
       errorRate: this.calculateErrorRate(metrics),
-      
+
       // Resource efficiency
       resourceEfficiency: this.calculateResourceEfficiency(metrics),
-      
+
       // Cost metrics
       costEfficiency: this.calculateCostEfficiency(metrics)
     };
   },
-  
+
   // Trend analysis
   analyzeTrends(historicalData, timeWindow = '7d') {
     return {

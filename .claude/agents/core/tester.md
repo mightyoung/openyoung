@@ -187,7 +187,7 @@ describe('User API Integration', () => {
 describe('User Registration Flow', () => {
   it('should complete full registration process', async () => {
     await page.goto('/register');
-    
+
     await page.fill('[name="email"]', 'newuser@example.com');
     await page.fill('[name="password"]', 'SecurePass123!');
     await page.click('button[type="submit"]');
@@ -216,7 +216,7 @@ describe('Edge Cases', () => {
   // Error conditions
   it('should recover from network timeout', async () => {
     jest.setTimeout(10000);
-    mockApi.get.mockImplementation(() => 
+    mockApi.get.mockImplementation(() =>
       new Promise(resolve => setTimeout(resolve, 5000))
     );
 
@@ -255,7 +255,7 @@ describe('Edge Cases', () => {
 describe('Performance', () => {
   it('should process 1000 items under 100ms', async () => {
     const items = generateItems(1000);
-    
+
     const start = performance.now();
     await service.processItems(items);
     const duration = performance.now() - start;
@@ -265,7 +265,7 @@ describe('Performance', () => {
 
   it('should handle memory efficiently', () => {
     const initialMemory = process.memoryUsage().heapUsed;
-    
+
     // Process large dataset
     processLargeDataset();
     global.gc(); // Force garbage collection
@@ -284,7 +284,7 @@ describe('Performance', () => {
 describe('Security', () => {
   it('should prevent SQL injection', async () => {
     const maliciousInput = "'; DROP TABLE users; --";
-    
+
     const response = await request(app)
       .get(`/users?name=${maliciousInput}`);
 
@@ -310,7 +310,7 @@ describe('Security', () => {
 /**
  * @test User Registration
  * @description Validates the complete user registration flow
- * @prerequisites 
+ * @prerequisites
  *   - Database is empty
  *   - Email service is mocked
  * @steps

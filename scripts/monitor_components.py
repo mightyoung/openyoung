@@ -122,7 +122,9 @@ class ComponentMonitor:
         # Datacenter - evaluations
         evaluations_content = get_file_content(FILES_TO_WATCH["evaluations"])
         state["evaluations_hash"] = get_file_hash(FILES_TO_WATCH["evaluations"])
-        state["evaluations_count"] = len(evaluations_content) if isinstance(evaluations_content, list) else 0
+        state["evaluations_count"] = (
+            len(evaluations_content) if isinstance(evaluations_content, list) else 0
+        )
         state["evaluations_summary"] = get_stats_summary(evaluations_content, "evaluations")
 
         # Evolver - genes
@@ -178,9 +180,9 @@ class ComponentMonitor:
     def get_current_status(self):
         """Get formatted current status"""
         lines = []
-        lines.append("\n" + "="*60)
+        lines.append("\n" + "=" * 60)
         lines.append(f"  Status Check at {datetime.now().strftime('%H:%M:%S')}")
-        lines.append("="*60)
+        lines.append("=" * 60)
 
         # Datacenter
         lines.append("\n[1] Datacenter (.young/)")
@@ -198,7 +200,9 @@ class ComponentMonitor:
 
         # Skills
         lines.append("\n[4] Skills (src/skills/)")
-        lines.append(f"  - Files: {self.state['skills_count']} ({', '.join(self.state['skills_files'])})")
+        lines.append(
+            f"  - Files: {self.state['skills_count']} ({', '.join(self.state['skills_files'])})"
+        )
 
         # MCPs
         lines.append("\n[5] MCPs")
@@ -212,12 +216,12 @@ class ComponentMonitor:
 
 
 def main():
-    print("="*60)
+    print("=" * 60)
     print("  Component Status Monitor")
-    print("="*60)
+    print("=" * 60)
     print(f"  Check interval: {CHECK_INTERVAL} seconds")
     print(f"  Total duration: {TOTAL_DURATION} seconds")
-    print("="*60)
+    print("=" * 60)
 
     monitor = ComponentMonitor()
 
@@ -244,9 +248,9 @@ def main():
         # Always show current status
         print(monitor.get_current_status())
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("  Monitoring Complete")
-    print("="*60)
+    print("=" * 60)
 
 
 if __name__ == "__main__":

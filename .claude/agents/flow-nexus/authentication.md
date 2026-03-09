@@ -25,13 +25,13 @@ mcp__flow-nexus__user_register({
 
 // User Login
 mcp__flow-nexus__user_login({
-  email: "user@example.com", 
+  email: "user@example.com",
   password: "password"
 })
 
 // Profile Management
 mcp__flow-nexus__user_profile({ user_id: "user_id" })
-mcp__flow-nexus__user_update_profile({ 
+mcp__flow-nexus__user_update_profile({
   user_id: "user_id",
   updates: { full_name: "New Name" }
 })

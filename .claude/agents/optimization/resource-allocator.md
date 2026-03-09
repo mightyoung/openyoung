@@ -27,29 +27,29 @@ class AdaptiveResourceAllocator {
       network: new NetworkAllocator(),
       agents: new AgentAllocator()
     };
-    
+
     this.predictor = new ResourcePredictor();
     this.optimizer = new AllocationOptimizer();
     this.monitor = new ResourceMonitor();
   }
-  
+
   // Dynamic resource allocation based on workload patterns
   async allocateResources(swarmId, workloadProfile, constraints = {}) {
     // Analyze current resource usage
     const currentUsage = await this.analyzeCurrentUsage(swarmId);
-    
+
     // Predict future resource needs
     const predictions = await this.predictor.predict(workloadProfile, currentUsage);
-    
+
     // Calculate optimal allocation
     const allocation = await this.optimizer.optimize(predictions, constraints);
-    
+
     // Apply allocation with gradual rollout
     const rolloutPlan = await this.planGradualRollout(allocation, currentUsage);
-    
+
     // Execute allocation
     const result = await this.executeAllocation(rolloutPlan);
-    
+
     return {
       allocation,
       rolloutPlan,
@@ -57,7 +57,7 @@ class AdaptiveResourceAllocator {
       monitoring: await this.setupMonitoring(allocation)
     };
   }
-  
+
   // Workload pattern analysis
   async analyzeWorkloadPatterns(historicalData, timeWindow = '7d') {
     const patterns = {
@@ -68,7 +68,7 @@ class AdaptiveResourceAllocator {
         weekly: this.analyzeWeeklyPatterns(historicalData),
         seasonal: this.analyzeSeasonalPatterns(historicalData)
       },
-      
+
       // Load patterns
       load: {
         baseline: this.calculateBaselineLoad(historicalData),
@@ -76,14 +76,14 @@ class AdaptiveResourceAllocator {
         valleys: this.identifyValleyPatterns(historicalData),
         spikes: this.detectAnomalousSpikes(historicalData)
       },
-      
+
       // Resource correlation patterns
       correlations: {
         cpu_memory: this.analyzeCPUMemoryCorrelation(historicalData),
         network_load: this.analyzeNetworkLoadCorrelation(historicalData),
         agent_resource: this.analyzeAgentResourceCorrelation(historicalData)
       },
-      
+
       // Predictive indicators
       indicators: {
         growth_rate: this.calculateGrowthRate(historicalData),
@@ -91,10 +91,10 @@ class AdaptiveResourceAllocator {
         predictability: this.calculatePredictability(historicalData)
       }
     };
-    
+
     return patterns;
   }
-  
+
   // Multi-objective resource optimization
   async optimizeResourceAllocation(resources, demands, objectives) {
     const optimizationProblem = {
@@ -102,7 +102,7 @@ class AdaptiveResourceAllocator {
       constraints: this.defineConstraints(resources, demands),
       objectives: this.defineObjectives(objectives)
     };
-    
+
     // Use multi-objective genetic algorithm
     const solver = new MultiObjectiveGeneticSolver({
       populationSize: 100,
@@ -110,12 +110,12 @@ class AdaptiveResourceAllocator {
       mutationRate: 0.1,
       crossoverRate: 0.8
     });
-    
+
     const solutions = await solver.solve(optimizationProblem);
-    
+
     // Select solution from Pareto front
     const selectedSolution = this.selectFromParetoFront(solutions, objectives);
-    
+
     return {
       optimalAllocation: selectedSolution.allocation,
       paretoFront: solutions.paretoFront,
@@ -137,28 +137,28 @@ class PredictiveScaler {
       anomaly: new IsolationForestModel(),
       ensemble: new EnsemblePredictor()
     };
-    
+
     this.featureEngineering = new FeatureEngineer();
     this.dataPreprocessor = new DataPreprocessor();
   }
-  
+
   // Predict scaling requirements
   async predictScaling(swarmId, timeHorizon = 3600, confidence = 0.95) {
     // Collect training data
     const trainingData = await this.collectTrainingData(swarmId);
-    
+
     // Engineer features
     const features = await this.featureEngineering.engineer(trainingData);
-    
+
     // Train/update models
     await this.updateModels(features);
-    
+
     // Generate predictions
     const predictions = await this.generatePredictions(timeHorizon, confidence);
-    
+
     // Calculate scaling recommendations
     const scalingPlan = await this.calculateScalingPlan(predictions);
-    
+
     return {
       predictions,
       scalingPlan,
@@ -167,7 +167,7 @@ class PredictiveScaler {
       features: features.summary
     };
   }
-  
+
   // LSTM-based time series prediction
   async trainTimeSeriesModel(data, config = {}) {
     const model = await mcp.neural_train({
@@ -179,23 +179,23 @@ class PredictiveScaler {
       }),
       epochs: config.epochs || 100
     });
-    
+
     // Validate model performance
     const validation = await this.validateModel(model, data.validation);
-    
+
     if (validation.accuracy > 0.85) {
       await mcp.model_save({
         modelId: model.modelId,
         path: '/models/scaling_predictor.model'
       });
-      
+
       return {
         model,
         validation,
         ready: true
       };
     }
-    
+
     return {
       model: null,
       validation,
@@ -203,7 +203,7 @@ class PredictiveScaler {
       reason: 'Model accuracy below threshold'
     };
   }
-  
+
   // Reinforcement learning for scaling decisions
   async trainScalingAgent(environment, episodes = 1000) {
     const agent = new DeepQNetworkAgent({
@@ -214,46 +214,46 @@ class PredictiveScaler {
       epsilonDecay: 0.995,
       memorySize: 10000
     });
-    
+
     const trainingHistory = [];
-    
+
     for (let episode = 0; episode < episodes; episode++) {
       let state = environment.reset();
       let totalReward = 0;
       let done = false;
-      
+
       while (!done) {
         // Agent selects action
         const action = agent.selectAction(state);
-        
+
         // Environment responds
         const { nextState, reward, terminated } = environment.step(action);
-        
+
         // Agent learns from experience
         agent.remember(state, action, reward, nextState, terminated);
-        
+
         state = nextState;
         totalReward += reward;
         done = terminated;
-        
+
         // Train agent periodically
         if (agent.memory.length > agent.batchSize) {
           await agent.train();
         }
       }
-      
+
       trainingHistory.push({
         episode,
         reward: totalReward,
         epsilon: agent.epsilon
       });
-      
+
       // Log progress
       if (episode % 100 === 0) {
         console.log(`Episode ${episode}: Reward ${totalReward}, Epsilon ${agent.epsilon}`);
       }
     }
-    
+
     return {
       agent,
       trainingHistory,
@@ -271,16 +271,16 @@ class AdaptiveCircuitBreaker {
     this.failureThreshold = config.failureThreshold || 5;
     this.recoveryTimeout = config.recoveryTimeout || 60000;
     this.successThreshold = config.successThreshold || 3;
-    
+
     this.state = 'CLOSED'; // CLOSED, OPEN, HALF_OPEN
     this.failureCount = 0;
     this.successCount = 0;
     this.lastFailureTime = null;
-    
+
     // Adaptive thresholds
     this.adaptiveThresholds = new AdaptiveThresholdManager();
     this.performanceHistory = new CircularBuffer(1000);
-    
+
     // Metrics
     this.metrics = {
       totalRequests: 0,
@@ -291,11 +291,11 @@ class AdaptiveCircuitBreaker {
       circuitClosedEvents: 0
     };
   }
-  
+
   // Execute operation with circuit breaker protection
   async execute(operation, fallback = null) {
     this.metrics.totalRequests++;
-    
+
     // Check circuit state
     if (this.state === 'OPEN') {
       if (this.shouldAttemptReset()) {
@@ -306,46 +306,46 @@ class AdaptiveCircuitBreaker {
         return await this.executeFallback(fallback);
       }
     }
-    
+
     try {
       const startTime = performance.now();
       const result = await operation();
       const endTime = performance.now();
-      
+
       // Record success
       this.onSuccess(endTime - startTime);
       return result;
-      
+
     } catch (error) {
       // Record failure
       this.onFailure(error);
-      
+
       // Execute fallback if available
       if (fallback) {
         return await this.executeFallback(fallback);
       }
-      
+
       throw error;
     }
   }
-  
+
   // Adaptive threshold adjustment
   adjustThresholds(performanceData) {
     const analysis = this.adaptiveThresholds.analyze(performanceData);
-    
+
     if (analysis.recommendAdjustment) {
       this.failureThreshold = Math.max(
-        1, 
+        1,
         Math.round(this.failureThreshold * analysis.thresholdMultiplier)
       );
-      
+
       this.recoveryTimeout = Math.max(
         1000,
         Math.round(this.recoveryTimeout * analysis.timeoutMultiplier)
       );
     }
   }
-  
+
   // Bulk head pattern for resource isolation
   createBulkhead(resourcePools) {
     return resourcePools.map(pool => ({
@@ -372,11 +372,11 @@ class PerformanceProfiler {
       network: new NetworkProfiler(),
       application: new ApplicationProfiler()
     };
-    
+
     this.analyzer = new ProfileAnalyzer();
     this.optimizer = new PerformanceOptimizer();
   }
-  
+
   // Comprehensive performance profiling
   async profilePerformance(swarmId, duration = 60000) {
     const profilingSession = {
@@ -385,7 +385,7 @@ class PerformanceProfiler {
       duration,
       profiles: new Map()
     };
-    
+
     // Start all profilers concurrently
     const profilingTasks = Object.entries(this.profilers).map(
       async ([type, profiler]) => {
@@ -393,19 +393,19 @@ class PerformanceProfiler {
         return [type, profile];
       }
     );
-    
+
     const profiles = await Promise.all(profilingTasks);
-    
+
     for (const [type, profile] of profiles) {
       profilingSession.profiles.set(type, profile);
     }
-    
+
     // Analyze performance data
     const analysis = await this.analyzer.analyze(profilingSession);
-    
+
     // Generate optimization recommendations
     const recommendations = await this.optimizer.recommend(analysis);
-    
+
     return {
       session: profilingSession,
       analysis,
@@ -413,7 +413,7 @@ class PerformanceProfiler {
       summary: this.generateSummary(analysis, recommendations)
     };
   }
-  
+
   // CPU profiling with flame graphs
   async profileCPU(duration) {
     const cpuProfile = {
@@ -422,30 +422,30 @@ class PerformanceProfiler {
       hotspots: [],
       flamegraph: null
     };
-    
+
     // Sample CPU usage at high frequency
     const sampleInterval = 10; // 10ms
     const samples = duration / sampleInterval;
-    
+
     for (let i = 0; i < samples; i++) {
       const sample = await this.sampleCPU();
       cpuProfile.samples.push(sample);
-      
+
       // Update function statistics
       this.updateFunctionStats(cpuProfile.functions, sample);
-      
+
       await this.sleep(sampleInterval);
     }
-    
+
     // Generate flame graph
     cpuProfile.flamegraph = this.generateFlameGraph(cpuProfile.samples);
-    
+
     // Identify hotspots
     cpuProfile.hotspots = this.identifyHotspots(cpuProfile.functions);
-    
+
     return cpuProfile;
   }
-  
+
   // Memory profiling with leak detection
   async profileMemory(duration) {
     const memoryProfile = {
@@ -455,35 +455,35 @@ class PerformanceProfiler {
       leaks: [],
       growth: []
     };
-    
+
     // Take initial snapshot
     let previousSnapshot = await this.takeMemorySnapshot();
     memoryProfile.snapshots.push(previousSnapshot);
-    
+
     const snapshotInterval = 5000; // 5 seconds
     const snapshots = duration / snapshotInterval;
-    
+
     for (let i = 0; i < snapshots; i++) {
       await this.sleep(snapshotInterval);
-      
+
       const snapshot = await this.takeMemorySnapshot();
       memoryProfile.snapshots.push(snapshot);
-      
+
       // Analyze memory changes
       const changes = this.analyzeMemoryChanges(previousSnapshot, snapshot);
       memoryProfile.allocations.push(...changes.allocations);
       memoryProfile.deallocations.push(...changes.deallocations);
-      
+
       // Detect potential leaks
       const leaks = this.detectMemoryLeaks(changes);
       memoryProfile.leaks.push(...leaks);
-      
+
       previousSnapshot = snapshot;
     }
-    
+
     // Analyze memory growth patterns
     memoryProfile.growth = this.analyzeMemoryGrowth(memoryProfile.snapshots);
-    
+
     return memoryProfile;
   }
 }
@@ -501,13 +501,13 @@ const resourceIntegration = {
     const currentUsage = await mcp.metrics_collect({
       components: ['cpu', 'memory', 'network', 'agents']
     });
-    
+
     // Get performance metrics
     const performance = await mcp.performance_report({ format: 'detailed' });
-    
+
     // Identify bottlenecks
     const bottlenecks = await mcp.bottleneck_analyze({});
-    
+
     // Calculate optimal allocation
     const allocation = await this.calculateOptimalAllocation(
       currentUsage,
@@ -515,54 +515,54 @@ const resourceIntegration = {
       bottlenecks,
       requirements
     );
-    
+
     // Apply resource allocation
     const result = await mcp.daa_resource_alloc({
       resources: allocation.resources,
       agents: allocation.agents
     });
-    
+
     return {
       allocation,
       result,
       monitoring: await this.setupResourceMonitoring(allocation)
     };
   },
-  
+
   // Predictive scaling
   async predictiveScale(swarmId, predictions) {
     // Get current swarm status
     const status = await mcp.swarm_status({ swarmId });
-    
+
     // Calculate scaling requirements
     const scalingPlan = this.calculateScalingPlan(status, predictions);
-    
+
     if (scalingPlan.scaleRequired) {
       // Execute scaling
       const scalingResult = await mcp.swarm_scale({
         swarmId,
         targetSize: scalingPlan.targetSize
       });
-      
+
       // Optimize topology after scaling
       if (scalingResult.success) {
         await mcp.topology_optimize({ swarmId });
       }
-      
+
       return {
         scaled: true,
         plan: scalingPlan,
         result: scalingResult
       };
     }
-    
+
     return {
       scaled: false,
       reason: 'No scaling required',
       plan: scalingPlan
     };
   },
-  
+
   // Performance optimization
   async optimizePerformance(swarmId) {
     // Collect comprehensive metrics
@@ -572,9 +572,9 @@ const resourceIntegration = {
       mcp.agent_metrics({}),
       mcp.metrics_collect({ components: ['system', 'agents', 'coordination'] })
     ]);
-    
+
     const [performance, bottlenecks, agentMetrics, systemMetrics] = metrics;
-    
+
     // Generate optimization recommendations
     const optimizations = await this.generateOptimizations({
       performance,
@@ -582,10 +582,10 @@ const resourceIntegration = {
       agentMetrics,
       systemMetrics
     });
-    
+
     // Apply optimizations
     const results = await this.applyOptimizations(swarmId, optimizations);
-    
+
     return {
       optimizations,
       results,
@@ -654,14 +654,14 @@ const allocationMetrics = {
     allocation_accuracy: this.calculateAllocationAccuracy(),
     prediction_accuracy: this.calculatePredictionAccuracy()
   },
-  
+
   performance: {
     allocation_latency: this.calculateAllocationLatency(),
     scaling_response_time: this.calculateScalingResponseTime(),
     optimization_impact: this.calculateOptimizationImpact(),
     cost_efficiency: this.calculateCostEfficiency()
   },
-  
+
   reliability: {
     availability: this.calculateAvailability(),
     fault_tolerance: this.calculateFaultTolerance(),

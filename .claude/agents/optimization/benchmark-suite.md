@@ -26,22 +26,22 @@ class ComprehensiveBenchmarkSuite {
       latency: new LatencyBenchmark(),
       scalability: new ScalabilityBenchmark(),
       resource_usage: new ResourceUsageBenchmark(),
-      
+
       // Swarm-specific benchmarks
       coordination: new CoordinationBenchmark(),
       load_balancing: new LoadBalancingBenchmark(),
       topology: new TopologyBenchmark(),
       fault_tolerance: new FaultToleranceBenchmark(),
-      
+
       // Custom benchmarks
       custom: new CustomBenchmarkManager()
     };
-    
+
     this.reporter = new BenchmarkReporter();
     this.comparator = new PerformanceComparator();
     this.analyzer = new BenchmarkAnalyzer();
   }
-  
+
   // Execute comprehensive benchmark suite
   async runBenchmarkSuite(config = {}) {
     const suiteConfig = {
@@ -52,44 +52,44 @@ class ComprehensiveBenchmarkSuite {
       parallel: config.parallel || false,
       baseline: config.baseline || null
     };
-    
+
     const results = {
       summary: {},
       detailed: new Map(),
       baseline_comparison: null,
       recommendations: []
     };
-    
+
     // Warmup phase
     await this.warmup(suiteConfig.warmupTime);
-    
+
     // Execute benchmarks
     if (suiteConfig.parallel) {
       results.detailed = await this.runBenchmarksParallel(suiteConfig);
     } else {
       results.detailed = await this.runBenchmarksSequential(suiteConfig);
     }
-    
+
     // Generate summary
     results.summary = this.generateSummary(results.detailed);
-    
+
     // Compare with baseline if provided
     if (suiteConfig.baseline) {
       results.baseline_comparison = await this.compareWithBaseline(
-        results.detailed, 
+        results.detailed,
         suiteConfig.baseline
       );
     }
-    
+
     // Generate recommendations
     results.recommendations = await this.generateRecommendations(results);
-    
+
     // Cooldown phase
     await this.cooldown(suiteConfig.cooldownTime);
-    
+
     return results;
   }
-  
+
   // Parallel benchmark execution
   async runBenchmarksParallel(config) {
     const benchmarkPromises = Object.entries(this.benchmarks).map(
@@ -98,23 +98,23 @@ class ComprehensiveBenchmarkSuite {
         return [name, result];
       }
     );
-    
+
     const results = await Promise.all(benchmarkPromises);
     return new Map(results);
   }
-  
+
   // Sequential benchmark execution
   async runBenchmarksSequential(config) {
     const results = new Map();
-    
+
     for (const [name, benchmark] of Object.entries(this.benchmarks)) {
       const result = await this.executeBenchmark(benchmark, name, config);
       results.set(name, result);
-      
+
       // Brief pause between benchmarks
       await this.sleep(1000);
     }
-    
+
     return results;
   }
 }
@@ -131,11 +131,11 @@ class RegressionDetector {
       threshold: new ThresholdRegressionDetector(),
       trend: new TrendRegressionDetector()
     };
-    
+
     this.analyzer = new RegressionAnalyzer();
     this.alerting = new RegressionAlerting();
   }
-  
+
   // Detect performance regressions
   async detectRegressions(currentResults, historicalData, config = {}) {
     const regressions = {
@@ -144,7 +144,7 @@ class RegressionDetector {
       confidence: 0,
       analysis: {}
     };
-    
+
     // Run multiple detection algorithms
     const detectionPromises = Object.entries(this.detectors).map(
       async ([method, detector]) => {
@@ -152,9 +152,9 @@ class RegressionDetector {
         return [method, detection];
       }
     );
-    
+
     const detectionResults = await Promise.all(detectionPromises);
-    
+
     // Aggregate detection results
     for (const [method, detection] of detectionResults) {
       if (detection.regression_detected) {
@@ -164,25 +164,25 @@ class RegressionDetector {
         });
       }
     }
-    
+
     // Calculate overall confidence and severity
     if (regressions.detected.length > 0) {
       regressions.confidence = this.calculateAggregateConfidence(regressions.detected);
       regressions.severity = this.calculateSeverity(regressions.detected);
       regressions.analysis = await this.analyzer.analyze(regressions.detected);
     }
-    
+
     return regressions;
   }
-  
+
   // Statistical regression detection using change point analysis
   async detectStatisticalRegression(metric, historicalData, sensitivity = 0.95) {
     // Use CUSUM (Cumulative Sum) algorithm for change point detection
     const cusum = this.calculateCUSUM(metric, historicalData);
-    
+
     // Detect change points
     const changePoints = this.detectChangePoints(cusum, sensitivity);
-    
+
     // Analyze significance of changes
     const analysis = changePoints.map(point => ({
       timestamp: point.timestamp,
@@ -191,7 +191,7 @@ class RegressionDetector {
       significance: point.significance,
       confidence: point.confidence
     }));
-    
+
     return {
       regression_detected: changePoints.length > 0,
       change_points: analysis,
@@ -199,19 +199,19 @@ class RegressionDetector {
       sensitivity: sensitivity
     };
   }
-  
+
   // Machine learning-based regression detection
   async detectMLRegression(metrics, historicalData) {
     // Train anomaly detection model on historical data
     const model = await this.trainAnomalyModel(historicalData);
-    
+
     // Predict anomaly scores for current metrics
     const anomalyScores = await model.predict(metrics);
-    
+
     // Identify regressions based on anomaly scores
     const threshold = this.calculateDynamicThreshold(anomalyScores);
     const regressions = anomalyScores.filter(score => score.anomaly > threshold);
-    
+
     return {
       regression_detected: regressions.length > 0,
       anomaly_scores: anomalyScores,
@@ -236,12 +236,12 @@ class AutomatedPerformanceTester {
       spike: new SpikeTestSuite(),
       configuration: new ConfigurationTestSuite()
     };
-    
+
     this.scheduler = new TestScheduler();
     this.orchestrator = new TestOrchestrator();
     this.validator = new ResultValidator();
   }
-  
+
   // Execute automated performance test campaign
   async runTestCampaign(config) {
     const campaign = {
@@ -252,16 +252,16 @@ class AutomatedPerformanceTester {
       results: new Map(),
       summary: null
     };
-    
+
     // Schedule test execution
     const schedule = await this.scheduler.schedule(config.tests, config.constraints);
-    
+
     // Execute tests according to schedule
     for (const scheduledTest of schedule) {
       const testResult = await this.executeScheduledTest(scheduledTest);
       campaign.tests.push(scheduledTest);
       campaign.results.set(scheduledTest.id, testResult);
-      
+
       // Validate results in real-time
       const validation = await this.validator.validate(testResult);
       if (!validation.valid) {
@@ -273,18 +273,18 @@ class AutomatedPerformanceTester {
         break;
       }
     }
-    
+
     // Generate campaign summary
     if (!campaign.summary) {
       campaign.summary = await this.generateCampaignSummary(campaign);
     }
-    
+
     campaign.endTime = Date.now();
     campaign.duration = campaign.endTime - campaign.startTime;
-    
+
     return campaign;
   }
-  
+
   // Load testing with gradual ramp-up
   async executeLoadTest(config) {
     const loadTest = {
@@ -294,25 +294,25 @@ class AutomatedPerformanceTester {
       metrics: new Map(),
       results: {}
     };
-    
+
     // Ramp-up phase
     const rampUpResult = await this.executeRampUp(config.rampUp);
     loadTest.phases.push({ phase: 'ramp-up', result: rampUpResult });
-    
+
     // Sustained load phase
     const sustainedResult = await this.executeSustainedLoad(config.sustained);
     loadTest.phases.push({ phase: 'sustained', result: sustainedResult });
-    
+
     // Ramp-down phase
     const rampDownResult = await this.executeRampDown(config.rampDown);
     loadTest.phases.push({ phase: 'ramp-down', result: rampDownResult });
-    
+
     // Analyze results
     loadTest.results = await this.analyzeLoadTestResults(loadTest.phases);
-    
+
     return loadTest;
   }
-  
+
   // Stress testing to find breaking points
   async executeStressTest(config) {
     const stressTest = {
@@ -322,20 +322,20 @@ class AutomatedPerformanceTester {
       degradationCurve: [],
       results: {}
     };
-    
+
     let currentLoad = config.startLoad;
     let systemBroken = false;
-    
+
     while (!systemBroken && currentLoad <= config.maxLoad) {
       const testResult = await this.applyLoad(currentLoad, config.duration);
-      
+
       stressTest.degradationCurve.push({
         load: currentLoad,
         performance: testResult.performance,
         stability: testResult.stability,
         errors: testResult.errors
       });
-      
+
       // Check if system is breaking
       if (this.isSystemBreaking(testResult, config.breakingCriteria)) {
         stressTest.breakingPoint = {
@@ -345,12 +345,12 @@ class AutomatedPerformanceTester {
         };
         systemBroken = true;
       }
-      
+
       currentLoad += config.loadIncrement;
     }
-    
+
     stressTest.results = await this.analyzeStressTestResults(stressTest);
-    
+
     return stressTest;
   }
 }
@@ -368,11 +368,11 @@ class PerformanceValidator {
       reliability: new ReliabilityValidator(),
       efficiency: new EfficiencyValidator()
     };
-    
+
     this.thresholds = new ThresholdManager();
     this.rules = new ValidationRuleEngine();
   }
-  
+
   // Validate performance against defined criteria
   async validatePerformance(results, criteria) {
     const validation = {
@@ -384,7 +384,7 @@ class PerformanceValidator {
       detailed: new Map(),
       recommendations: []
     };
-    
+
     // Run all validators
     const validationPromises = Object.entries(this.validators).map(
       async ([type, validator]) => {
@@ -392,31 +392,31 @@ class PerformanceValidator {
         return [type, result];
       }
     );
-    
+
     const validationResults = await Promise.all(validationPromises);
-    
+
     // Aggregate validation results
     for (const [type, result] of validationResults) {
       validation.detailed.set(type, result);
-      
+
       if (!result.passed) {
         validation.overall.passed = false;
         validation.overall.violations.push(...result.violations);
       }
-      
+
       validation.overall.score += result.score * (criteria[type]?.weight || 1);
     }
-    
+
     // Normalize overall score
     const totalWeight = Object.values(criteria).reduce((sum, c) => sum + (c.weight || 1), 0);
     validation.overall.score /= totalWeight;
-    
+
     // Generate recommendations
     validation.recommendations = await this.generateValidationRecommendations(validation);
-    
+
     return validation;
   }
-  
+
   // SLA validation
   async validateSLA(results, slaConfig) {
     const slaValidation = {
@@ -425,12 +425,12 @@ class PerformanceValidator {
       score: 1.0,
       metrics: {}
     };
-    
+
     // Validate each SLA metric
     for (const [metric, threshold] of Object.entries(slaConfig.thresholds)) {
       const actualValue = this.extractMetricValue(results, metric);
       const validation = this.validateThreshold(actualValue, threshold);
-      
+
       slaValidation.metrics[metric] = {
         actual: actualValue,
         threshold: threshold.value,
@@ -438,7 +438,7 @@ class PerformanceValidator {
         passed: validation.passed,
         deviation: validation.deviation
       };
-      
+
       if (!validation.passed) {
         slaValidation.passed = false;
         slaValidation.violations.push({
@@ -447,18 +447,18 @@ class PerformanceValidator {
           expected: threshold.value,
           severity: threshold.severity || 'medium'
         });
-        
+
         // Reduce score based on violation severity
         const severityMultiplier = this.getSeverityMultiplier(threshold.severity);
         slaValidation.score -= (validation.deviation * severityMultiplier);
       }
     }
-    
+
     slaValidation.score = Math.max(0, slaValidation.score);
-    
+
     return slaValidation;
   }
-  
+
   // Scalability validation
   async validateScalability(results, scalabilityConfig) {
     const scalabilityValidation = {
@@ -467,12 +467,12 @@ class PerformanceValidator {
       score: 1.0,
       analysis: {}
     };
-    
+
     // Linear scalability analysis
     if (scalabilityConfig.linear) {
       const linearityAnalysis = this.analyzeLinearScalability(results);
       scalabilityValidation.analysis.linearity = linearityAnalysis;
-      
+
       if (linearityAnalysis.coefficient < scalabilityConfig.linear.minCoefficient) {
         scalabilityValidation.passed = false;
         scalabilityValidation.violations.push({
@@ -482,12 +482,12 @@ class PerformanceValidator {
         });
       }
     }
-    
+
     // Efficiency retention analysis
     if (scalabilityConfig.efficiency) {
       const efficiencyAnalysis = this.analyzeEfficiencyRetention(results);
       scalabilityValidation.analysis.efficiency = efficiencyAnalysis;
-      
+
       if (efficiencyAnalysis.retention < scalabilityConfig.efficiency.minRetention) {
         scalabilityValidation.passed = false;
         scalabilityValidation.violations.push({
@@ -497,7 +497,7 @@ class PerformanceValidator {
         });
       }
     }
-    
+
     return scalabilityValidation;
   }
 }
@@ -515,23 +515,23 @@ const benchmarkIntegration = {
     const benchmarkResult = await mcp.benchmark_run({
       suite: config.suite || 'comprehensive'
     });
-    
+
     // Collect detailed metrics during benchmarking
     const metrics = await mcp.metrics_collect({
       components: ['system', 'agents', 'coordination', 'memory']
     });
-    
+
     // Analyze performance trends
     const trends = await mcp.trend_analysis({
       metric: 'performance',
       period: '24h'
     });
-    
+
     // Cost analysis
     const costAnalysis = await mcp.cost_analysis({
       timeframe: '24h'
     });
-    
+
     return {
       benchmark: benchmarkResult,
       metrics,
@@ -540,7 +540,7 @@ const benchmarkIntegration = {
       timestamp: Date.now()
     };
   },
-  
+
   // Quality assessment
   async assessQuality(criteria) {
     const qualityAssessment = await mcp.quality_assess({
@@ -553,20 +553,20 @@ const benchmarkIntegration = {
         'efficiency'
       ]
     });
-    
+
     return qualityAssessment;
   },
-  
+
   // Error pattern analysis
   async analyzeErrorPatterns() {
     // Collect system logs
     const logs = await this.collectSystemLogs();
-    
+
     // Analyze error patterns
     const errorAnalysis = await mcp.error_analysis({
       logs: logs
     });
-    
+
     return errorAnalysis;
   }
 };
@@ -634,7 +634,7 @@ const standardBenchmarks = {
       messages_per_second: { min: 10000, optimal: 50000 }
     }
   },
-  
+
   // Latency benchmarks
   latency: {
     name: 'Latency Benchmark',
@@ -648,7 +648,7 @@ const standardBenchmarks = {
       max: { max: 5000 }   // 5s
     }
   },
-  
+
   // Scalability benchmarks
   scalability: {
     name: 'Scalability Benchmark',

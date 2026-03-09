@@ -129,7 +129,7 @@ mcp__github__push_files {
       content: "[GitHub modes documentation]"
     },
     {
-      path: "claude-code-flow/claude-code-flow/.claude/commands/github/pr-manager.md", 
+      path: "claude-code-flow/claude-code-flow/.claude/commands/github/pr-manager.md",
       content: "[PR manager documentation]"
     },
     {
@@ -150,7 +150,7 @@ Bash(`gh pr create \
 
 ### Features Added
 - ✅ Comprehensive GitHub command modes
-- ✅ Swarm-coordinated PR management  
+- ✅ Swarm-coordinated PR management
 - ✅ Automated issue tracking
 - ✅ Cross-package synchronization
 
@@ -189,13 +189,13 @@ This integration uses ruv-swarm agents for:
   mcp__claude-flow__agent_spawn { type: "coder", name: "Integration Coder" }
   mcp__claude-flow__agent_spawn { type: "tester", name: "Validation Tester" }
   mcp__claude-flow__agent_spawn { type: "reviewer", name: "Quality Reviewer" }
-  
+
   // Read current state of both packages
   Read("/workspaces/ruv-FANN/claude-code-flow/claude-code-flow/package.json")
   Read("/workspaces/ruv-FANN/ruv-swarm/npm/package.json")
   Read("/workspaces/ruv-FANN/claude-code-flow/claude-code-flow/CLAUDE.md")
   Read("/workspaces/ruv-FANN/ruv-swarm/docs/CLAUDE.md")
-  
+
   // Synchronize multiple files simultaneously
   mcp__github__push_files {
     branch: "sync/complete-integration",
@@ -206,12 +206,12 @@ This integration uses ruv-swarm agents for:
     ],
     message: "feat: Complete package synchronization with GitHub integration"
   }
-  
+
   // Run validation tests
   Bash("cd /workspaces/ruv-FANN/claude-code-flow/claude-code-flow && npm install")
   Bash("cd /workspaces/ruv-FANN/claude-code-flow/claude-code-flow && npm test")
   Bash("cd /workspaces/ruv-FANN/ruv-swarm/npm && npm test")
-  
+
   // Track synchronization progress
   TodoWrite { todos: [
     { id: "sync-deps", content: "Synchronize package dependencies", status: "completed", priority: "high" },
@@ -220,7 +220,7 @@ This integration uses ruv-swarm agents for:
     { id: "sync-test", content: "Validate synchronization", status: "completed", priority: "medium" },
     { id: "sync-pr", content: "Create integration PR", status: "pending", priority: "high" }
   ]}
-  
+
   // Store comprehensive sync state
   mcp__claude-flow__memory_usage {
     action: "store",
@@ -277,7 +277,7 @@ const testMatrix = {
   packages: ["claude-code-flow", "ruv-swarm"],
   tests: [
     "unit_tests",
-    "integration_tests", 
+    "integration_tests",
     "cross_package_tests",
     "mcp_integration_tests",
     "github_workflow_tests"
@@ -348,7 +348,7 @@ mcp__claude-flow__load_balance {
   swarmId: "sync-coordination-swarm",
   tasks: [
     "package_json_sync",
-    "documentation_alignment", 
+    "documentation_alignment",
     "version_compatibility_check",
     "integration_test_execution"
   ]
@@ -361,12 +361,12 @@ mcp__claude-flow__load_balance {
 const syncConflictResolver = async (conflicts) => {
   // Initialize conflict resolution swarm
   await mcp__claude_flow__swarm_init({ topology: "mesh", maxAgents: 6 });
-  
+
   // Spawn specialized conflict resolution agents
   await mcp__claude_flow__agent_spawn({ type: "analyst", name: "Conflict Analyzer" });
   await mcp__claude_flow__agent_spawn({ type: "coder", name: "Resolution Developer" });
   await mcp__claude_flow__agent_spawn({ type: "reviewer", name: "Solution Validator" });
-  
+
   // Store conflict context in swarm memory
   await mcp__claude_flow__memory_usage({
     action: "store",
@@ -377,7 +377,7 @@ const syncConflictResolver = async (conflicts) => {
       priority_order: conflicts.sort((a, b) => b.impact - a.impact)
     }
   });
-  
+
   // Coordinate conflict resolution workflow
   return await mcp__claude_flow__task_orchestrate({
     task: "Resolve synchronization conflicts with multi-agent validation",

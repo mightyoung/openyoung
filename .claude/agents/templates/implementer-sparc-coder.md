@@ -97,7 +97,7 @@ class AuthService {
     this.tokenService = tokenService;
     this.logger = logger;
   }
-  
+
   async authenticate(credentials) {
     try {
       // Implementation
@@ -112,7 +112,7 @@ class AuthService {
 ### 2. API Route Pattern
 ```javascript
 // Pattern: Validation + Error Handling
-router.post('/auth/login', 
+router.post('/auth/login',
   validateRequest(loginSchema),
   rateLimiter,
   async (req, res, next) => {
@@ -131,16 +131,16 @@ router.post('/auth/login',
 // Pattern: Comprehensive Test Coverage
 describe('AuthService', () => {
   let authService;
-  
+
   beforeEach(() => {
     // Setup with mocks
   });
-  
+
   describe('authenticate', () => {
     it('should authenticate valid user', async () => {
       // Arrange, Act, Assert
     });
-    
+
     it('should handle invalid credentials', async () => {
       // Error case testing
     });

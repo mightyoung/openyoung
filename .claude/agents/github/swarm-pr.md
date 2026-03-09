@@ -110,7 +110,7 @@ Map PR labels to agent types:
 ### Label-Based Topology
 ```bash
 # Small PR (< 100 lines): ring topology
-# Medium PR (100-500 lines): mesh topology  
+# Medium PR (100-500 lines): mesh topology
 # Large PR (> 500 lines): hierarchical topology
 npx claude-flow@v3alpha github pr-topology --pr 123
 ```
@@ -158,7 +158,7 @@ echo "$REVIEW_RESULTS" | jq -r '.comments[]' | while read -r comment; do
   FILE=$(echo "$comment" | jq -r '.file')
   LINE=$(echo "$comment" | jq -r '.line')
   BODY=$(echo "$comment" | jq -r '.body')
-  
+
   gh pr review 123 --comment --body "$BODY"
 done
 ```
@@ -225,7 +225,7 @@ SWARM_STATUS=$(npx claude-flow@v3alpha github pr-status 123)
 if [[ "$SWARM_STATUS" == "complete" ]]; then
   # Check review requirements
   REVIEWS=$(gh pr view 123 --json reviews --jq '.reviews | length')
-  
+
   if [[ $REVIEWS -ge 2 ]]; then
     # Enable auto-merge
     gh pr merge 123 --auto --squash
@@ -244,11 +244,11 @@ const { execSync } = require('child_process');
 createServer((req, res) => {
   if (req.url === '/github-webhook') {
     const event = JSON.parse(body);
-    
+
     if (event.action === 'opened' && event.pull_request) {
       execSync(`npx claude-flow@v3alpha github pr-init ${event.pull_request.number}`);
     }
-    
+
     res.writeHead(200);
     res.end('OK');
   }
@@ -334,8 +334,8 @@ mcp__claude-flow__agent_spawn { type: "optimizer", name: "Performance Optimizer"
 mcp__claude-flow__memory_usage {
   action: "store",
   key: "pr/#{pr_number}/analysis",
-  value: { 
-    diff: "pr_diff_content", 
+  value: {
+    diff: "pr_diff_content",
     files_changed: ["file1.js", "file2.py"],
     complexity_score: 8.5,
     risk_assessment: "medium"
@@ -358,10 +358,10 @@ const prPreHook = async (prData) => {
   // Analyze PR complexity for optimal swarm configuration
   const complexity = await analyzePRComplexity(prData);
   const topology = complexity > 7 ? "hierarchical" : "mesh";
-  
+
   // Initialize swarm with PR-specific configuration
   await mcp__claude_flow__swarm_init({ topology, maxAgents: 8 });
-  
+
   // Store comprehensive PR context
   await mcp__claude_flow__memory_usage({
     action: "store",
@@ -373,7 +373,7 @@ const prPreHook = async (prData) => {
       timeline: generateTimeline(prData)
     }
   });
-  
+
   // Coordinate initial agent synchronization
   await mcp__claude_flow__coordination_sync({ swarmId: "current" });
 };
@@ -382,10 +382,10 @@ const prPreHook = async (prData) => {
 const prPostHook = async (results) => {
   // Generate comprehensive PR completion report
   const report = await generatePRReport(results);
-  
+
   // Update PR with final swarm analysis
   await updatePRWithResults(report);
-  
+
   // Store completion metrics for future optimization
   await mcp__claude_flow__memory_usage({
     action: "store",

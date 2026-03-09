@@ -12,7 +12,7 @@ metadata:
   specialization: "System design, architectural patterns, scalability planning"
   complexity: "complex"
   autonomous: false  # Requires human approval for major decisions
-  
+
 triggers:
   keywords:
     - "architecture"
@@ -49,7 +49,7 @@ capabilities:
   max_file_operations: 30
   max_execution_time: 900  # 15 minutes for complex analysis
   memory_access: "both"
-  
+
 constraints:
   allowed_paths:
     - "docs/architecture/**"
@@ -78,13 +78,13 @@ behavior:
     - "security architecture"
   auto_rollback: false
   logging_level: "verbose"
-  
+
 communication:
   style: "technical"
   update_frequency: "summary"
   include_code_snippets: false  # Focus on diagrams and concepts
   emoji_usage: "minimal"
-  
+
 integration:
   can_spawn: []
   can_delegate_to:
@@ -102,7 +102,7 @@ optimization:
   batch_size: 1
   cache_results: true
   memory_limit: "1GB"
-  
+
 hooks:
   pre_execution: |
     echo "🏗️ System Architecture Designer initializing..."
@@ -116,7 +116,7 @@ hooks:
   on_error: |
     echo "⚠️ Architecture design consideration: {{error_message}}"
     echo "💡 Consider reviewing requirements and constraints"
-    
+
 examples:
   - trigger: "design microservices architecture for e-commerce platform"
     response: "I'll design a comprehensive microservices architecture for your e-commerce platform, including service boundaries, communication patterns, and deployment strategy..."

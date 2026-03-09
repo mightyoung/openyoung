@@ -1,6 +1,6 @@
 /**
  * Self-Improvement Hook for OpenClaw
- * 
+ *
  * Injects a reminder to evaluate learnings during agent bootstrap.
  * Fires on agent:bootstrap event before workspace files are injected.
  */

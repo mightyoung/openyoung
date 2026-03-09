@@ -14,7 +14,10 @@ TRIGGER_EVAL_QUERIES = [
     # 应该触发的查询
     {"query": "从 GitHub 导入 anthropics/claude-code 作为本地 agent", "should_trigger": True},
     {"query": "帮我从 GitHub 上拉取 ruvnet/claude-flow 并配置成本地 agent", "should_trigger": True},
-    {"query": "import github https://github.com/affaan-m/everything-claude-code as my-agent", "should_trigger": True},
+    {
+        "query": "import github https://github.com/affaan-m/everything-claude-code as my-agent",
+        "should_trigger": True,
+    },
     {"query": "克隆一个 GitHub 仓库作为我的开发助手", "should_trigger": True},
     {"query": "把 GitHub 上的 Claude Code 项目下到本地", "should_trigger": True},
     {"query": "从 github 拉取 agent 模板到本地项目", "should_trigger": True},
@@ -22,7 +25,6 @@ TRIGGER_EVAL_QUERIES = [
     {"query": "将 GitHub 仓库配置成 OpenYoung 可用的 agent", "should_trigger": True},
     {"query": "下载并配置 GitHub 上的 AI agent 项目", "should_trigger": True},
     {"query": "从 GitHub 克隆 agent 配置到本地 packages 目录", "should_trigger": True},
-
     # 不应该触发的查询
     {"query": "帮我写一个 Python 排序函数", "should_trigger": False},
     {"query": "分析这段代码的质量", "should_trigger": False},
@@ -45,6 +47,7 @@ def load_skill_description() -> str:
 
     if skill_file.exists():
         import yaml
+
         with open(skill_file) as f:
             config = yaml.safe_load(f)
             return config.get("description", "")
@@ -60,14 +63,20 @@ def check_trigger_by_keywords(query: str, description: str) -> bool:
 
     # 核心触发词 - 必须包含这些词之一
     core_keywords = [
-        "github", "git", "导入", "克隆", "clone", "拉取", "下载",
-        "import", "类似", "想要"
+        "github",
+        "git",
+        "导入",
+        "克隆",
+        "clone",
+        "拉取",
+        "下载",
+        "import",
+        "类似",
+        "想要",
     ]
 
     # 相关词 - 与核心词配合使用
-    related_keywords = [
-        "agent", "配置", "模板", "项目", "本地", "仓库", "code", "一个"
-    ]
+    related_keywords = ["agent", "配置", "模板", "项目", "本地", "仓库", "code", "一个"]
 
     # 检查是否包含核心触发词
     has_core = any(kw in query_lower for kw in core_keywords)
@@ -94,7 +103,7 @@ def run_evaluation() -> Dict[str, Any]:
         "true_negatives": 0,  # 不应该触发且确实不触发
         "false_positives": 0,  # 不应该触发但触发了
         "false_negatives": 0,  # 应该触发但没触发
-        "queries": []
+        "queries": [],
     }
 
     for item in TRIGGER_EVAL_QUERIES:
@@ -109,7 +118,7 @@ def run_evaluation() -> Dict[str, Any]:
             "query": query,
             "expected": expected,
             "predicted": predicted,
-            "correct": expected == predicted
+            "correct": expected == predicted,
         }
 
         if expected == predicted:
@@ -128,9 +137,21 @@ def run_evaluation() -> Dict[str, Any]:
         results["queries"].append(query_result)
 
     # 计算指标
-    results["precision"] = results["true_positives"] / (results["true_positives"] + results["false_positives"]) if (results["true_positives"] + results["false_positives"]) > 0 else 0
-    results["recall"] = results["true_positives"] / (results["true_positives"] + results["false_negatives"]) if (results["true_positives"] + results["false_negatives"]) > 0 else 0
-    results["f1"] = 2 * results["precision"] * results["recall"] / (results["precision"] + results["recall"]) if (results["precision"] + results["recall"]) > 0 else 0
+    results["precision"] = (
+        results["true_positives"] / (results["true_positives"] + results["false_positives"])
+        if (results["true_positives"] + results["false_positives"]) > 0
+        else 0
+    )
+    results["recall"] = (
+        results["true_positives"] / (results["true_positives"] + results["false_negatives"])
+        if (results["true_positives"] + results["false_negatives"]) > 0
+        else 0
+    )
+    results["f1"] = (
+        2 * results["precision"] * results["recall"] / (results["precision"] + results["recall"])
+        if (results["precision"] + results["recall"]) > 0
+        else 0
+    )
     results["accuracy"] = results["passed"] / results["total"]
 
     return results
@@ -138,9 +159,9 @@ def run_evaluation() -> Dict[str, Any]:
 
 def print_report(results: Dict[str, Any]):
     """打印评估报告"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("Skill 触发评估报告")
-    print("="*60)
+    print("=" * 60)
 
     print("\n📊 总体结果:")
     print(f"   总查询数: {results['total']}")
@@ -148,10 +169,10 @@ def print_report(results: Dict[str, Any]):
     print(f"   失败: {results['failed']} ❌")
 
     print("\n📈 详细指标:")
-    print(f"   准确率 (Accuracy): {results['accuracy']*100:.1f}%")
-    print(f"   精确率 (Precision): {results['precision']*100:.1f}%")
-    print(f"   召回率 (Recall): {results['recall']*100:.1f}%")
-    print(f"   F1 分数: {results['f1']*100:.1f}%")
+    print(f"   准确率 (Accuracy): {results['accuracy'] * 100:.1f}%")
+    print(f"   精确率 (Precision): {results['precision'] * 100:.1f}%")
+    print(f"   召回率 (Recall): {results['recall'] * 100:.1f}%")
+    print(f"   F1 分数: {results['f1'] * 100:.1f}%")
 
     print("\n🔍 混淆矩阵:")
     print(f"   真正例 (TP): {results['true_positives']}")
@@ -170,7 +191,7 @@ def print_report(results: Dict[str, Any]):
     else:
         print("   无")
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
 
 
 def main():

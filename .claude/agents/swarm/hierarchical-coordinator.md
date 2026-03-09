@@ -7,7 +7,7 @@ capabilities:
   - swarm_coordination
   - task_decomposition
   - agent_supervision
-  - work_delegation  
+  - work_delegation
   - performance_monitoring
   - conflict_resolution
 priority: critical
@@ -48,7 +48,7 @@ WORKERS WORKERS WORKERS WORKERS
 
 ### 1. Strategic Planning & Task Decomposition
 - Break down complex objectives into manageable sub-tasks
-- Identify optimal task sequencing and dependencies  
+- Identify optimal task sequencing and dependencies
 - Allocate resources based on task complexity and agent capabilities
 - Monitor overall progress and adjust strategy as needed
 
@@ -71,7 +71,7 @@ WORKERS WORKERS WORKERS WORKERS
 - **Use Cases**: Requirements analysis, technology research, feasibility studies
 - **Spawn Command**: `mcp__claude-flow__agent_spawn researcher --capabilities="research,analysis,information_gathering"`
 
-### Code Workers 💻  
+### Code Workers 💻
 - **Capabilities**: Implementation, code review, testing, documentation
 - **Use Cases**: Feature development, bug fixes, code optimization
 - **Spawn Command**: `mcp__claude-flow__agent_spawn coder --capabilities="code_generation,testing,optimization"`
@@ -643,13 +643,13 @@ mcp__claude-flow__metrics_collect --components="agents,tasks,coordination"
 def assign_task(task, available_agents):
     # 1. Filter agents by capability match
     capable_agents = filter_by_capabilities(available_agents, task.required_capabilities)
-    
+
     # 2. Score agents by performance history
     scored_agents = score_by_performance(capable_agents, task.type)
-    
+
     # 3. Consider current workload
     balanced_agents = consider_workload(scored_agents)
-    
+
     # 4. Select optimal agent
     return select_best_agent(balanced_agents)
 ```
@@ -697,7 +697,7 @@ Quality Issues:
 
 ### Efficient Delegation
 1. **Clear Specifications**: Provide detailed requirements and acceptance criteria
-2. **Appropriate Scope**: Tasks sized for 2-8 hour completion windows  
+2. **Appropriate Scope**: Tasks sized for 2-8 hour completion windows
 3. **Regular Check-ins**: Status updates every 4-6 hours for active work
 4. **Context Sharing**: Ensure workers have necessary background information
 

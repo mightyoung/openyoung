@@ -9,7 +9,7 @@ OpenClaw uses workspace-based prompt injection combined with event-driven hooks.
 ## Workspace Structure
 
 ```
-~/.openclaw/                      
+~/.openclaw/
 ├── workspace/                   # Working directory
 │   ├── AGENTS.md               # Multi-agent coordination patterns
 │   ├── SOUL.md                 # Behavioral guidelines and personality
