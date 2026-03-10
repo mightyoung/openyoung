@@ -46,6 +46,23 @@ from .security import (
     DangerousCodeDetector,
 )
 from .security_client import SecurityServiceClient, create_security_client
+from .context_collector import (
+    ContextCollector,
+    AgentContext,
+    SkillInfo,
+    McpInfo,
+    HookInfo,
+    NetworkStatus,
+    ConnectionInfo,
+    SubAgentExecution,
+    EvaluationResult,
+    IterationRecord,
+    GeneInfo,
+    CapsuleInfo,
+    EvolutionEventInfo,
+    EvolverExecution,
+    create_context_collector,
+)
 
 __all__ = [
     # Sandbox
@@ -80,4 +97,20 @@ __all__ = [
     "AuditEvent",
     "get_audit_logger",
     "log_execution",
+    # Context Collector
+    "ContextCollector",
+    "AgentContext",
+    "SkillInfo",
+    "McpInfo",
+    "HookInfo",
+    "NetworkStatus",
+    "ConnectionInfo",
+    "SubAgentExecution",
+    "EvaluationResult",
+    "IterationRecord",
+    "GeneInfo",
+    "CapsuleInfo",
+    "EvolutionEventInfo",
+    "EvolverExecution",
+    "create_context_collector",
 ]
