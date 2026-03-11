@@ -45,9 +45,6 @@ warn_no_return = true
 follow_imports = "normal"
 ignore_missing_imports = true
 
-# Exclude directories
-[[tool.mypy.files]]
-ignore = ["tests/", "docs/", "github-import-workspace/", "packages/", "skills/", "evals/"]
 
 
 [tool.setuptools.packages.find]
