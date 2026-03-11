@@ -15,16 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Configure git
-        run: |
-          git config --global user.email "ci@openyoung.github.com"
-          git config --global user.name "CI"
       - uses: pre-commit/action@v3.0.1
         with:
           extra_args: --all-files --show-diff-on-failure
@@ -38,14 +31,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Configure git
-        run: |
-          git config --global user.email "ci@openyoung.github.com"
-          git config --global user.name "CI"
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -99,14 +84,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Configure git
-        run: |
-          git config --global user.email "ci@openyoung.github.com"
-          git config --global user.name "CI"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -127,14 +104,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Configure git
-        run: |
-          git config --global user.email "ci@openyoung.github.com"
-          git config --global user.name "CI"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -152,14 +121,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Configure git
-        run: |
-          git config --global user.email "ci@openyoung.github.com"
-          git config --global user.name "CI"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -189,14 +150,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Configure git
-        run: |
-          git config --global user.email "ci@openyoung.github.com"
-          git config --global user.name "CI"
 
       - name: Set up Python
         uses: actions/setup-python@v5
