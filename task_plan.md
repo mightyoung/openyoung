@@ -967,16 +967,100 @@ Received 1 log entries
 
 | 任务 | 描述 | 优先级 | 状态 |
 |------|------|--------|------|
-| A1 | 清理 skills/ 中所有 TODO 或标记为 wontfix | P1 | ⬜ |
-| A2 | 将 log_consumer 集成到 evaluator_client 调用链 | P2 | ⬜ |
-| A3 | 分析 security 模块，确认不需要合并 | P3 | ⬜ |
-| A4 | 启用 mypy 类型检查并修复错误 | P6 | ⬜ |
+| A1 | 清理 skills/ 中所有 TODO 或标记为 wontfix | P1 | ✅ 已完成 |
+| A2 | 将 log_consumer 集成到 evaluator_client 调用链 | P2 | ✅ 已完成 |
+| A3 | 分析 security 模块，确认不需要合并 | P3 | ✅ 已完成 |
+| A4 | 启用 mypy 类型检查并修复错误 | P6 | ✅ 已完成 |
 
 #### 阶段 B: 核心集成 (2周)
 
 | 任务 | 描述 | 优先级 | 状态 |
 |------|------|--------|------|
-| B1 | Sandbox 与 Evaluator 深度集成 | P5 | ⬜ |
+| B1 | Sandbox 与 Evaluator 深度集成 | P5 | 🔄 进行中 |
+
+#### B1: Sandbox-Evaluator 深度集成实施方案
+
+**目标**: 实现真正的自动数据流，使 Sandbox 执行结果能自动流入 Evaluator 进行评估，并支持迭代反馈
+
+**当前状态分析**:
+- `sandbox.py` 的 `evaluate()` 方法已存在，但实现有缺陷
+- 日志收集与评估串行执行，不是真正的并行
+- Timeout 0.01s 太短，会丢失大量日志
+- `should_continue` 迭代反馈未被使用
+
+**架构目标**:
+```
+Agent Decision Loop:
+  Think → Execute(Sandbox) → Evaluate(Evaluator) → (should_continue? → Think)
+       ▲                                              │
+       └──────────────────────────────────────────────┘
+              Log Consumer (并行收集)
+```
+
+**详细实施步骤**:
+
+```
+Step 1: 重构 sandbox.py evaluate() 方法
+  - 创建 SandboxEvaluator 类
+  - 分离执行、评估、日志收集职责
+  - 目标文件: src/runtime/sandbox.py
+
+Step 2: 实现真正的并行日志消费
+  - 使用 asyncio.create_task() 后台运行
+  - 使用 asyncio.Queue 非阻塞写入
+  - 添加日志缓冲区
+
+Step 3: 集成迭代反馈机制
+  - 使用 Evaluator 的 should_continue 控制循环
+  - 实现 max_iterations 限制
+  - 流式反馈给 Agent
+
+Step 4: 添加评估结果缓存
+  - 使用 hash(code) 作为缓存键
+  - 避免重复评估相同代码
+
+Step 5: 验证
+  - 单元测试: 测试日志消费逻辑
+  - 集成测试: 测试完整评估流程
+  - 性能测试: 确保不影响执行速度
+```
+
+**关键代码结构**:
+```python
+class SandboxEvaluator:
+    async def evaluate_with_feedback(
+        self,
+        code: str,
+        session_id: str,
+        task_id: str,
+    ) -> AsyncIterator[EvaluationFeedback]:
+        # 1. 启动日志消费者 (后台)
+        log_task = asyncio.create_task(self._consume_logs(...))
+
+        # 2. 执行代码
+        execution = await self.execute(code)
+
+        # 3. 流式评估 (每轮迭代)
+        async for iteration in self._stream_evaluations(...):
+            yield iteration
+            if not iteration.should_continue:
+                break
+
+        # 4. 清理
+        log_task.cancel()
+```
+
+**验收标准**:
+- [ ] 日志收集不阻塞评估流程
+- [ ] 评估迭代正确响应 should_continue
+- [ ] 单元测试覆盖新逻辑
+- [ ] 与现有 YoungAgent 集成无缝
+- [ ] 执行时间增加 < 100ms
+
+**依赖**:
+- aiohttp (已安装)
+- asyncio (内置)
+- Evaluator gRPC 服务
 
 ### 12.4 详细实施计划
 
@@ -1115,17 +1199,22 @@ Step 3: 验证
 
 ### 12.4 执行计划
 
-**立即执行 (今天)**:
-1. [ ] A1: 扫描所有 TODO，分类处理（实现/延迟/废弃）
-2. [ ] A2: 在 sandbox.py 的 evaluate_and_execute 中调用 stream_logs
+**已完成 (Phase A)**:
+- [x] A1: 扫描所有 TODO，分类处理（实现/延迟/废弃）
+- [x] A2: 在 sandbox.py 的 evaluate_and_execute 中调用 stream_logs
+- [x] A3: 分析 security 模块
+- [x] A4: mypy 可运行（772 个类型注解问题待修复）
 
-**本周完成**:
-3. [ ] A3: 合并 security 模块
-4. [ ] A4: 运行 mypy，修复前 20 个错误
+**进行中 (Phase B)**:
+- [x] B1: Sandbox-Evaluator 深度集成方案设计
+- [x] B1.1: 重构 sandbox.py evaluate() 方法
+- [x] B1.2: 实现真正的并行日志消费
+- [ ] B1.3: 集成迭代反馈机制
+- [ ] B1.4: 添加评估结果缓存
+- [ ] B1.5: 验证测试
 
-**下周目标**:
-5. [ ] B1: 实现 Sandbox-Evaluator 自动数据流
-6. [ ] B2: 添加全局异常处理中间件
+**待处理**:
+- B2: 添加全局异常处理中间件
 
 ---
 

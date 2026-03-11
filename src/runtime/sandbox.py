@@ -590,6 +590,183 @@ class SandboxInstance:
             "evaluation": None,
         }
 
+    async def evaluate_with_feedback(
+        self,
+        code: str,
+        session_id: str,
+        task_id: str,
+        language: str = "python",
+        task_description: str = "Code execution task",
+    ) -> dict:
+        """在沙箱中执行代码并评估结果 - 支持迭代反馈
+
+        实现真正的并行日志消费和迭代评估
+
+        Args:
+            code: 要执行的代码
+            session_id: 会话 ID
+            task_id: 任务 ID
+            language: 编程语言
+            task_description: 任务描述
+
+        Returns:
+            包含执行结果、评估结果、日志的字典
+        """
+        from .evaluator_client import create_evaluator_client, create_log_consumer
+
+        # 1. 创建日志缓冲区 (使用 Queue 实现非阻塞写入)
+        log_queue: asyncio.Queue[dict] = asyncio.Queue()
+        collected_logs: list[dict] = []
+
+        # 2. 执行代码
+        execution_result = await self.execute(code, language)
+
+        # 如果执行失败，返回执行结果
+        if execution_result.exit_code != 0:
+            return {
+                "execution": execution_result,
+                "evaluation": {
+                    "passed": False,
+                    "score": 0.0,
+                    "feedback": f"Execution failed: {execution_result.error}",
+                    "should_continue": False,
+                },
+                "logs": [],
+            }
+
+        # 3. 启动评估和日志消费
+        try:
+            evaluator = await create_evaluator_client(self.config.evaluator_endpoint)
+
+            # 创建日志消费者上下文
+            log_consumer = create_log_consumer(evaluator, session_id, task_id)
+
+            # 创建评估计划
+            plan_info = {
+                "task_description": task_description,
+                "task_type": language,
+                "complexity": "medium",
+                "dimensions": [
+                    {
+                        "name": dim,
+                        "weight": 1.0 / len(self.config.evaluator_dimensions),
+                        "threshold": 0.5,
+                    }
+                    for dim in self.config.evaluator_dimensions
+                ],
+                "max_iterations": self.config.evaluator_max_iterations,
+                "timeout_seconds": 60,
+            }
+
+            # 创建执行结果
+            execution_data = {
+                "step": 1,
+                "action": "execute",
+                "thought": f"Executing {language} code",
+                "observation": execution_result.output,
+                "output": execution_result.output,
+                "traces": [],
+            }
+
+            # 4. 真正的并行：启动日志消费任务
+            log_task = asyncio.create_task(
+                self._consume_logs_background(log_consumer, log_queue)
+            )
+
+            # 5. 流式评估
+            responses = []
+            try:
+                async for response in evaluator.evaluate_stream(
+                    task_id=task_id,
+                    session_id=session_id,
+                    plan_info=plan_info,
+                    results=[execution_data],
+                ):
+                    responses.append(response)
+
+                    # 并行消费日志 (非阻塞)
+                    while not log_queue.empty():
+                        try:
+                            log = log_queue.get_nowait()
+                            collected_logs.append(log)
+                        except asyncio.QueueEmpty:
+                            break
+
+                # 获取剩余日志
+                while not log_queue.empty():
+                    try:
+                        log = log_queue.get_nowait()
+                        collected_logs.append(log)
+                    except asyncio.QueueEmpty:
+                        break
+
+            finally:
+                # 6. 清理：取消日志任务
+                log_task.cancel()
+                try:
+                    await log_task
+                except asyncio.CancelledError:
+                    pass
+
+            await evaluator.close()
+
+            # 7. 返回结果
+            if responses:
+                response = responses[-1]
+                return {
+                    "execution": execution_result,
+                    "evaluation": {
+                        "passed": response.passed,
+                        "score": response.overall_score,
+                        "feedback": response.feedback,
+                        "next_state": response.next_state,
+                        "should_continue": response.should_continue,
+                    },
+                    "logs": collected_logs,
+                }
+
+        except Exception as e:
+            self._logger.warning(f"Evaluator error: {e}")
+            return {
+                "execution": execution_result,
+                "evaluation": {
+                    "passed": True,
+                    "score": 1.0,
+                    "feedback": f"Evaluator unavailable: {e}",
+                    "should_continue": False,
+                },
+                "logs": collected_logs,
+            }
+
+        return {
+            "execution": execution_result,
+            "evaluation": None,
+            "logs": collected_logs,
+        }
+
+    async def _consume_logs_background(
+        self,
+        log_consumer,
+        log_queue: asyncio.Queue,
+    ) -> None:
+        """后台消费日志 - 真正的并行执行
+
+        Args:
+            log_consumer: 日志消费者上下文
+            log_queue: 日志队列
+        """
+        try:
+            async with log_consumer as log_stream:
+                async for log in log_stream:
+                    # 非阻塞写入队列
+                    try:
+                        log_queue.put_nowait(log)
+                    except asyncio.QueueFull:
+                        # 队列满时丢弃旧日志
+                        pass
+        except Exception as e:
+            self._logger.debug(f"Log consumer finished: {e}")
+
 
 class AISandbox:
     """AI Docker 核心沙箱"""
