@@ -1,0 +1,153 @@
+syntax = "proto3";
+
+package ironclaw;
+
+// Import existing message definitions
+import "agent_control.proto";
+
+// ============================================================
+// External Evaluator Service - 外部评估器服务
+// ============================================================
+
+service EvaluatorService {
+    // 评估迭代：双向流
+    rpc EvaluateStream(stream EvaluatorEvent) returns (stream EvalResponse);
+
+    // 日志流：客户端订阅日志
+    rpc StreamLogs(LogRequest) returns (stream LogEntry);
+
+    // 健康检查
+    rpc HealthCheck(EvaluatorHealthRequest) returns (EvaluatorHealthResponse);
+}
+
+// ============================================================
+// 消息定义
+// ============================================================
+
+// Evaluator 事件 (Agent -> Evaluator)
+message EvaluatorEvent {
+    string task_id = 1;
+    int32 iteration = 2;
+
+    oneof event_type {
+        // 第一次：发送评估计划
+        EvalPlanInfo plan = 10;
+
+        // 执行结果
+        ExecutionResult result = 11;
+    }
+
+    string session_id = 100;
+    int64 timestamp = 101;
+}
+
+// 评估计划信息
+message EvalPlanInfo {
+    string task_description = 1;
+    string task_type = 2;           // coding, research, dialogue
+    string complexity = 3;           // simple, medium, high
+    repeated EvalDimensionInfo dimensions = 4;
+    int32 max_iterations = 5;
+    int32 timeout_seconds = 6;
+}
+
+// 评估维度信息
+message EvalDimensionInfo {
+    string name = 1;                // correctness, safety, efficiency
+    float weight = 2;
+    float threshold = 3;
+    string criteria = 4;            // 评估标准
+    string evaluation_method = 5;    // code_execution, llm_judge, static_analysis
+}
+
+// 执行结果 (复用 agent_control.proto 的 TraceEntry)
+message ExecutionResult {
+    int32 step = 1;
+    string action = 2;
+    string thought = 3;
+    string observation = 4;
+    string output = 5;
+    repeated TraceEntry traces = 6;
+}
+
+// 评估响应 (Evaluator -> Agent)
+message EvalResponse {
+    string task_id = 1;
+    int32 iteration = 2;
+
+    // 评估结果
+    bool passed = 3;
+    float overall_score = 4;
+    repeated DimensionResult results = 5;
+    string feedback = 6;
+
+    // 迭代控制
+    bool should_continue = 10;
+    int32 remaining_iterations = 11;
+    int32 current_iteration = 12;    // 当前迭代次数（由 Evaluator 记录）
+
+    // 状态机控制
+    string next_state = 13;          // EVAL_WAIT, IMPROVING, DONE, FAIL
+    bool can_shutdown = 14;         // Python 可关闭容器信号
+
+    string status = 100;             // success, improving, failure, timeout
+}
+
+// 单维度评估结果 (复用 agent_control.proto 的 DimensionResult)
+
+// 健康检查
+message EvaluatorHealthRequest {}
+
+message EvaluatorHealthResponse {
+    bool healthy = 1;
+    string status = 2;
+}
+
+// ============================================================
+// 扩展 AgentControlService
+// ============================================================
+
+// 扩展 AgentControlService 添加评估器状态查询
+message EvaluatorStatusRequest {
+    string task_id = 1;
+}
+
+message EvaluatorStatusResponse {
+    bool running = 1;
+    int32 current_iteration = 2;
+    int32 max_iterations = 3;
+    string status = 4;
+}
+
+// ============================================================
+// 日志流消息
+// ============================================================
+
+// 日志请求
+message LogRequest {
+    string session_id = 1;
+    string task_id = 2;
+    LogLevel min_level = 3;  // 过滤级别
+}
+
+// 日志级别
+enum LogLevel {
+    TRACE = 0;
+    DEBUG = 1;
+    INFO = 2;
+    WARN = 3;
+    ERROR = 4;
+}
+
+// 日志条目
+message LogEntry {
+    string timestamp = 1;
+    string level = 2;
+    string component = 3;
+    string event = 4;
+    string message = 5;
+    string trace_id = 6;
+    string session_id = 7;
+    int32 iteration = 8;
+    map<string, string> data = 9;
+}

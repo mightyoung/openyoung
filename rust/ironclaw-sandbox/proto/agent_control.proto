@@ -1,0 +1,151 @@
+syntax = "proto3";
+
+package ironclaw;
+
+// ============================================================
+// Agent Control Service - Agent 生命周期控制
+// ============================================================
+
+service AgentControlService {
+    // 启动 Agent 并获取状态流
+    rpc StartAgent(AgentRequest) returns (stream AgentState);
+
+    // 提交评估结果（外部评估器调用）
+    rpc SubmitEvaluationResult(EvaluationResultRequest) returns (EvaluationResultResponse);
+
+    // 请求关闭容器
+    rpc RequestShutdown(ShutdownRequest) returns (ShutdownResponse);
+
+    // 健康检查
+    rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+// ============================================================
+// 请求消息
+// ============================================================
+
+message AgentRequest {
+    string task_id = 1;
+    string task_description = 2;
+    EvaluationPlan eval_plan = 3;
+    AgentConfig config = 4;
+}
+
+message EvaluationPlan {
+    string task_type = 1;
+    string complexity = 2;
+    bool skip_evaluation = 3;
+    repeated EvaluationDimension dimensions = 4;
+    int32 max_iterations = 5;
+    int32 timeout_seconds = 6;
+}
+
+message EvaluationDimension {
+    string name = 1;
+    float weight = 2;
+    float threshold = 3;
+    string criteria = 4;
+    string evaluation_method = 5;
+    string scoring_reason = 6;
+}
+
+message AgentConfig {
+    string agent_type = 1;
+    string model = 2;
+    int32 max_steps = 3;
+    map<string, string> environment = 4;
+}
+
+// ============================================================
+// 状态消息
+// ============================================================
+
+message AgentState {
+    string task_id = 1;
+    AgentStatus status = 2;
+    int32 current_step = 3;
+    string current_action = 4;
+    repeated TraceEntry traces = 5;
+    string output = 6;
+    int64 timestamp = 7;
+}
+
+enum AgentStatus {
+    AGENT_STATUS_UNSPECIFIED = 0;
+    AGENT_STATUS_INITIALIZING = 1;
+    AGENT_STATUS_RUNNING = 2;
+    AGENT_STATUS_EVALUATING = 3;
+    AGENT_STATUS_COMPLETED = 4;
+    AGENT_STATUS_FAILED = 5;
+    AGENT_STATUS_SHUTDOWN_REQUESTED = 7;
+}
+
+message TraceEntry {
+    int32 step = 1;
+    string action = 2;
+    string thought = 3;
+    string observation = 4;
+    string tool_used = 5;
+}
+
+// ============================================================
+// 评估结果消息
+// ============================================================
+
+message EvaluationResultRequest {
+    string task_id = 1;
+    float overall_score = 2;
+    bool passed = 3;
+    bool blocking_failed = 4;
+    repeated DimensionResult results = 5;
+    string feedback = 6;
+}
+
+message DimensionResult {
+    string dimension_name = 1;
+    float score = 2;
+    bool passed = 3;
+    string feedback = 4;
+}
+
+message EvaluationResultResponse {
+    bool accepted = 1;
+    string message = 2;
+    bool can_shutdown = 3;
+}
+
+// ============================================================
+// 关闭消息
+// ============================================================
+
+message ShutdownRequest {
+    string task_id = 1;
+    ShutdownReason reason = 2;
+    string message = 3;
+}
+
+enum ShutdownReason {
+    SHUTDOWN_REASON_UNSPECIFIED = 0;
+    SHUTDOWN_REASON_SUCCESS = 1;
+    SHUTDOWN_REASON_MAX_ITERATIONS = 2;
+    SHUTDOWN_REASON_TIMEOUT = 3;
+    SHUTDOWN_REASON_USER_REQUESTED = 4;
+    SHUTDOWN_REASON_EVALUATION_FAILED = 5;
+}
+
+message ShutdownResponse {
+    bool success = 1;
+    string message = 2;
+    int32 exit_code = 3;
+}
+
+// ============================================================
+// 健康检查
+// ============================================================
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+    bool healthy = 1;
+    string status = 2;
+}

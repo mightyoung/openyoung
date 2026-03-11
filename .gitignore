@@ -26,6 +26,7 @@ secrets.yaml
 secrets.yml
 .claude
 .claude-flow
+.openyoung
 .gitnexus
 .swarm
 .github
