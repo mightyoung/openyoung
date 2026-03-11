@@ -50,7 +50,9 @@ class SecretScanResult:
     def __str__(self) -> str:
         if not self.has_secrets:
             return "No secrets found"
-        return f"Found {len(self.secrets_found)} secrets: {[s.type.value for s in self.secrets_found]}"
+        return (
+            f"Found {len(self.secrets_found)} secrets: {[s.type.value for s in self.secrets_found]}"
+        )
 
 
 class SecretScanner:

@@ -179,7 +179,7 @@ class Firewall:
         """
         try:
             socket.inet_aton(ip)
-        except socket.error:
+        except OSError:
             return False
 
         # 检查私有 IP 范围

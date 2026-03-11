@@ -14,6 +14,23 @@ from .audit import (
     get_audit_logger,
     log_execution,
 )
+from .context_collector import (
+    AgentContext,
+    CapsuleInfo,
+    ConnectionInfo,
+    ContextCollector,
+    EvaluationResult,
+    EvolutionEventInfo,
+    EvolverExecution,
+    GeneInfo,
+    HookInfo,
+    IterationRecord,
+    McpInfo,
+    NetworkStatus,
+    SkillInfo,
+    SubAgentExecution,
+    create_context_collector,
+)
 from .pool import (
     PoolConfig,
     SandboxPool,
@@ -26,42 +43,33 @@ from .sandbox import (
     SandboxType,
     create_sandbox,
 )
+
+# Import from new security package
+from .security import (
+    DangerousCodeDetector,
+    Firewall,
+    PolicyEngine,
+    PromptInjector,
+    RateLimiter,
+    SecretScanner,
+    SecurityConfig,
+    Vault,
+)
+
 # Import from old security_basic.py for backward compatibility
 from .security_basic import (
     IsolationLevel,
     SecurityManager,
-    SecurityPolicy as OldSecurityPolicy,
     create_security_manager,
 )
-
-# Import from new security package
-from .security import (
-    PromptInjector,
-    SecretScanner,
-    Firewall,
-    SecurityConfig,
-    RateLimiter,
-    PolicyEngine,
-    Vault,
-    DangerousCodeDetector,
+from .security_basic import (
+    SecurityPolicy as OldSecurityPolicy,
 )
-from .security_client import SecurityServiceClient, create_security_client
-from .context_collector import (
-    ContextCollector,
-    AgentContext,
-    SkillInfo,
-    McpInfo,
-    HookInfo,
-    NetworkStatus,
-    ConnectionInfo,
-    SubAgentExecution,
-    EvaluationResult,
-    IterationRecord,
-    GeneInfo,
-    CapsuleInfo,
-    EvolutionEventInfo,
-    EvolverExecution,
-    create_context_collector,
+from .security_client import (
+    AgentControlClient,
+    SecurityServiceClient,
+    create_agent_client,
+    create_security_client,
 )
 
 __all__ = [
@@ -92,6 +100,8 @@ __all__ = [
     # Security Client
     "SecurityServiceClient",
     "create_security_client",
+    "AgentControlClient",
+    "create_agent_client",
     # Audit
     "AuditLogger",
     "AuditEvent",

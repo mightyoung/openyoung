@@ -11,6 +11,14 @@ from .creator import (
     create_skill,
     list_templates,
 )
+from .external_sources import (
+    ExternalSourcesConfig,
+    ExternalSourcesFetcher,
+    NewsItem,
+    SourceConfig,
+    SourceType,
+    get_external_sources_fetcher,
+)
 from .heartbeat import (
     HeartbeatConfig,
     HeartbeatPhase,
@@ -35,14 +43,6 @@ from .versioning import (
     SkillVersion,
     SkillVersionManager,
     get_version_manager,
-)
-from .external_sources import (
-    ExternalSourcesConfig,
-    ExternalSourcesFetcher,
-    NewsItem,
-    SourceConfig,
-    SourceType,
-    get_external_sources_fetcher,
 )
 
 # 导出主要类

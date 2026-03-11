@@ -4,8 +4,8 @@
 实现基于令牌桶算法的请求频率控制
 """
 
-import time
 import threading
+import time
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -88,7 +88,7 @@ class TokenBucket:
                 return 0.0
             # 如果 refill_rate 为 0，返回无穷大（永远不会补充）
             if self.refill_rate <= 0:
-                return float('inf')
+                return float("inf")
             # 计算充满所需时间
             return (self.capacity - self.tokens) / self.refill_rate
 

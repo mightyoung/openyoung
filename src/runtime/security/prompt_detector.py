@@ -150,15 +150,27 @@ class PromptInjector:
     def _compile_patterns(self) -> None:
         """预编译所有正则表达式"""
         for category, patterns in self.PATTERNS.items():
-            self._compiled_patterns[category] = [
-                re.compile(pattern) for pattern in patterns
-            ]
+            self._compiled_patterns[category] = [re.compile(pattern) for pattern in patterns]
 
     # Unicode 混淆映射表
     UNICODE_LEET_MAP = {
-        "а": "a", "е": "e", "о": "o", "р": "p", "с": "c", "у": "y",  # Cyrillic
-        "ɑ": "a", "ҽ": "e", "ο": "o", "ρ": "p", "с": "c", "υ": "y",  # Greek-like
-        "0": "o", "1": "i", "3": "e", "4": "a", "5": "s", "7": "t",
+        "а": "a",
+        "е": "e",
+        "о": "o",
+        "р": "p",
+        "с": "c",
+        "у": "y",  # Cyrillic
+        "ɑ": "a",
+        "ҽ": "e",
+        "ο": "o",
+        "ρ": "p",
+        "υ": "y",  # Greek-like
+        "0": "o",
+        "1": "i",
+        "3": "e",
+        "4": "a",
+        "5": "s",
+        "7": "t",
     }
 
     def _normalize_unicode(self, content: str) -> str:
@@ -275,9 +287,7 @@ class PromptInjector:
         confidence = min(base + category_bonus + severe_bonus, 0.99)
         return confidence
 
-    def _calculate_severity(
-        self, matched_categories: list[str]
-    ) -> InjectionSeverity:
+    def _calculate_severity(self, matched_categories: list[str]) -> InjectionSeverity:
         """计算严重程度
 
         Args:
@@ -299,12 +309,8 @@ class PromptInjector:
 
         max_severity = InjectionSeverity.SANITIZE
         for category in matched_categories:
-            category_severity = self.SEVERITY_WEIGHTS.get(
-                category, InjectionSeverity.WARN
-            )
-            if severity_order.index(category_severity) < severity_order.index(
-                max_severity
-            ):
+            category_severity = self.SEVERITY_WEIGHTS.get(category, InjectionSeverity.WARN)
+            if severity_order.index(category_severity) < severity_order.index(max_severity):
                 max_severity = category_severity
 
         return max_severity

@@ -176,7 +176,9 @@ class PolicyEngine:
             return True
         return False
 
-    def evaluate(self, context: dict, policy_name: Optional[str] = None) -> tuple[PolicyAction, Optional[str]]:
+    def evaluate(
+        self, context: dict, policy_name: Optional[str] = None
+    ) -> tuple[PolicyAction, Optional[str]]:
         """
         评估上下文
 
@@ -288,22 +290,26 @@ def create_strict_policy() -> Policy:
     )
 
     # 允许的代码模式
-    policy.add_rule(PolicyRule(
-        name="allow_safe_code",
-        description="允许安全的代码模式",
-        patterns=[r"^print\(", r"^import ", r"^def ", r"^class "],
-        action=PolicyAction.ALLOW,
-        priority=10,
-    ))
+    policy.add_rule(
+        PolicyRule(
+            name="allow_safe_code",
+            description="允许安全的代码模式",
+            patterns=[r"^print\(", r"^import ", r"^def ", r"^class "],
+            action=PolicyAction.ALLOW,
+            priority=10,
+        )
+    )
 
     # 拒绝危险操作
-    policy.add_rule(PolicyRule(
-        name="deny_dangerous_code",
-        description="拒绝危险代码",
-        patterns=[r"eval\(", r"exec\(", r"__import__\("],
-        action=PolicyAction.DENY,
-        priority=20,
-    ))
+    policy.add_rule(
+        PolicyRule(
+            name="deny_dangerous_code",
+            description="拒绝危险代码",
+            patterns=[r"eval\(", r"exec\(", r"__import__\("],
+            action=PolicyAction.DENY,
+            priority=20,
+        )
+    )
 
     return policy
 
@@ -317,31 +323,45 @@ def create_standard_policy() -> Policy:
     )
 
     # 允许常规代码
-    policy.add_rule(PolicyRule(
-        name="allow_normal_code",
-        description="允许常规代码",
-        patterns=[r"^print\(", r"^import ", r"^def ", r"^class ", r"^if ", r"^for ", r"^while "],
-        action=PolicyAction.ALLOW,
-        priority=10,
-    ))
+    policy.add_rule(
+        PolicyRule(
+            name="allow_normal_code",
+            description="允许常规代码",
+            patterns=[
+                r"^print\(",
+                r"^import ",
+                r"^def ",
+                r"^class ",
+                r"^if ",
+                r"^for ",
+                r"^while ",
+            ],
+            action=PolicyAction.ALLOW,
+            priority=10,
+        )
+    )
 
     # 警告危险操作
-    policy.add_rule(PolicyRule(
-        name="warn_dangerous",
-        description="警告危险操作",
-        patterns=[r"eval\(", r"exec\("],
-        action=PolicyAction.WARN,
-        priority=50,
-    ))
+    policy.add_rule(
+        PolicyRule(
+            name="warn_dangerous",
+            description="警告危险操作",
+            patterns=[r"eval\(", r"exec\("],
+            action=PolicyAction.WARN,
+            priority=50,
+        )
+    )
 
     # 阻止提示注入
-    policy.add_rule(PolicyRule(
-        name="block_injection",
-        description="阻止提示注入",
-        condition=lambda ctx: ctx.get("detected_injection", False),
-        action=PolicyAction.DENY,
-        priority=5,
-    ))
+    policy.add_rule(
+        PolicyRule(
+            name="block_injection",
+            description="阻止提示注入",
+            condition=lambda ctx: ctx.get("detected_injection", False),
+            action=PolicyAction.DENY,
+            priority=5,
+        )
+    )
 
     return policy
 
@@ -355,12 +375,14 @@ def create_permissive_policy() -> Policy:
     )
 
     # 只阻止最明显的危险操作
-    policy.add_rule(PolicyRule(
-        name="block_extreme_danger",
-        description="阻止极端危险操作",
-        patterns=[r"rm\s+-rf\s+/", r"format\s+disk", r"drop\s+table"],
-        action=PolicyAction.DENY,
-        priority=1,
-    ))
+    policy.add_rule(
+        PolicyRule(
+            name="block_extreme_danger",
+            description="阻止极端危险操作",
+            patterns=[r"rm\s+-rf\s+/", r"format\s+disk", r"drop\s+table"],
+            action=PolicyAction.DENY,
+            priority=1,
+        )
+    )
 
     return policy

@@ -6,6 +6,8 @@ Evaluation Planner - 评估计划生成器
 - 验证方法
 - 评估指标
 - 预期输出
+- 复杂度判断
+- 评估理由
 
 支持从 GitHub、社区、互联网搜索最佳实践
 """
@@ -14,15 +16,32 @@ import json
 import re
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
+
+from .prompts import (
+    COMPLEXITY_JUDGE_PROMPT,
+    SKIP_EVAL_PATTERNS,
+    EvaluationMethod,
+    TaskComplexity,
+    TaskType,
+    get_default_dimensions_for_task_type,
+    get_dimension_threshold,
+    get_dimension_weight,
+    should_skip_evaluation,
+)
 
 
 @dataclass
 class EvalPlan:
-    """评估计划"""
+    """评估计划
+
+    包含完整的评估维度配置，包括权重、阈值和评分理由
+    """
 
     task_description: str
     task_type: str  # coding, analysis, research, web_scraping, etc.
+    complexity: str = "medium"  # simple, medium, high, skip
+    skip_evaluation: bool = False  # 是否跳过评估
     success_criteria: list[str] = field(default_factory=list)
     validation_methods: list[str] = field(default_factory=list)
     metrics: list[str] = field(default_factory=list)
@@ -31,17 +50,29 @@ class EvalPlan:
     sources: list[str] = field(default_factory=list)
     created_at: str = field(default_factory=lambda: datetime.now().isoformat())
 
+    # 新增字段：评估维度配置
+    evaluation_dimensions: list[dict[str, Any]] = field(default_factory=list)
+    max_iterations: int = 3
+    timeout_seconds: int = 300
+    notes: str = ""
+
     def to_dict(self) -> dict:
         """转换为字典"""
         return {
             "task_description": self.task_description,
             "task_type": self.task_type,
+            "complexity": self.complexity,
+            "skip_evaluation": self.skip_evaluation,
             "success_criteria": self.success_criteria,
             "validation_methods": self.validation_methods,
             "metrics": self.metrics,
             "expected_outputs": self.expected_outputs,
             "evaluation_steps": self.evaluation_steps,
+            "evaluation_dimensions": self.evaluation_dimensions,
+            "max_iterations": self.max_iterations,
+            "timeout_seconds": self.timeout_seconds,
             "sources": self.sources,
+            "notes": self.notes,
             "created_at": self.created_at,
         }
 
@@ -123,28 +154,49 @@ class EvalPlanner:
         # 1. 分析任务类型
         task_type = self._analyze_task_type(task_description)
 
-        # 2. 生成成功标准
+        # 2. 判断任务复杂度
+        complexity_result = self._judge_complexity(task_description)
+        complexity = complexity_result["complexity"]
+        estimated_steps = complexity_result.get("estimated_steps", 1)
+        sub_goals = complexity_result.get("sub_goals", [])
+
+        # 3. 判断是否跳过评估
+        skip_evaluation = (
+            should_skip_evaluation(task_description) or complexity == TaskComplexity.SKIP
+        )
+
+        # 4. 生成评估维度配置
+        evaluation_dimensions = self._generate_evaluation_dimensions(
+            task_type=task_type,
+            complexity=complexity,
+            skip_evaluation=skip_evaluation,
+        )
+
+        # 5. 生成成功标准
         success_criteria = self._generate_success_criteria(task_type, task_description)
 
-        # 3. 生成验证方法
+        # 6. 生成验证方法
         validation_methods = self._generate_validation_methods(task_type, task_description)
 
-        # 4. 生成评估指标
+        # 7. 生成评估指标
         metrics = self._generate_metrics(task_type)
 
-        # 5. 解析预期输出
+        # 8. 解析预期输出
         expected_outputs = self._parse_expected_outputs(task_description)
 
-        # 6. 生成评估步骤
+        # 9. 生成评估步骤
         evaluation_steps = self._generate_evaluation_steps(success_criteria, validation_methods)
 
-        # 7. 搜索最佳实践获取来源
+        # 10. 搜索最佳实践获取来源
         sources = await self.search_best_practices(task_description)
 
-        # 8. 创建评估计划
+        # 11. 创建评估计划
         plan = EvalPlan(
             task_description=task_description,
             task_type=task_type,
+            complexity=complexity,
+            skip_evaluation=skip_evaluation,
+            evaluation_dimensions=evaluation_dimensions,
             success_criteria=success_criteria,
             validation_methods=validation_methods,
             metrics=metrics,
@@ -168,6 +220,195 @@ class EvalPlanner:
                     return task_type
 
         return "general"
+
+    def _judge_complexity(self, task_description: str) -> dict[str, Any]:
+        """判断任务复杂度
+
+        Args:
+            task_description: 任务描述
+
+        Returns:
+            dict: 包含 complexity, reasoning, estimated_steps, sub_goals
+        """
+        task_lower = task_description.lower().strip()
+
+        # 检查是否匹配跳过模式
+        for pattern in SKIP_EVAL_PATTERNS:
+            if re.match(pattern, task_lower, re.IGNORECASE):
+                return {
+                    "complexity": TaskComplexity.SKIP,
+                    "reasoning": "任务匹配跳过评估模式（问候/简单查询）",
+                    "estimated_steps": 1,
+                    "sub_goals": [],
+                }
+
+        # 分析任务步骤数
+        step_indicators = [
+            "实现",
+            "开发",
+            "创建",
+            "重构",
+            "优化",
+            "implement",
+            "create",
+            "refactor",
+            "build",
+            "修复",
+            "调试",
+            "fix",
+            "debug",
+            "分析",
+            "研究",
+            "调查",
+            "analyze",
+            "research",
+        ]
+
+        step_count = 0
+        for indicator in step_indicators:
+            if indicator in task_lower:
+                step_count += 1
+
+        # 根据步骤数判断复杂度
+        if step_count >= 3:
+            complexity = TaskComplexity.HIGH
+            reasoning = "任务需要多个步骤和子目标"
+        elif step_count >= 1:
+            complexity = TaskComplexity.MEDIUM
+            reasoning = "任务需要2-5个步骤"
+        else:
+            complexity = TaskComplexity.SIMPLE
+            reasoning = "任务简单，单步可完成"
+
+        # 提取子目标
+        sub_goals = []
+        if "和" in task_description or "并" in task_description:
+            # 尝试提取多个目标
+            parts = re.split(r"[和并]", task_description)
+            sub_goals = [p.strip() for p in parts if p.strip()][:3]
+
+        return {
+            "complexity": complexity,
+            "reasoning": reasoning,
+            "estimated_steps": step_count + 1,
+            "sub_goals": sub_goals,
+        }
+
+    def _generate_evaluation_dimensions(
+        self,
+        task_type: str,
+        complexity: str,
+        skip_evaluation: bool,
+    ) -> list[dict[str, Any]]:
+        """生成评估维度配置
+
+        Args:
+            task_type: 任务类型
+            complexity: 任务复杂度
+            skip_evaluation: 是否跳过评估
+
+        Returns:
+            list[dict]: 评估维度配置列表
+        """
+        if skip_evaluation:
+            return []
+
+        # 获取任务类型对应的评估维度
+        dimensions = get_default_dimensions_for_task_type(task_type)
+
+        # 根据复杂度调整
+        if complexity == TaskComplexity.HIGH:
+            # 高复杂度添加更多维度
+            if "robustness" not in dimensions:
+                dimensions.append("robustness")
+            if "planning" not in dimensions:
+                dimensions.append("planning")
+
+        # 生成每个维度的配置
+        result = []
+        for dim in dimensions:
+            weight = get_dimension_weight(dim)
+            threshold = get_dimension_threshold(dim, complexity)
+
+            # 生成评分理由
+            scoring_reason = self._generate_scoring_reason(dim, task_type, complexity)
+
+            result.append(
+                {
+                    "name": dim,
+                    "weight": weight,
+                    "threshold": threshold,
+                    "criteria": self._get_dimension_criteria(dim),
+                    "evaluation_method": self._get_evaluation_method(dim, task_type),
+                    "scoring_reason": scoring_reason,
+                }
+            )
+
+        return result
+
+    def _generate_scoring_reason(self, dimension: str, task_type: str, complexity: str) -> str:
+        """生成评分理由
+
+        Args:
+            dimension: 评估维度
+            task_type: 任务类型
+            complexity: 任务复杂度
+
+        Returns:
+            str: 评分理由
+        """
+        reasons = {
+            "correctness": {
+                "coding": "代码任务正确性至关重要，0.8 确保高质量输出",
+                "research": "信息检索任务需要准确返回相关内容",
+                "dialogue": "对话任务需要正确理解用户意图",
+            },
+            "safety": {
+                "coding": "代码生成任务必须评估安全性，防止漏洞",
+                "research": "信息检索需确保内容安全合规",
+            },
+            "efficiency": {
+                "high": "高复杂度任务需要关注执行效率",
+                "medium": "效率是重要但不紧急的评估点",
+            },
+            "robustness": {
+                "high": "高复杂度任务需要评估边界条件处理",
+            },
+        }
+
+        # 获取特定理由
+        if dimension in reasons:
+            if task_type in reasons[dimension]:
+                return reasons[dimension][task_type]
+            if complexity in reasons[dimension]:
+                return reasons[dimension][complexity]
+
+        return f"{dimension} 评估对任务完成质量至关重要"
+
+    def _get_dimension_criteria(self, dimension: str) -> str:
+        """获取评估维度的标准描述"""
+        criteria = {
+            "correctness": "输出是否符合预期，任务是否正确完成",
+            "safety": "代码/输出是否存在安全漏洞或风险",
+            "efficiency": "资源使用是否合理，执行是否高效",
+            "robustness": "对边界条件和异常情况的处理能力",
+            "planning": "任务分解和子目标追踪能力",
+            "collaboration": "多轮对话的连贯性和有效性",
+        }
+        return criteria.get(dimension, f"{dimension} 维度的评估")
+
+    def _get_evaluation_method(self, dimension: str, task_type: str) -> str:
+        """获取评估方法"""
+        method_map = {
+            ("correctness", "coding"): EvaluationMethod.CODE_EXECUTION,
+            ("correctness", "research"): EvaluationMethod.LLM_JUDGE,
+            ("safety", "coding"): EvaluationMethod.STATIC_ANALYSIS,
+            ("safety", "research"): EvaluationMethod.LLM_JUDGE,
+            ("efficiency", "coding"): EvaluationMethod.CODE_EXECUTION,
+            ("robustness", "coding"): EvaluationMethod.STATIC_ANALYSIS,
+            ("planning", "coding"): EvaluationMethod.TRACE_REVIEW,
+        }
+        return method_map.get((dimension, task_type), EvaluationMethod.LLM_JUDGE)
 
     def _generate_success_criteria(self, task_type: str, task_description: str) -> list[str]:
         """生成成功标准"""

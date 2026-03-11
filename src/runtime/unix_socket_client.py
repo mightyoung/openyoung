@@ -5,10 +5,10 @@ Provides fast communication with Rust sandbox service via Unix Domain Socket
 instead of gRPC for lower latency.
 """
 
-import socket
 import json
 import os
-from typing import Optional, Dict, Any
+import socket
+from typing import Any, Dict, Optional
 
 
 class UnixSocketClient:
@@ -16,7 +16,9 @@ class UnixSocketClient:
 
     def __init__(self, socket_path: str = None):
         # Use environment variable or default
-        self.socket_path = socket_path or os.environ.get("IRONCLAW_SOCKET", "/tmp/ironclaw-sandbox.sock")
+        self.socket_path = socket_path or os.environ.get(
+            "IRONCLAW_SOCKET", "/tmp/ironclaw-sandbox.sock"
+        )
 
     def _send_request(self, request: Dict[str, Any]) -> Dict[str, Any]:
         """Send request and receive response via Unix socket"""
@@ -30,7 +32,7 @@ class UnixSocketClient:
 
             # Send request
             request_json = json.dumps(request) + "\n"
-            client.sendall(request_json.encode('utf-8'))
+            client.sendall(request_json.encode("utf-8"))
 
             # Receive response
             response_data = b""
@@ -41,13 +43,13 @@ class UnixSocketClient:
                 response_data += chunk
                 # Check if we have complete JSON
                 try:
-                    response = json.loads(response_data.decode('utf-8'))
+                    response = json.loads(response_data.decode("utf-8"))
                     return response
                 except json.JSONDecodeError:
                     continue
 
             # Try to parse what we have
-            return json.loads(response_data.decode('utf-8'))
+            return json.loads(response_data.decode("utf-8"))
         finally:
             client.close()
 

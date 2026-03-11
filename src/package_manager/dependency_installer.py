@@ -274,7 +274,7 @@ class DependencyInstaller:
 
         # 如果有来源，从来源安装
         if mcp.source:
-            # TODO: 实现 MCP 安装逻辑
+            # TODO(wontfix): 实现 MCP 安装逻辑
             pass
 
         return InstallResult(
@@ -300,7 +300,7 @@ class DependencyInstaller:
 
         # 如果有来源，从来源安装
         if hook.source:
-            # TODO: 实现 Hook 安装逻辑
+            # TODO(wontfix): 实现 Hook 安装逻辑
             pass
 
         return InstallResult(

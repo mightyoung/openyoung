@@ -6,12 +6,12 @@
 
 import base64
 import hashlib
+import json
 import os
 import secrets
 import time
 from dataclasses import dataclass, field
 from typing import Optional
-import json
 
 
 @dataclass
@@ -61,13 +61,7 @@ class Vault:
 
     def _derive_key(self, key: str, salt: bytes) -> bytes:
         """派生加密密钥"""
-        return hashlib.pbkdf2_hmac(
-            'sha256',
-            key.encode(),
-            salt,
-            100000,
-            dklen=32
-        )
+        return hashlib.pbkdf2_hmac("sha256", key.encode(), salt, 100000, dklen=32)
 
     def _encrypt(self, plaintext: str) -> tuple[str, bytes, bytes]:
         """
@@ -85,7 +79,7 @@ class Vault:
 
         # 简单 XOR 加密（实际使用应该用更安全的加密库）
         plaintext_bytes = plaintext.encode()
-        key_bytes = derived_key[:len(plaintext_bytes)]
+        key_bytes = derived_key[: len(plaintext_bytes)]
         encrypted = bytes(a ^ b for a, b in zip(plaintext_bytes, key_bytes))
 
         return base64.b64encode(encrypted).decode(), salt, iv
@@ -95,7 +89,7 @@ class Vault:
         derived_key = self._derive_key(self._master_key, salt)
 
         encrypted_bytes = base64.b64decode(encrypted)
-        key_bytes = derived_key[:len(encrypted_bytes)]
+        key_bytes = derived_key[: len(encrypted_bytes)]
         decrypted = bytes(a ^ b for a, b in zip(encrypted_bytes, key_bytes))
 
         return decrypted.decode()
@@ -119,9 +113,9 @@ class Vault:
             value=encrypted_value,
             salt=base64.b64encode(salt).decode(),
             iv=base64.b64encode(iv).decode() if iv else None,
-            allowed_agents=metadata.get('allowed_agents', []),
-            expires_at=metadata.get('expires_at'),
-            max_uses=metadata.get('max_uses'),
+            allowed_agents=metadata.get("allowed_agents", []),
+            expires_at=metadata.get("expires_at"),
+            max_uses=metadata.get("max_uses"),
         )
 
         self._credentials[key] = credential

@@ -13,19 +13,20 @@ Context Collector - 完整上下文收集器
 - Evolver 演进记录
 """
 
-import os
 import json
-import subprocess
+import os
 import socket
-from dataclasses import dataclass, field, asdict
+import subprocess
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, List, Dict, Any
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
 class SkillInfo:
     """Skill 信息"""
+
     name: str
     path: str
     version: Optional[str] = None
@@ -35,6 +36,7 @@ class SkillInfo:
 @dataclass
 class McpInfo:
     """MCP 服务器信息"""
+
     name: str
     command: str
     args: List[str] = field(default_factory=list)
@@ -44,6 +46,7 @@ class McpInfo:
 @dataclass
 class HookInfo:
     """Hook 信息"""
+
     name: str
     hook_type: str
     enabled: bool = True
@@ -54,6 +57,7 @@ class HookInfo:
 @dataclass
 class ConnectionInfo:
     """网络连接信息"""
+
     target: str
     port: Optional[int] = None
     protocol: str = "tcp"
@@ -65,6 +69,7 @@ class ConnectionInfo:
 @dataclass
 class NetworkStatus:
     """网络状态"""
+
     connected: bool
     connections: List[ConnectionInfo] = field(default_factory=list)
 
@@ -72,6 +77,7 @@ class NetworkStatus:
 @dataclass
 class SubAgentExecution:
     """Sub-agent 执行记录"""
+
     agent_id: str
     agent_name: str
     task: str
@@ -85,6 +91,7 @@ class SubAgentExecution:
 @dataclass
 class EvaluationResult:
     """评估结果"""
+
     metric: str
     score: float
     reasoning: str
@@ -94,6 +101,7 @@ class EvaluationResult:
 @dataclass
 class IterationRecord:
     """自迭代记录"""
+
     iteration: int
     timestamp: str
     input: str
@@ -106,6 +114,7 @@ class IterationRecord:
 @dataclass
 class GeneInfo:
     """Evolver 基因信息"""
+
     gene_id: str
     version: str = "1.0.0"
     category: str = "repair"
@@ -119,6 +128,7 @@ class GeneInfo:
 @dataclass
 class CapsuleInfo:
     """Evolver 执行单元信息"""
+
     capsule_id: str
     name: str = ""
     description: str = ""
@@ -132,6 +142,7 @@ class CapsuleInfo:
 @dataclass
 class EvolutionEventInfo:
     """Evolver 演进事件记录"""
+
     event_id: str
     event_type: str
     description: str
@@ -142,6 +153,7 @@ class EvolutionEventInfo:
 @dataclass
 class EvolverExecution:
     """Evolver 演进执行记录"""
+
     engine_id: str
     status: str = "idle"
     genes: List[GeneInfo] = field(default_factory=list)
@@ -153,6 +165,7 @@ class EvolverExecution:
 @dataclass
 class AgentContext:
     """完整的 Agent 上下文"""
+
     request_id: str
     timestamp: str
     agent_id: str
@@ -194,6 +207,7 @@ class ContextCollector:
     def _generate_request_id(self) -> str:
         """生成请求 ID"""
         import uuid
+
         return str(uuid.uuid4())
 
     def set_repo_url(self, url: str):
@@ -210,11 +224,13 @@ class ContextCollector:
 
         if skills_path.exists():
             for skill_file in skills_path.glob("*.md"):
-                skills.append(SkillInfo(
-                    name=skill_file.stem,
-                    path=str(skill_file),
-                    enabled=True,
-                ))
+                skills.append(
+                    SkillInfo(
+                        name=skill_file.stem,
+                        path=str(skill_file),
+                        enabled=True,
+                    )
+                )
 
         self.context.skills = skills
         return skills
@@ -232,12 +248,14 @@ class ContextCollector:
                 with open(mcp_path) as f:
                     mcp_config = json.load(f)
                     for mcp in mcp_config.get("mcp_servers", {}).values():
-                        mcps.append(McpInfo(
-                            name=mcp.get("name", "unknown"),
-                            command=mcp.get("command", ""),
-                            args=mcp.get("args", []),
-                            env=mcp.get("env", {}),
-                        ))
+                        mcps.append(
+                            McpInfo(
+                                name=mcp.get("name", "unknown"),
+                                command=mcp.get("command", ""),
+                                args=mcp.get("args", []),
+                                env=mcp.get("env", {}),
+                            )
+                        )
             except Exception:
                 pass
 
@@ -261,11 +279,13 @@ class ContextCollector:
                     for hook_type, hook_list in hooks_config.items():
                         if isinstance(hook_list, list):
                             for hook in hook_list:
-                                hooks.append(HookInfo(
-                                    name=hook.get("matcher", hook_type),
-                                    hook_type=hook_type,
-                                    enabled=True,
-                                ))
+                                hooks.append(
+                                    HookInfo(
+                                        name=hook.get("matcher", hook_type),
+                                        hook_type=hook_type,
+                                        enabled=True,
+                                    )
+                                )
             except Exception:
                 pass
 
@@ -312,12 +332,14 @@ class ContextCollector:
                 result = sock.connect_ex((host, port))
                 if result == 0:
                     connected = True
-                    connections.append(ConnectionInfo(
-                        target=host,
-                        port=port,
-                        protocol="tcp",
-                        status="connected",
-                    ))
+                    connections.append(
+                        ConnectionInfo(
+                            target=host,
+                            port=port,
+                            protocol="tcp",
+                            status="connected",
+                        )
+                    )
             except Exception:
                 pass
             finally:
@@ -356,7 +378,9 @@ class ContextCollector:
                 gene_info = GeneInfo(
                     gene_id=gene.id,
                     version=gene.version,
-                    category=gene.category.value if hasattr(gene.category, 'value') else str(gene.category),
+                    category=gene.category.value
+                    if hasattr(gene.category, "value")
+                    else str(gene.category),
                     signals=gene.signals,
                     preconditions=gene.preconditions,
                     strategy=gene.strategy,
@@ -385,9 +409,13 @@ class ContextCollector:
             for event in engine._events:
                 event_info = EvolutionEventInfo(
                     event_id=event.id,
-                    event_type=event.event_type.value if hasattr(event.event_type, 'value') else str(event.event_type),
+                    event_type=event.event_type.value
+                    if hasattr(event.event_type, "value")
+                    else str(event.event_type),
                     description=event.description,
-                    timestamp=event.timestamp.isoformat() if event.timestamp else datetime.now().isoformat(),
+                    timestamp=event.timestamp.isoformat()
+                    if event.timestamp
+                    else datetime.now().isoformat(),
                     metadata=event.metadata,
                 )
                 execution.events.append(event_info)

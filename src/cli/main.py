@@ -1629,9 +1629,7 @@ def import_github(
             click.echo("[Mode] Lazy clone (fast, partial)")
 
         result = import_github_enhanced(
-            github_url,
-            use_git_clone=not lazy,
-            analyze_with_agent=validate
+            github_url, use_git_clone=not lazy, analyze_with_agent=validate
         )
 
         if "error" in result:

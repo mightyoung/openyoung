@@ -201,6 +201,7 @@ def _get_sandbox_config_class():
     """延迟导入 SandboxConfig 以避免循环依赖"""
     try:
         from src.runtime.sandbox import SandboxConfig
+
         return SandboxConfig
     except ImportError:
         return None

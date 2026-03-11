@@ -155,8 +155,7 @@ class DangerousCodeDetector:
         self._allow_patterns = allow_patterns or []
         self._block_patterns = block_patterns or []
         self._compiled_patterns = [
-            (p["name"], re.compile(p["pattern"]), p["level"], p["message"])
-            for p in self.PATTERNS
+            (p["name"], re.compile(p["pattern"]), p["level"], p["message"]) for p in self.PATTERNS
         ]
 
     def detect(self, code: str) -> DangerousCodeResult:
@@ -174,20 +173,24 @@ class DangerousCodeDetector:
         # 检查自定义黑名单
         for pattern in self._block_patterns:
             if re.search(pattern, code):
-                detected.append({
-                    "name": "custom_blocked",
-                    "level": DangerousLevel.CRITICAL,
-                    "message": f"Code matches blocked pattern: {pattern}",
-                })
+                detected.append(
+                    {
+                        "name": "custom_blocked",
+                        "level": DangerousLevel.CRITICAL,
+                        "message": f"Code matches blocked pattern: {pattern}",
+                    }
+                )
 
         # 检查预定义危险模式
         for name, pattern, level, message in self._compiled_patterns:
             if pattern.search(code):
-                detected.append({
-                    "name": name,
-                    "level": level,
-                    "message": message,
-                })
+                detected.append(
+                    {
+                        "name": name,
+                        "level": level,
+                        "message": message,
+                    }
+                )
 
         # 确定最高危险等级
         level_order = [
