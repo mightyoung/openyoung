@@ -11,6 +11,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, AsyncIterator, Dict, List, Optional
 
+from src.core.exception_handler import handle_exceptions
+
 # Add tests/ to path for protobuf imports (so we can import rust.evaluator_pb2)
 _tests_path = str(Path(__file__).parent.parent.parent / "tests")
 if _tests_path not in sys.path:
@@ -115,6 +117,7 @@ class EvaluatorClient:
             logger.error(f"Health check failed: {e}")
             return False
 
+    @handle_exceptions(reraise=False, default=iter([]))
     async def evaluate_stream(
         self,
         task_id: str,
@@ -174,6 +177,7 @@ class EvaluatorClient:
             logger.error(f"EvaluateStream failed: {e}")
             raise
 
+    @handle_exceptions(reraise=False, default=None)
     async def evaluate_iterate(
         self,
         task_id: str,

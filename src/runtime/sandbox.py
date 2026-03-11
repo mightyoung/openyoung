@@ -27,6 +27,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional
 
+from src.core.exception_handler import handle_exceptions
+
 
 class SandboxType(str, Enum):
     """沙箱类型"""
@@ -490,6 +492,7 @@ class SandboxInstance:
             except Exception:
                 pass
 
+    @handle_exceptions(reraise=False, default={})
     async def evaluate(
         self,
         code: str,
@@ -640,6 +643,7 @@ class SandboxInstance:
             "evaluation": None,
         }
 
+    @handle_exceptions(reraise=False, default={})
     async def evaluate_with_feedback(
         self,
         code: str,
@@ -817,6 +821,7 @@ class SandboxInstance:
         except Exception as e:
             self._logger.debug(f"Log consumer finished: {e}")
 
+    @handle_exceptions(reraise=False, default={})
     async def evaluate_iterative(
         self,
         initial_code: str,
