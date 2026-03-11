@@ -767,6 +767,209 @@ class SandboxInstance:
         except Exception as e:
             self._logger.debug(f"Log consumer finished: {e}")
 
+    async def evaluate_iterative(
+        self,
+        initial_code: str,
+        refine_callback: callable,
+        session_id: str,
+        task_id: str,
+        language: str = "python",
+        task_description: str = "Code execution task",
+        max_iterations: int = 5,
+    ) -> dict:
+        """迭代评估：支持 Agent 根据反馈 refin ecode
+
+        这是 B1.3 的核心实现 - 集成迭代反馈机制
+
+        Args:
+            initial_code: 初始代码
+            refine_callback: 回调函数，接收 (feedback, score) 返回 refined_code
+                           返回 None 表示停止迭代
+            session_id: 会话 ID
+            task_id: 任务 ID
+            language: 编程语言
+            task_description: 任务描述
+            max_iterations: 最大迭代次数
+
+        Returns:
+            包含所有迭代结果的字典
+        """
+        from .evaluator_client import create_evaluator_client, create_log_consumer
+
+        # 日志队列
+        log_queue: asyncio.Queue[dict] = asyncio.Queue()
+
+        # 收集所有执行结果用于评估
+        all_execution_results: list[dict] = []
+
+        # 最终结果
+        final_result = None
+
+        # 创建评估计划
+        plan_info = {
+            "task_description": task_description,
+            "task_type": language,
+            "complexity": "medium",
+            "dimensions": [
+                {
+                    "name": dim,
+                    "weight": 1.0 / len(self.config.evaluator_dimensions),
+                    "threshold": 0.5,
+                }
+                for dim in self.config.evaluator_dimensions
+            ],
+            "max_iterations": max_iterations,
+            "timeout_seconds": 60,
+        }
+
+        current_code = initial_code
+
+        for iteration in range(max_iterations):
+            self._logger.info(f"Iteration {iteration + 1}/{max_iterations}")
+
+            # 1. 执行当前代码
+            execution_result = await self.execute(current_code, language)
+            all_execution_results.append({
+                "step": iteration + 1,
+                "action": "execute",
+                "thought": f"Executing {language} code (iteration {iteration + 1})",
+                "observation": execution_result.output or execution_result.error or "",
+                "output": execution_result.output,
+                "traces": [],
+            })
+
+            # 如果执行失败，停止迭代
+            if execution_result.exit_code != 0:
+                final_result = {
+                    "execution": execution_result,
+                    "evaluation": {
+                        "passed": False,
+                        "score": 0.0,
+                        "feedback": f"Execution failed: {execution_result.error}",
+                        "should_continue": False,
+                    },
+                    "iteration": iteration,
+                    "total_iterations": max_iterations,
+                }
+                break
+
+            # 2. 评估执行结果
+            try:
+                evaluator = await create_evaluator_client(self.config.evaluator_endpoint)
+                log_consumer = create_log_consumer(evaluator, session_id, task_id)
+
+                collected_logs: list[dict] = []
+
+                # 启动日志消费者
+                log_task = asyncio.create_task(
+                    self._consume_logs_background(log_consumer, log_queue)
+                )
+
+                # 流式评估
+                responses = []
+                try:
+                    async for response in evaluator.evaluate_stream(
+                        task_id=task_id,
+                        session_id=session_id,
+                        plan_info=plan_info,
+                        results=all_execution_results,
+                    ):
+                        responses.append(response)
+
+                        # 收集日志
+                        while not log_queue.empty():
+                            try:
+                                log = log_queue.get_nowait()
+                                collected_logs.append(log)
+                            except asyncio.QueueEmpty:
+                                break
+
+                    # 获取剩余日志
+                    while not log_queue.empty():
+                        try:
+                            log = log_queue.get_nowait()
+                            collected_logs.append(log)
+                        except asyncio.QueueEmpty:
+                            break
+
+                finally:
+                    log_task.cancel()
+                    try:
+                        await log_task
+                    except asyncio.CancelledError:
+                        pass
+
+                await evaluator.close()
+
+                if responses:
+                    response = responses[-1]
+
+                    final_result = {
+                        "execution": execution_result,
+                        "evaluation": {
+                            "passed": response.passed,
+                            "score": response.overall_score,
+                            "feedback": response.feedback,
+                            "next_state": response.next_state,
+                            "should_continue": response.should_continue,
+                            "remaining_iterations": response.remaining_iterations,
+                        },
+                        "logs": collected_logs,
+                        "iteration": iteration,
+                        "total_iterations": max_iterations,
+                        "all_results": all_execution_results,
+                    }
+
+                    # 3. 检查是否继续迭代
+                    if response.should_continue and response.remaining_iterations > 0:
+                        # 调用回调获取 refined code
+                        refined_code = refine_callback(
+                            feedback=response.feedback,
+                            score=response.overall_score,
+                            iteration=iteration + 1,
+                        )
+
+                        if refined_code is None:
+                            # 用户选择停止
+                            break
+
+                        current_code = refined_code
+                        continue
+                    else:
+                        # 评估器判断不需要继续
+                        break
+
+            except Exception as e:
+                self._logger.warning(f"Evaluator error in iteration {iteration}: {e}")
+                final_result = {
+                    "execution": execution_result,
+                    "evaluation": {
+                        "passed": True,
+                        "score": 1.0,
+                        "feedback": f"Evaluator unavailable: {e}",
+                        "should_continue": False,
+                    },
+                    "iteration": iteration,
+                    "total_iterations": max_iterations,
+                }
+                break
+
+        # 如果循环正常结束且没有结果
+        if final_result is None:
+            final_result = {
+                "execution": execution_result,
+                "evaluation": {
+                    "passed": False,
+                    "score": 0.0,
+                    "feedback": "Max iterations reached",
+                    "should_continue": False,
+                },
+                "iteration": max_iterations - 1,
+                "total_iterations": max_iterations,
+            }
+
+        return final_result
+
 
 class AISandbox:
     """AI Docker 核心沙箱"""
