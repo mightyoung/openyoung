@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 class SourceType(str, Enum):
     """信息源类型"""
+
     RSS = "rss"
     HACKERNEWS = "hackernews"
 
@@ -30,6 +31,7 @@ class SourceType(str, Enum):
 @dataclass
 class NewsItem:
     """新闻条目"""
+
     id: str
     title: str
     url: Optional[str] = None
@@ -45,6 +47,7 @@ class NewsItem:
 @dataclass
 class SourceConfig:
     """信息源配置"""
+
     url: str
     source_type: SourceType
     enabled: bool = True
@@ -55,6 +58,7 @@ class SourceConfig:
 @dataclass
 class ExternalSourcesConfig:
     """外部信息源总配置"""
+
     sources: list[SourceConfig] = field(default_factory=list)
     timeout_seconds: int = 10
     user_agent: str = "OpenYoung/1.0 (External Source Fetcher)"

@@ -121,10 +121,10 @@ class SandboxInstance:
         if self._prompt_detector is None:
             try:
                 from src.runtime.security import (
-                    PromptInjector,
-                    SecretScanner,
                     Firewall,
                     FirewallConfig,
+                    PromptInjector,
+                    SecretScanner,
                 )
 
                 self._prompt_detector = PromptInjector(
@@ -255,9 +255,7 @@ class SandboxInstance:
                             message=f"Blocked: high-risk secrets detected ({len(secret_result.secrets_found)} found)",
                             details={
                                 "type": "high_risk_secrets",
-                                "secrets": [
-                                    s.type.value for s in secret_result.secrets_found
-                                ],
+                                "secrets": [s.type.value for s in secret_result.secrets_found],
                             },
                         )
 
@@ -515,7 +513,11 @@ class SandboxInstance:
                 "task_type": language,
                 "complexity": "medium",
                 "dimensions": [
-                    {"name": dim, "weight": 1.0 / len(self.config.evaluator_dimensions), "threshold": 0.5}
+                    {
+                        "name": dim,
+                        "weight": 1.0 / len(self.config.evaluator_dimensions),
+                        "threshold": 0.5,
+                    }
                     for dim in self.config.evaluator_dimensions
                 ],
                 "max_iterations": self.config.evaluator_max_iterations,

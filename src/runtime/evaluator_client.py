@@ -7,9 +7,9 @@ Evaluator gRPC Client - 评估器客户端
 import asyncio
 import logging
 import sys
-from pathlib import Path
-from typing import AsyncIterator, Optional, List, Dict, Any
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, AsyncIterator, Dict, List, Optional
 
 # Add tests/ to path for protobuf imports (so we can import rust.evaluator_pb2)
 _tests_path = str(Path(__file__).parent.parent.parent / "tests")
@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class EvalDimensionResult:
     """单维度评估结果"""
+
     dimension_name: str
     score: float
     passed: bool
@@ -31,6 +32,7 @@ class EvalDimensionResult:
 @dataclass
 class EvalResponse:
     """评估响应"""
+
     task_id: str
     iteration: int
     passed: bool
@@ -74,9 +76,9 @@ class EvaluatorClient:
             self._channel = grpc.insecure_channel(
                 self._endpoint,
                 options=[
-                    ('grpc.connect_timeout_ms', 5000),
-                    ('grpc.max_receive_message_length', 10 * 1024 * 1024),
-                ]
+                    ("grpc.connect_timeout_ms", 5000),
+                    ("grpc.max_receive_message_length", 10 * 1024 * 1024),
+                ],
             )
 
             # 等待连接就绪
@@ -105,6 +107,7 @@ class EvaluatorClient:
 
         try:
             import rust.evaluator_pb2 as evaluator__pb2
+
             request = evaluator__pb2.EvaluatorHealthRequest()
             response = self._stub.HealthCheck(request)
             return response.healthy
@@ -245,9 +248,11 @@ class EvaluatorClient:
             # 收集所有响应，返回最后一个
             last_response = None
             for response in responses:
-                logger.info(f"Received response: iteration={response.iteration}, "
-                           f"passed={response.passed}, should_continue={response.should_continue}, "
-                           f"next_state={response.next_state}")
+                logger.info(
+                    f"Received response: iteration={response.iteration}, "
+                    f"passed={response.passed}, should_continue={response.should_continue}, "
+                    f"next_state={response.next_state}"
+                )
                 last_response = self._parse_eval_response(response)
 
                 # 如果不应继续，提前退出

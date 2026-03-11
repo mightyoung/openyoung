@@ -243,9 +243,7 @@ class HeartbeatScheduler:
             """信息摄入阶段 - 扫描外部信息源"""
             try:
                 # 获取外部信息源
-                items = await self.external_fetcher.fetch_all(
-                    keywords=self.config.info_keywords
-                )
+                items = await self.external_fetcher.fetch_all(keywords=self.config.info_keywords)
 
                 # 限制数量
                 items = items[: self.config.max_info_items]
@@ -256,8 +254,7 @@ class HeartbeatScheduler:
                 if items:
                     # 格式化返回
                     item_summaries = [
-                        f"[{item.source}] {item.title} (score: {item.score})"
-                        for item in items[:5]
+                        f"[{item.source}] {item.title} (score: {item.score})" for item in items[:5]
                     ]
                     return HeartbeatResult(
                         phase=HeartbeatPhase.INFO_INTAKE,
