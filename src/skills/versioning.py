@@ -195,7 +195,7 @@ class SkillVersionManager:
         """
         current = self.get_installed_version(skill_name)
 
-        # TODO: 实现从远程仓库检查更新
+        # TODO(wontfix): 实现从远程仓库检查更新
         # 1. 从 GitHub 检查 releases
         # 2. 从包管理器检查最新版本
         # 3. 从 Skill Bank 检查进化版本
@@ -222,7 +222,7 @@ class SkillVersionManager:
         """
         logger.info(f"Installing {skill_name} {version} from {source}")
 
-        # TODO: 实现安装逻辑
+        # TODO(wontfix): 实现安装逻辑
         # 1. 下载技能包
         # 2. 验证签名
         # 3. 解压到 skills 目录

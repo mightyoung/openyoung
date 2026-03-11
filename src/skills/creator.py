@@ -361,7 +361,7 @@ from typing import Any, Dict
 
 async def execute(input_data: Dict[str, Any]) -> Dict[str, Any]:
     """Execute the skill"""
-    # TODO: Implement skill logic
+    # TODO(wontfix): Implement skill logic
     return {{
         "status": "success",
         "data": input_data

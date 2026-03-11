@@ -36,6 +36,14 @@ from .versioning import (
     SkillVersionManager,
     get_version_manager,
 )
+from .external_sources import (
+    ExternalSourcesConfig,
+    ExternalSourcesFetcher,
+    NewsItem,
+    SourceConfig,
+    SourceType,
+    get_external_sources_fetcher,
+)
 
 # 导出主要类
 __all__ = [
@@ -73,6 +81,13 @@ __all__ = [
     "ReleaseType",
     "SkillVersionManager",
     "get_version_manager",
+    # 新增模块 - 外部信息源
+    "ExternalSourcesConfig",
+    "ExternalSourcesFetcher",
+    "NewsItem",
+    "SourceConfig",
+    "SourceType",
+    "get_external_sources_fetcher",
 ]
 
 # 保持向后兼容

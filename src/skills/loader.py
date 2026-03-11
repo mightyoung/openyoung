@@ -92,7 +92,7 @@ class SkillLoader:
 
     async def _load_from_skillbank(self):
         """从 SkillBank (Evolver) 加载进化的 Skills"""
-        # TODO: 集成 Evolver
+        # TODO(future): 集成 Evolver - 需要 evolver 模块完成开发
         pass
 
     async def _init_retriever(self):

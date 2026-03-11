@@ -68,6 +68,12 @@ class SandboxConfig:
     prompt_block_threshold: float = 0.8
     secret_action: str = "warn"  # warn, block, redact
 
+    # Evaluator 配置
+    enable_evaluator: bool = False
+    evaluator_endpoint: str = "localhost:50051"
+    evaluator_max_iterations: int = 5
+    evaluator_dimensions: list[str] = field(default_factory=lambda: ["correctness", "safety"])
+
 
 # 安全检测结果
 @dataclass
@@ -455,6 +461,132 @@ class SandboxInstance:
                 shutil.rmtree(self.working_dir)
             except Exception:
                 pass
+
+    async def evaluate(
+        self,
+        code: str,
+        language: str = "python",
+        task_description: str = "Code execution task",
+    ) -> dict:
+        """在沙箱中执行代码并评估结果
+
+        Args:
+            code: 要执行的代码
+            language: 编程语言
+            task_description: 任务描述
+
+        Returns:
+            包含执行结果和评估结果的字典
+        """
+        if not self.config.enable_evaluator:
+            # 如果未启用evaluator，只执行代码
+            result = await self.execute(code, language)
+            return {
+                "execution": result,
+                "evaluation": None,
+            }
+
+        # 首先执行代码
+        execution_result = await self.execute(code, language)
+
+        # 如果执行失败，返回执行结果
+        if execution_result.exit_code != 0:
+            return {
+                "execution": execution_result,
+                "evaluation": {
+                    "passed": False,
+                    "score": 0.0,
+                    "feedback": f"Execution failed: {execution_result.error}",
+                },
+            }
+
+        # 使用evaluator评估结果
+        try:
+            from .evaluator_client import create_evaluator_client, create_log_consumer
+
+            evaluator = await create_evaluator_client(self.config.evaluator_endpoint)
+
+            # 启动日志消费者 (后台并行)
+            log_consumer = create_log_consumer(evaluator, self.sandbox_id, self.sandbox_id)
+
+            # 创建评估计划
+            plan_info = {
+                "task_description": task_description,
+                "task_type": language,
+                "complexity": "medium",
+                "dimensions": [
+                    {"name": dim, "weight": 1.0 / len(self.config.evaluator_dimensions), "threshold": 0.5}
+                    for dim in self.config.evaluator_dimensions
+                ],
+                "max_iterations": self.config.evaluator_max_iterations,
+                "timeout_seconds": 60,
+            }
+
+            # 创建执行结果
+            execution_data = {
+                "step": 1,
+                "action": "execute",
+                "thought": f"Executing {language} code",
+                "observation": execution_result.output,
+                "output": execution_result.output,
+                "traces": [],
+            }
+
+            # 收集日志 (后台运行)
+            collected_logs = []
+
+            # 启动日志消费者和评估并行运行
+            async with log_consumer as log_stream:
+                # 获取评估响应
+                responses = []
+                async for response in evaluator.evaluate_stream(
+                    task_id=self.sandbox_id,
+                    session_id=self.sandbox_id,
+                    plan_info=plan_info,
+                    results=[execution_data],
+                ):
+                    responses.append(response)
+
+                    # 并行收集日志
+                    try:
+                        while True:
+                            log = await asyncio.wait_for(log_stream.__anext__(), timeout=0.01)
+                            collected_logs.append(log)
+                    except StopAsyncIteration:
+                        pass
+                    except asyncio.TimeoutError:
+                        pass
+
+            await evaluator.close()
+
+            if responses:
+                response = responses[-1]
+                return {
+                    "execution": execution_result,
+                    "evaluation": {
+                        "passed": response.passed,
+                        "score": response.overall_score,
+                        "feedback": response.feedback,
+                        "next_state": response.next_state,
+                        "should_continue": response.should_continue,
+                    },
+                    "logs": collected_logs,
+                }
+        except Exception as e:
+            self._logger.warning(f"Evaluator error: {e}")
+            return {
+                "execution": execution_result,
+                "evaluation": {
+                    "passed": True,
+                    "score": 1.0,
+                    "feedback": f"Evaluator unavailable: {e}",
+                },
+            }
+
+        return {
+            "execution": execution_result,
+            "evaluation": None,
+        }
 
 
 class AISandbox:

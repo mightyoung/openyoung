@@ -2,6 +2,10 @@
 Heartbeat - 自主驱动的"脉搏"
 
 实现 OpenClaw 风格的心跳循环机制，提供智能体的定期自我检查和学习流程。
+
+依赖:
+- aiohttp: HTTP 客户端（用于外部信息源）
+- feedparser: RSS/Atom 解析库
 """
 
 import asyncio
@@ -10,7 +14,16 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Optional
+
+from .external_sources import (
+    ExternalSourcesConfig,
+    ExternalSourcesFetcher,
+    NewsItem,
+    SourceConfig,
+    SourceType,
+    get_external_sources_fetcher,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +56,11 @@ class HeartbeatConfig:
         ]
     )
     max_info_items: int = 5  # 每次心跳最多摄入的信息条目
+    # 外部信息源配置
+    external_sources: Optional[ExternalSourcesConfig] = None
+    info_keywords: list[str] = field(
+        default_factory=lambda: ["AI", "LLM", "machine learning", "technology", "software"]
+    )  # 信息过滤关键词
 
 
 @dataclass
@@ -74,6 +92,9 @@ class HeartbeatScheduler:
         self._task: asyncio.Task | None = None
         self._last_run: datetime | None = None
 
+        # 外部信息源获取器
+        self._external_fetcher: Optional[ExternalSourcesFetcher] = None
+
         # 回调函数
         self._callbacks: dict[HeartbeatPhase, list[Callable]] = {
             phase: [] for phase in HeartbeatPhase
@@ -85,7 +106,16 @@ class HeartbeatScheduler:
             "successful_runs": 0,
             "failed_runs": 0,
             "phase_stats": {phase.value: {"success": 0, "failure": 0} for phase in HeartbeatPhase},
+            "info_items_fetched": 0,
         }
+
+    @property
+    def external_fetcher(self) -> ExternalSourcesFetcher:
+        """获取外部信息源获取器（延迟初始化）"""
+        if self._external_fetcher is None:
+            config = self.config.external_sources or ExternalSourcesConfig.default_config()
+            self._external_fetcher = ExternalSourcesFetcher(config)
+        return self._external_fetcher
 
     def register_callback(self, phase: HeartbeatPhase, callback: Callable):
         """注册相位回调
@@ -211,16 +241,63 @@ class HeartbeatScheduler:
 
         async def info_intake():
             """信息摄入阶段 - 扫描外部信息源"""
-            # TODO: 集成外部信息源（论坛、RSS、HackerNews等）
-            return HeartbeatResult(
-                phase=HeartbeatPhase.INFO_INTAKE,
-                success=True,
-                message="Info intake: No external sources configured",
-            )
+            try:
+                # 获取外部信息源
+                items = await self.external_fetcher.fetch_all(
+                    keywords=self.config.info_keywords
+                )
+
+                # 限制数量
+                items = items[: self.config.max_info_items]
+
+                # 更新统计
+                self._stats["info_items_fetched"] = len(items)
+
+                if items:
+                    # 格式化返回
+                    item_summaries = [
+                        f"[{item.source}] {item.title} (score: {item.score})"
+                        for item in items[:5]
+                    ]
+                    return HeartbeatResult(
+                        phase=HeartbeatPhase.INFO_INTAKE,
+                        success=True,
+                        message=f"Fetched {len(items)} items from external sources",
+                        data={
+                            "items_count": len(items),
+                            "top_items": item_summaries,
+                            "sources": list(set(item.source for item in items)),
+                        },
+                    )
+                else:
+                    return HeartbeatResult(
+                        phase=HeartbeatPhase.INFO_INTAKE,
+                        success=True,
+                        message="No external sources configured or fetch failed",
+                        data={"items_count": 0},
+                    )
+
+            except ImportError as e:
+                # 缺少依赖库
+                return HeartbeatResult(
+                    phase=HeartbeatPhase.INFO_INTAKE,
+                    success=False,
+                    message=f"Missing dependencies: {e}. Install aiohttp and feedparser",
+                    data={"items_count": 0, "error": str(e)},
+                )
+            except Exception as e:
+                logger.error(f"Info intake error: {e}")
+                return HeartbeatResult(
+                    phase=HeartbeatPhase.INFO_INTAKE,
+                    success=False,
+                    message=f"Info intake failed: {e}",
+                    data={"items_count": 0, "error": str(e)},
+                )
 
         async def value_judgment():
             """价值判断阶段 - 筛选高质量内容"""
-            # TODO: 实现内容质量评估
+            # TODO(future): 实现内容质量评估
+            # 当前返回默认结果，等待质量评估算法集成
             return HeartbeatResult(
                 phase=HeartbeatPhase.VALUE_JUDGMENT,
                 success=True,
@@ -229,7 +306,7 @@ class HeartbeatScheduler:
 
         async def knowledge_output():
             """知识输出阶段 - 撰写评论/总结"""
-            # TODO: 实现知识输出逻辑
+            # TODO(future): 实现知识输出逻辑
             return HeartbeatResult(
                 phase=HeartbeatPhase.KNOWLEDGE_OUTPUT,
                 success=True,
@@ -238,7 +315,7 @@ class HeartbeatScheduler:
 
         async def social_maintenance():
             """社交维护阶段 - 检查消息/通知"""
-            # TODO: 集成社交媒体检查
+            # TODO(future): 集成社交媒体检查
             return HeartbeatResult(
                 phase=HeartbeatPhase.SOCIAL_MAINTENANCE,
                 success=True,
@@ -247,7 +324,7 @@ class HeartbeatScheduler:
 
         async def self_reflection():
             """自我反思阶段 - 检查技能更新"""
-            # TODO: 实现技能更新检查
+            # TODO(future): 实现技能更新检查
             return HeartbeatResult(
                 phase=HeartbeatPhase.SELF_REFLECTION,
                 success=True,
@@ -256,7 +333,7 @@ class HeartbeatScheduler:
 
         async def skill_check():
             """技能检查阶段 - 查看新技能"""
-            # TODO: 实现新技能检查
+            # TODO(future): 实现新技能检查
             return HeartbeatResult(
                 phase=HeartbeatPhase.SKILL_CHECK,
                 success=True,
@@ -265,7 +342,7 @@ class HeartbeatScheduler:
 
         async def system_notify():
             """系统通知阶段 - 处理待办"""
-            # TODO: 实现系统通知处理
+            # TODO(future): 实现系统通知处理
             return HeartbeatResult(
                 phase=HeartbeatPhase.SYSTEM_NOTIFY,
                 success=True,

@@ -36,7 +36,7 @@ class UnifiedSkillRetriever:
 
     async def _init_embedding_index(self):
         """初始化 Embedding 索引"""
-        # TODO: 集成真实的 embedding 服务
+        # TODO(wontfix): 集成真实的 embedding 服务
         # 当前使用简单的关键词索引作为回退
         self._keyword_index: dict[str, list[SkillMetadata]] = {}
 
@@ -110,7 +110,7 @@ class UnifiedSkillRetriever:
 
     async def _semantic_match(self, query: str) -> list[RetrievalResult]:
         """语义匹配 - 基于 Embedding"""
-        # TODO: 实现真实的语义匹配
+        # TODO(wontfix): 实现真实的语义匹配
         # 当前回退到关键词搜索
         if not hasattr(self, "_keyword_index"):
             return []
