@@ -102,6 +102,10 @@ class ExecutionResult:
 class SandboxInstance:
     """沙箱实例"""
 
+    # 类级别的评估缓存（所有实例共享）
+    _eval_cache: dict[str, dict] = {}
+    _cache_max_size: int = 100
+
     def __init__(self, sandbox_id: str, config: SandboxConfig):
         self.id = sandbox_id
         self.config = config
@@ -428,6 +432,32 @@ class SandboxInstance:
 
         return True
 
+    @classmethod
+    def _get_code_hash(cls, code: str) -> str:
+        """生成代码哈希用于缓存"""
+        import hashlib
+        return hashlib.sha256(code.encode()).hexdigest()[:16]
+
+    @classmethod
+    def _get_eval_cache(cls, code_hash: str) -> Optional[dict]:
+        """获取缓存的评估结果"""
+        return cls._eval_cache.get(code_hash)
+
+    @classmethod
+    def _set_eval_cache(cls, code_hash: str, result: dict) -> None:
+        """设置评估结果缓存"""
+        # 如果缓存已满，删除最早的条目
+        if len(cls._eval_cache) >= cls._cache_max_size:
+            # 删除第一个条目（最旧的）
+            first_key = next(iter(cls._eval_cache))
+            del cls._eval_cache[first_key]
+        cls._eval_cache[code_hash] = result
+
+    @classmethod
+    def _clear_eval_cache(cls) -> None:
+        """清空评估缓存"""
+        cls._eval_cache.clear()
+
     def _validate_file_access(self, path: str) -> bool:
         """验证文件访问权限"""
         # 如果没有设置允许路径，默认只允许临时目录
@@ -482,6 +512,20 @@ class SandboxInstance:
             return {
                 "execution": result,
                 "evaluation": None,
+            }
+
+        # B1.4: 检查评估缓存
+        code_hash = self._get_code_hash(code)
+        cached_result = self._get_eval_cache(code_hash)
+        if cached_result is not None:
+            self._logger.debug(f"Using cached evaluation for code hash: {code_hash}")
+            # 执行代码但返回缓存的评估结果
+            execution_result = await self.execute(code, language)
+            return {
+                "execution": execution_result,
+                "evaluation": cached_result.get("evaluation"),
+                "logs": cached_result.get("logs", []),
+                "cached": True,
             }
 
         # 首先执行代码
@@ -563,15 +607,21 @@ class SandboxInstance:
 
             if responses:
                 response = responses[-1]
+                # B1.4: 存储评估结果到缓存
+                eval_result = {
+                    "passed": response.passed,
+                    "score": response.overall_score,
+                    "feedback": response.feedback,
+                    "next_state": response.next_state,
+                    "should_continue": response.should_continue,
+                }
+                self._set_eval_cache(code_hash, {
+                    "evaluation": eval_result,
+                    "logs": collected_logs,
+                })
                 return {
                     "execution": execution_result,
-                    "evaluation": {
-                        "passed": response.passed,
-                        "score": response.overall_score,
-                        "feedback": response.feedback,
-                        "next_state": response.next_state,
-                        "should_continue": response.should_continue,
-                    },
+                    "evaluation": eval_result,
                     "logs": collected_logs,
                 }
         except Exception as e:
