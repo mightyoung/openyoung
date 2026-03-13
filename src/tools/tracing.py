@@ -202,7 +202,7 @@ def get_tracer(service_name: str = "openyoung") -> Tracer:
 
 
 # 上下文管理器用于方便使用
-class traceSpan:
+class TraceSpan:  # noqa: N801
     """Span 上下文管理器"""
 
     def __init__(self, tracer: Tracer, name: str, kind: SpanKind = SpanKind.INTERNAL):

@@ -128,11 +128,11 @@ class ToolExecutor:
         self.max_retries = 3
         self.auto_fix_compile_errors = True
 
-    def _is_path_allowed(self, filePath: str) -> bool:
+    def _is_path_allowed(self, file_path: str) -> bool:
         """检查路径是否在允许的目录内（防止目录遍历攻击）"""
         try:
             # 解析绝对路径
-            abs_path = Path(filePath).resolve()
+            abs_path = Path(file_path).resolve()
 
             # 检查是否在允许的目录内
             for allowed_dir in self.allowed_dirs:
@@ -640,7 +640,7 @@ class ToolExecutor:
 
         return " | ".join(results) if results else "No tests found"
 
-    async def execute_write(self, filePath: str, content: str) -> str:
+    async def execute_write(self, filePath: str, content: str) -> str:  # noqa: N803
         import os
 
         # 安全检查：路径验证
@@ -654,7 +654,7 @@ class ToolExecutor:
             f.write(content)
         return f"已写入文件: {filePath}"
 
-    async def execute_edit(self, filePath: str, old_content: str, new_content: str) -> str:
+    async def execute_edit(self, filePath: str, old_content: str, new_content: str) -> str:  # noqa: N803
         # 安全检查：路径验证
         if not self._is_path_allowed(filePath):
             return f"错误: 路径不在允许的目录内: {filePath}"
@@ -668,7 +668,7 @@ class ToolExecutor:
             f.write(new_content_file)
         return f"已编辑文件: {filePath}"
 
-    async def execute_read(self, filePath: str, limit: int = None, offset: int = None) -> str:
+    async def execute_read(self, filePath: str, limit: int = None, offset: int = None) -> str:  # noqa: N803
         # 安全检查：路径验证
         if not self._is_path_allowed(filePath):
             return f"错误: 路径不在允许的目录内: {filePath}"
