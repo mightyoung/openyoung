@@ -356,6 +356,114 @@ class ExecutionRecord:
 
 **目标**: 评估能力领先 + 数据资产成型
 
+**时间**: 2个月 (8周)
+
+**技术方案**:
+- 后端: FastAPI + Streamlit
+- 实时: Server-Sent Events (SSE)
+- 数据: SQLite + JSON/CSV导出
+
+### Phase 1.1: 数据基础设施 (W1-W3)
+
+| 任务ID | 任务 | 交付物 | 状态 |
+|--------|------|--------|------|
+| P1-1-1 | 扩展DataCenter数据模型 | ExecutionRecord, EvaluationRecord, EvaluationDimension 类 | ✅ |
+| P1-1-2 | 创建评估数据库表 | evaluations.sqlite | ✅ |
+| P1-1-3 | FastAPI项目初始化 | 项目结构 + 基础路由 | ✅ |
+| P1-1-4 | 中间件基础 | 认证 / 日志中间件 | ✅ |
+| P1-1-5 | 执行记录查询API | `/api/v1/executions` 端点 | ✅ |
+
+### Phase 1.2: 评估仪表板 (W4-W6)
+
+| 任务ID | 任务 | 交付物 | 状态 |
+|--------|------|--------|------|
+| P1-2-1 | Streamlit项目初始化 | 项目结构 + 基础路由 | ✅ |
+| P1-2-2 | Dashboard组件-指标卡片 | 4列指标卡片 | ✅ |
+| P1-2-3 | Dashboard组件-趋势图 | 评估分数趋势图 | ✅ |
+| P1-2-4 | Dashboard组件-对比表 | 并排对比视图 | ✅ |
+| P1-2-5 | 查询与过滤功能 | 高级搜索 + 筛选器 | ✅ |
+
+### Phase 1.3: 数据导出与实时流 (W7-W8)
+
+| 任务ID | 任务 | 交付物 | 状态 |
+|--------|------|--------|------|
+| P1-3-1 | 数据导出API | `/api/v1/exports` 端点 | ✅ |
+| P1-3-2 | 导出UI组件 | 导出按钮 + 格式选择 | ✅ |
+| P1-3-3 | SSE实时流 | `/api/v1/stream/{task_id}` | ✅ |
+| P1-3-4 | 实时监控面板 | Live Monitor组件 | ✅ |
+| P1-3-5 | 完整集成测试 | E2E测试 | ✅ |
+
+### 里程碑
+
+| 周 | 里程碑 | 交付物 |
+|----|--------|--------|
+| W3 | **Alpha** | 数据模型 + 查询API可用 |
+| W6 | **Beta** | 完整仪表板 |
+| W8 | **GA** | 完整功能 + 测试通过 |
+
+---
+
+## 五、Phase 2: Agent能力增强 (2026 Q1)
+
+### Phase 2 概述
+
+**目标**: Agent能力增强 + 多Agent协作系统
+
+**时间**: 2个月 (8周)
+
+**设计文档**: `docs/plans/2026-03-13-phase2-agent-enhancement.md`
+
+### Phase 2.1: Agent工作流增强 (W1-W3)
+
+| 任务ID | 任务 | 交付物 | 状态 |
+|--------|------|--------|------|
+| P2-1-1 | TaskPlanner增强 | 目标分解、迭代规划 | ✅ |
+| P2-1-2 | Reflection机制 | 结果自检、错误恢复 | ✅ |
+| P2-1-3 | Tool Selector | 动态工具选择 | ✅ |
+| P2-1-4 | 迭代评估 | 基于反馈的重试 | ✅ |
+
+### Phase 2.2: 多Agent协作 (W4-W6)
+
+| 任务ID | 任务 | 交付物 | 状态 |
+|--------|------|--------|------|
+| P2-2-1 | MultiAgentCrew | 多Agent团队 | ✅ |
+| P2-2-2 | Orchestrator | 任务编排器 | ✅ |
+| P2-2-3 | Team Memory | 共享记忆 | ✅ |
+| P2-2-4 | Conflict Resolution | 冲突解决 | ✅ |
+
+### Phase 2.3: 性能优化 (W7-W8)
+
+| 任务ID | 任务 | 交付物 | 状态 |
+|--------|------|--------|------|
+| P2-3-1 | 缓存优化 | 结果缓存、模板缓存 | ✅ |
+| P2-3-2 | 并发优化 | 异步执行、批量处理 | ✅ |
+| P2-3-3 | 资源管理 | 连接池、内存优化 | ✅ |
+| P2-3-4 | 集成测试 | E2E测试 | ✅ |
+
+### Phase 2.4: 安全与沙箱 (W7-W8)
+
+| 任务ID | 任务 | 交付物 | 状态 |
+|--------|------|--------|------|
+| P2-4-1 | WASM沙箱基础 | wasm_runtime.py | ⬜ |
+| P2-4-2 | 隔离文件系统 | isolated_fs.py | ⬜ |
+| P2-4-3 | 资源限制器 | resource_limits.py | ⬜ |
+| P2-4-4 | 安全策略引擎 | security_policy.py | ⬜ |
+| P2-4-5 | 提示注入检测 | prompt_detector.py | ⬜ |
+| P2-4-6 | 敏感信息扫描 | secret_scanner.py | ⬜ |
+| P2-4-7 | 集成测试 | E2E测试 | ⬜ |
+
+### Phase 3: 可观测性与生命周期 (W9-W12)
+
+| 任务ID | 任务 | 交付物 | 状态 |
+|--------|------|--------|------|
+| P3-1-1 | Checkpoint管理 | checkpoint.py | ⬜ |
+| P3-1-2 | 三层记忆系统 | auto_memory.py | ⬜ |
+| P3-1-3 | OpenTelemetry集成 | telemetry.py | ⬜ |
+| P3-1-4 | Tracing Hooks | tracing_hooks.py | ⬜ |
+| P3-1-5 | 生命周期状态机 | lifecycle.py | ⬜ |
+| P3-1-6 | 异常恢复机制 | recovery.py | ⬜ |
+| P3-1-7 | 集成测试 | E2E测试 | ⬜ |
+
 ### P1-1: EvalHub 独立评估服务 (P0)
 
 **目标**: 将评估功能拆分为独立服务，提供 REST API
