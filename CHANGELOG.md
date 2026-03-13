@@ -11,6 +11,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### [1.0.2] - 2026-03-13
+
+#### Added
+- External information sources integration (RSS/HackerNews) in heartbeat.py
+- Parallel log consumption for Sandbox-Evaluator integration
+- Iterative evaluation with feedback mechanism
+- Centralized configuration management (src/config/)
+- Runtime tests module (tests/runtime/)
+
+#### Improved
+- Sandbox-Evaluator deep integration with parallel log consumption
+- Unified error handling in runtime module
+- Test coverage: 539 tests passing (was 533)
+
+#### Fixed
+- CI workflow simplified to fix exit code 128 errors
+- Removed malformed mypy config section
+
 ### [1.0.1] - 2026-03-07
 
 #### Added

@@ -1219,7 +1219,7 @@ Step 3: 验证
 
 **质量提升 (Phase C)**:
 - [x] C1: 增加单元测试覆盖率至 70% (新增 runtime 测试模块，+6 测试)
-- [ ] C2: 更新所有设计文档
+- [x] C2: 更新所有设计文档 (更新 CHANGELOG.md，task_plan.md 完整记录)
 - [ ] C3: 代码规范统一 (snake_case)
 
 ---
