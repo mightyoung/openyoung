@@ -37,6 +37,12 @@ class SandboxConfig:
     timeout: int = 300
     policy: SandboxPolicy = field(default_factory=SandboxPolicy)
 
+    # 向后兼容属性 (来自原 sandbox.py)
+    max_cpu_percent: float = 50.0
+    max_memory_mb: int = 512
+    max_execution_time_seconds: int = 300
+    enable_evaluator: bool = False
+
 
 class SandboxBackendBase(ABC):
     """沙箱后端基类"""
