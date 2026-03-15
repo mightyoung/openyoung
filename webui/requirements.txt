@@ -1,0 +1,6 @@
+# OpenYoung WebUI Dependencies
+streamlit>=1.28.0
+httpx>=0.25.0
+httpx-sse>=0.4.0
+sseclient-py>=1.8.0
+python-dotenv>=1.0.0

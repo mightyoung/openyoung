@@ -271,6 +271,43 @@ safe, reason = engine.check_path_traversal("/tmp/sandbox/file.txt")  # ALLOWED
 safe, reason = engine.check_path_traversal("/etc/passwd")  # BLOCKED
 ```
 
+### WebUI
+
+OpenYoung provides a **Streamlit-based WebUI** for visual interaction with agents, sessions, and evaluations.
+
+#### Core Features
+
+| Feature | Description |
+|---------|-------------|
+| **Chat Interface** | Real-time streaming chat with AI agents |
+| **Session Management** | Create, suspend, resume, delete persistent sessions |
+| **Agent Management** | Browse and manage available agents |
+| **Evaluation Dashboard** | View evaluation results and metrics |
+| **SSE Streaming** | Server-Sent Events for real-time responses |
+
+#### Quick Start
+
+```bash
+# Install dependencies
+pip install -r webui/requirements.txt
+
+# Start WebUI
+streamlit run webui/app.py
+
+# Or use the CLI
+openyoung webui
+```
+
+#### Configuration
+
+Edit `webui/utils/config.py`:
+
+```python
+API_BASE_URL = "http://localhost:8000"  # API server URL
+API_KEY = ""  # Optional API key
+TYPING_SPEED = 0.02  # Seconds between characters
+```
+
 ### License
 
 MIT License
@@ -542,6 +579,43 @@ engine = SecurityPolicyEngine(policy)
 # 检查文件访问
 safe, reason = engine.check_path_traversal("/tmp/sandbox/file.txt")  # 允许
 safe, reason = engine.check_path_traversal("/etc/passwd")  # 阻止
+```
+
+### WebUI
+
+OpenYoung 提供基于 **Streamlit 的 WebUI**，用于可视化交互 Agent、会话和评估。
+
+#### 核心功能
+
+| 功能 | 描述 |
+|------|------|
+| **聊天界面** | 实时流式与 AI Agent 对话 |
+| **会话管理** | 创建、暂停、恢复、删除持久会话 |
+| **Agent 管理** | 浏览和管理可用的 Agent |
+| **评估仪表盘** | 查看评估结果和指标 |
+| **SSE 流式传输** | 服务器发送事件实现实时响应 |
+
+#### 快速开始
+
+```bash
+# 安装依赖
+pip install -r webui/requirements.txt
+
+# 启动 WebUI
+streamlit run webui/app.py
+
+# 或使用 CLI
+openyoung webui
+```
+
+#### 配置
+
+编辑 `webui/utils/config.py`:
+
+```python
+API_BASE_URL = "http://localhost:8000"  # API 服务器地址
+API_KEY = ""  # 可选的 API 密钥
+TYPING_SPEED = 0.02  # 字符间隔秒数
 ```
 
 ### 许可证
