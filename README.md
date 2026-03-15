@@ -167,6 +167,68 @@ openyoung/
 
 ---
 
+## Reinforcement Learning (RL)
+
+OpenYoung supports optional **GPU-accelerated Reinforcement Learning** for agent self-evolution and optimization.
+
+### Core Features
+
+| Feature | Description |
+|---------|-------------|
+| **Multi-Backend Support** | CUDA (NVIDIA), MPS (Apple Silicon), CPU, Vulkan (ARM RK3588) |
+| **GRPO** | Group Relative Policy Optimization - lightweight training for M1/medium GPUs |
+| **GiGPO** | Group-in-Group Policy Optimization - two-layer advantage for complex agents |
+| **Experience Collection** | Collect task experiences without GPU (default mode) |
+| **Docker Support** | Ready-to-deploy RL training with Docker Compose |
+
+### Supported Hardware
+
+| Hardware | Recommended Mode | Notes |
+|----------|-----------------|-------|
+| NVIDIA GPU (CUDA) | GiGPO | Full two-layer advantage |
+| Apple Silicon (MPS) | GRPO | Memory-efficient training |
+| CPU only | Collection Only | Experience collection only |
+| ARM (RK3588) | Collection Only | Future: Vulkan support |
+
+### Usage
+
+```python
+from src.agents.rl import create_rl_engine, RLConfig, RLMode
+
+# Auto-detect hardware and create engine
+engine = create_rl_engine()
+
+# Or specify mode manually
+config = RLConfig(mode=RLMode.GRPO)  # collection_only / grpo / gigpo
+engine = create_rl_engine(config)
+```
+
+### Docker Deployment
+
+```bash
+# Start RL training service
+docker-compose -f docker-compose.rl.yml up -d
+
+# With NVIDIA GPU
+docker-compose -f docker-compose.rl.yml up -d --profile gpu
+```
+
+### Configuration
+
+```yaml
+# config/rl.yaml
+rl:
+  enabled: true
+  mode: collection_only  # collection_only | grpo | gigpo
+  device: auto  # auto | cuda | mps | cpu
+  grpo:
+    learning_rate: 1.0e-5
+    clip_epsilon: 0.2
+    group_size: 4
+```
+
+---
+
 ## AI Docker
 
 OpenYoung includes a built-in **AI Docker sandbox execution environment** that provides secure and controlled code execution for AI Agents.
@@ -180,15 +242,33 @@ OpenYoung includes a built-in **AI Docker sandbox execution environment** that p
 | **Instance Pool** | Auto-scaling, instance pre-warming, state persistence |
 | **Audit Logging** | Execution records, statistics, JSONL format |
 
+### Enhanced Security (2025 Best Practices)
+
+| Security Feature | Description |
+|-----------------|-------------|
+| **Working Directory Restriction** | Files can only be accessed within configured working directory |
+| **Path Traversal Prevention** | Blocks `..`, `/proc`, `/sys`, `/dev` attacks |
+| **Network Isolation** | Domain whitelist/blacklist, default deny |
+| **MCP Server Security** | Command validation, environment sanitization |
+| **Audit Logging** | All security events logged |
+
 ### Usage
 
 ```python
-from src.agents import YoungAgent
+from src.runtime.sandbox import SandboxPolicy, SecurityPolicyEngine
 
-agent = YoungAgent(config)
-agent.enable_sandbox(max_memory_mb=512)
-# or
-agent.enable_sandbox_pool(min_size=2, max_size=10)
+# Configure security policy
+policy = SandboxPolicy(
+    working_directory="/tmp/sandbox",       # Restrict to working dir
+    restrict_to_working_dir=True,
+    allow_network=True,
+    allowed_domains=["api.openai.com"],
+)
+engine = SecurityPolicyEngine(policy)
+
+# Check file access
+safe, reason = engine.check_path_traversal("/tmp/sandbox/file.txt")  # ALLOWED
+safe, reason = engine.check_path_traversal("/etc/passwd")  # BLOCKED
 ```
 
 ### License
@@ -360,6 +440,68 @@ openyoung/
 
 ---
 
+## 强化学习 (RL)
+
+OpenYoung 支持可选的 **GPU 加速强化学习**，用于 Agent 自我进化与优化。
+
+### 核心功能
+
+| 功能 | 描述 |
+|------|------|
+| **多后端支持** | CUDA (NVIDIA)、MPS (Apple Silicon)、CPU、Vulkan (ARM RK3588) |
+| **GRPO** | 组相对策略优化 - 适用于 M1/中等 GPU 的轻量训练 |
+| **GiGPO** | 组内组策略优化 - 复杂 Agent 的双层优势估计 |
+| **经验收集** | 无需 GPU 的经验收集（默认模式） |
+| **Docker 支持** | 开箱即用的 RL 训练服务部署 |
+
+### 支持的硬件
+
+| 硬件 | 推荐模式 | 备注 |
+|------|---------|------|
+| NVIDIA GPU (CUDA) | GiGPO | 完整双层优势 |
+| Apple Silicon (MPS) | GRPO | 内存高效训练 |
+| 仅 CPU | 仅收集 | 经验收集模式 |
+| ARM (RK3588) | 仅收集 | 未来支持: Vulkan |
+
+### 使用方式
+
+```python
+from src.agents.rl import create_rl_engine, RLConfig, RLMode
+
+# 自动检测硬件并创建引擎
+engine = create_rl_engine()
+
+# 或手动指定模式
+config = RLConfig(mode=RLMode.GRPO)  # collection_only / grpo / gigpo
+engine = create_rl_engine(config)
+```
+
+### Docker 部署
+
+```bash
+# 启动 RL 训练服务
+docker-compose -f docker-compose.rl.yml up -d
+
+# 使用 NVIDIA GPU
+docker-compose -f docker-compose.rl.yml up -d --profile gpu
+```
+
+### 配置
+
+```yaml
+# config/rl.yaml
+rl:
+  enabled: true
+  mode: collection_only  # collection_only | grpo | gigpo
+  device: auto  # auto | cuda | mps | cpu
+  grpo:
+    learning_rate: 1.0e-5
+    clip_epsilon: 0.2
+    group_size: 4
+```
+
+---
+
 ## AI Docker
 
 OpenYoung 内置 **AI Docker 沙箱执行环境**，为 AI Agent 提供安全可控的代码执行能力。
@@ -373,15 +515,33 @@ OpenYoung 内置 **AI Docker 沙箱执行环境**，为 AI Agent 提供安全可
 | **实例池** | 自动扩缩容，预热实例，状态持久化 |
 | **审计日志** | 执行记录，统计查询 |
 
+### 安全增强 (2025最佳实践)
+
+| 安全功能 | 描述 |
+|---------|------|
+| **工作目录限制** | 文件只能访问配置的工作目录 |
+| **路径穿越防护** | 阻止 `..`、`/proc`、`/sys`、`/dev` 攻击 |
+| **网络隔离** | 域名白名单/黑名单，默认拒绝 |
+| **MCP服务器安全** | 命令验证，环境变量清理 |
+| **审计日志** | 所有安全事件记录 |
+
 ### 使用方式
 
 ```python
-from src.agents import YoungAgent
+from src.runtime.sandbox import SandboxPolicy, SecurityPolicyEngine
 
-agent = YoungAgent(config)
-agent.enable_sandbox(max_memory_mb=512)
-# 或
-agent.enable_sandbox_pool(min_size=2, max_size=10)
+# 配置安全策略
+policy = SandboxPolicy(
+    working_directory="/tmp/sandbox",       # 限制工作目录
+    restrict_to_working_dir=True,
+    allow_network=True,
+    allowed_domains=["api.openai.com"],
+)
+engine = SecurityPolicyEngine(policy)
+
+# 检查文件访问
+safe, reason = engine.check_path_traversal("/tmp/sandbox/file.txt")  # 允许
+safe, reason = engine.check_path_traversal("/etc/passwd")  # 阻止
 ```
 
 ### 许可证
