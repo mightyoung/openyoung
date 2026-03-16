@@ -6,6 +6,7 @@ Skill Rating Service - 技能评价服务
 
 from datetime import datetime
 from typing import Optional
+
 from .models import (
     MarketplaceSkill,
     SkillReview,
@@ -153,11 +154,7 @@ class RatingService:
         reviews = self._registry.get_reviews(skill_id, limit=100)
 
         # 按 helpful_count 排序
-        sorted_reviews = sorted(
-            reviews,
-            key=lambda r: r.helpful_count,
-            reverse=True
-        )
+        sorted_reviews = sorted(reviews, key=lambda r: r.helpful_count, reverse=True)
 
         return sorted_reviews[:limit]
 

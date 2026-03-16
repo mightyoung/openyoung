@@ -7,6 +7,7 @@ Based on LangChain streamlit-agent patterns:
 """
 
 import asyncio
+
 import streamlit as st
 
 from webui.utils.config import config
@@ -19,6 +20,7 @@ def run_async(coro):
         if loop.is_running():
             # Create a new loop in a thread
             import concurrent.futures
+
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 future = executor.submit(asyncio.run, coro)
                 return future.result()
@@ -68,9 +70,7 @@ def render():
                 # Create session if not exists
                 if not st.session_state.current_session_id:
                     # Create a new session
-                    session = run_async(
-                        client.create_session(agent_name=agent)
-                    )
+                    session = run_async(client.create_session(agent_name=agent))
                     st.session_state.current_session_id = session.get("session_id")
 
                 # Send message with streaming
@@ -82,9 +82,7 @@ def render():
 
                 try:
                     # Get the async generator
-                    stream_gen = run_async(
-                        client.send_message_stream(session_id, prompt)
-                    )
+                    stream_gen = run_async(client.send_message_stream(session_id, prompt))
 
                     # Process the stream
                     for chunk in stream_gen:
@@ -96,9 +94,7 @@ def render():
                 except Exception as e:
                     st.error(f"Streaming error: {str(e)}, falling back to non-streaming")
                     # Fallback to non-streaming
-                    result = run_async(
-                        client.send_message(session_id, prompt)
-                    )
+                    result = run_async(client.send_message(session_id, prompt))
                     full_response = result.get("response", "")
 
                     # Display with typing effect
@@ -114,9 +110,7 @@ def render():
                 full_response = f"抱歉，发生错误: {str(e)}"
 
         # Add assistant response
-        st.session_state.messages.append(
-            {"role": "assistant", "content": full_response}
-        )
+        st.session_state.messages.append({"role": "assistant", "content": full_response})
 
 
 # Import for type hints

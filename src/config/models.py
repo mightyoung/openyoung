@@ -4,13 +4,15 @@ Pydantic 配置模型
 参考 FastAPI 和 Pydantic 最佳实践
 """
 
-from typing import Optional, Literal
+from typing import Literal, Optional
+
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings
 
 
 class SandboxConfig(BaseModel):
     """沙箱配置"""
+
     max_execution_time_ms: int = Field(default=300000, description="最大执行时间(毫秒)")
     max_memory_mb: int = Field(default=512, description="最大内存(MB)")
     allow_network: bool = Field(default=False, description="是否允许网络访问")
@@ -21,7 +23,10 @@ class SandboxConfig(BaseModel):
 
 class LLMConfig(BaseModel):
     """LLM 配置"""
-    provider: Literal["openai", "anthropic", "azure"] = Field(default="openai", description="LLM 提供商")
+
+    provider: Literal["openai", "anthropic", "azure"] = Field(
+        default="openai", description="LLM 提供商"
+    )
     model: str = Field(default="gpt-4", description="模型名称")
     api_key: Optional[str] = Field(default=None, description="API Key")
     base_url: Optional[str] = Field(default=None, description="自定义 API 地址")
@@ -32,6 +37,7 @@ class LLMConfig(BaseModel):
 
 class AgentConfig(BaseModel):
     """Agent 配置"""
+
     name: str = Field(default="young", description="Agent 名称")
     description: str = Field(default="OpenYoung Agent", description="Agent 描述")
     default_model: str = Field(default="gpt-4", description="默认模型")
@@ -43,6 +49,7 @@ class AgentConfig(BaseModel):
 
 class EvaluationConfig(BaseModel):
     """评估配置"""
+
     enable: bool = Field(default=True, description="启用评估")
     criteria: dict[str, float] = Field(
         default_factory=lambda: {
@@ -50,7 +57,7 @@ class EvaluationConfig(BaseModel):
             "completeness": 0.3,
             "efficiency": 0.3,
         },
-        description="评估标准及权重"
+        description="评估标准及权重",
     )
     timeout: int = Field(default=300, description="评估超时(秒)")
     max_iterations: int = Field(default=10, description="最大迭代次数")
@@ -58,7 +65,10 @@ class EvaluationConfig(BaseModel):
 
 class DatabaseConfig(BaseModel):
     """数据库配置"""
-    type: Literal["sqlite", "postgresql", "mongodb"] = Field(default="sqlite", description="数据库类型")
+
+    type: Literal["sqlite", "postgresql", "mongodb"] = Field(
+        default="sqlite", description="数据库类型"
+    )
     path: Optional[str] = Field(default=None, description="SQLite 路径")
     host: Optional[str] = Field(default=None, description="主机地址")
     port: Optional[int] = Field(default=None, description="端口号")
@@ -69,8 +79,13 @@ class DatabaseConfig(BaseModel):
 
 class LoggingConfig(BaseModel):
     """日志配置"""
-    level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = Field(default="INFO", description="日志级别")
-    format: str = Field(default="%(asctime)s - %(name)s - %(levelname)s - %(message)s", description="日志格式")
+
+    level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = Field(
+        default="INFO", description="日志级别"
+    )
+    format: str = Field(
+        default="%(asctime)s - %(name)s - %(levelname)s - %(message)s", description="日志格式"
+    )
     file: Optional[str] = Field(default=None, description="日志文件路径")
     max_bytes: int = Field(default=10485760, description="单个日志文件大小")
     backup_count: int = Field(default=5, description="备份文件数量")
@@ -89,7 +104,9 @@ class OpenYoungConfig(BaseSettings):
     # 应用配置
     app_name: str = Field(default="OpenYoung", description="应用名称")
     debug: bool = Field(default=False, description="调试模式")
-    environment: Literal["development", "staging", "production"] = Field(default="development", description="环境")
+    environment: Literal["development", "staging", "production"] = Field(
+        default="development", description="环境"
+    )
 
     # 子配置
     sandbox: SandboxConfig = Field(default_factory=SandboxConfig, description="沙箱配置")

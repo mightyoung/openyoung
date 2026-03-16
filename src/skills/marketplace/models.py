@@ -15,6 +15,7 @@ from typing import Optional
 
 class SkillStatus(str, Enum):
     """技能状态"""
+
     DRAFT = "draft"
     PUBLISHED = "published"
     DEPRECATED = "deprecated"
@@ -23,22 +24,24 @@ class SkillStatus(str, Enum):
 
 class ReleaseType(str, Enum):
     """发布类型"""
-    MAJOR = "major"      # 破坏性更新
-    MINOR = "minor"      # 新功能
-    PATCH = "patch"      # 修复
+
+    MAJOR = "major"  # 破坏性更新
+    MINOR = "minor"  # 新功能
+    PATCH = "patch"  # 修复
 
 
 class SkillCategory(str, Enum):
     """技能分类"""
-    CODE = "code"           # 代码生成
-    REVIEW = "review"       # 代码审查
-    TEST = "test"           # 测试
-    DATA = "data"           # 数据处理
-    DEVOPS = "devops"      # DevOps
-    RESEARCH = "research"   # 研究
-    SECURITY = "security"   # 安全
-    UTILITY = "utility"    # 工具
-    CUSTOM = "custom"      # 自定义
+
+    CODE = "code"  # 代码生成
+    REVIEW = "review"  # 代码审查
+    TEST = "test"  # 测试
+    DATA = "data"  # 数据处理
+    DEVOPS = "devops"  # DevOps
+    RESEARCH = "research"  # 研究
+    SECURITY = "security"  # 安全
+    UTILITY = "utility"  # 工具
+    CUSTOM = "custom"  # 自定义
 
 
 @dataclass
@@ -257,7 +260,7 @@ class SearchFilters:
 
     # 排序
     sort_by: str = "relevance"  # relevance | downloads | rating | newest
-    sort_order: str = "desc"    # asc | desc
+    sort_order: str = "desc"  # asc | desc
 
     # 分页
     page: int = 1
@@ -281,7 +284,7 @@ class SearchResult:
 
     # 聚合
     categories: dict[str, int] = field(default_factory=dict)  # category -> count
-    tags: dict[str, int] = field(default_factory=dict)      # tag -> count
+    tags: dict[str, int] = field(default_factory=dict)  # tag -> count
 
 
 @dataclass

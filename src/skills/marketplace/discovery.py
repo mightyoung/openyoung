@@ -6,11 +6,12 @@ Skill Discovery Service - 技能发现服务
 """
 
 from typing import Optional
+
 from .models import (
     MarketplaceSkill,
-    SkillCategory,
     SearchFilters,
     SearchResult,
+    SkillCategory,
 )
 
 

@@ -16,6 +16,7 @@ from typing import Any, Optional
 @dataclass
 class Checkpoint:
     """检查点"""
+
     checkpoint_id: str
     session_id: str
     state_snapshot: dict
@@ -85,16 +86,18 @@ class CheckpointStore:
 
         data = []
         if file_path.exists():
-            with open(file_path, "r") as f:
+            with open(file_path) as f:
                 data = json.load(f)
 
-        data.append({
-            "checkpoint_id": checkpoint.checkpoint_id,
-            "session_id": checkpoint.session_id,
-            "state_snapshot": checkpoint.state_snapshot,
-            "created_at": checkpoint.created_at.isoformat(),
-            "metadata": checkpoint.metadata,
-        })
+        data.append(
+            {
+                "checkpoint_id": checkpoint.checkpoint_id,
+                "session_id": checkpoint.session_id,
+                "state_snapshot": checkpoint.state_snapshot,
+                "created_at": checkpoint.created_at.isoformat(),
+                "metadata": checkpoint.metadata,
+            }
+        )
 
         with open(file_path, "w") as f:
             json.dump(data, f, indent=2)
@@ -139,7 +142,7 @@ class CheckpointStore:
         if not file_path.exists():
             return
 
-        with open(file_path, "r") as f:
+        with open(file_path) as f:
             data = json.load(f)
 
         data = [c for c in data if c["checkpoint_id"] != checkpoint.checkpoint_id]

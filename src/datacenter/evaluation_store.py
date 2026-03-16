@@ -84,11 +84,15 @@ class EvaluationStore(BaseStorage):
                 record.execution_id,
                 record.overall_score,
                 1 if record.passed else 0,
-                record.evaluator_type.value if isinstance(record.evaluator_type, EvaluatorType) else record.evaluator_type,
+                record.evaluator_type.value
+                if isinstance(record.evaluator_type, EvaluatorType)
+                else record.evaluator_type,
                 record.feedback,
                 record.iteration,
                 record.max_iterations,
-                record.evaluated_at.isoformat() if record.evaluated_at else datetime.now().isoformat(),
+                record.evaluated_at.isoformat()
+                if record.evaluated_at
+                else datetime.now().isoformat(),
                 self._json_serialize(record.metadata),
                 self._json_serialize(record.tags),
             ),

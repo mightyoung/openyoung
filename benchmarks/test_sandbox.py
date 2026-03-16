@@ -9,13 +9,13 @@ Following Brendan Gregg's performance methodology:
 - Measure throughput (ops/sec)
 """
 
-import sys
-import os
-import time
 import asyncio
+import os
 import statistics
-from typing import Callable, Any, List, Dict
+import sys
+import time
 from dataclasses import dataclass
+from typing import Any, Callable, Dict, List
 
 # Add project root to path
 _project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -66,6 +66,7 @@ SAFE_CODES = [
 @dataclass
 class BenchmarkResult:
     """Single benchmark result"""
+
     name: str
     iterations: int
     total_time: float
@@ -143,43 +144,28 @@ def run_python_benchmarks():
     # Benchmark prompt injection detection
     print("\n1. Prompt Injection Detection")
     for prompt in MALICIOUS_PROMPTS[:3]:
-        result = benchmark_function(
-            client.detect_prompt_injection,
-            prompt,
-            iterations=50
-        )
+        result = benchmark_function(client.detect_prompt_injection, prompt, iterations=50)
         results.append(result)
         print(format_result(result))
 
     # Benchmark secret scanning
     print("\n2. Secret Scanning")
     for content in SECRET_CONTENTS[:3]:
-        result = benchmark_function(
-            client.scan_secrets,
-            content,
-            iterations=50
-        )
+        result = benchmark_function(client.scan_secrets, content, iterations=50)
         results.append(result)
         print(format_result(result))
 
     # Benchmark dangerous code detection
     print("\n3. Dangerous Code Detection")
     for code in DANGEROUS_CODES[:3]:
-        result = benchmark_function(
-            client.detect_dangerous_code,
-            code,
-            iterations=50
-        )
+        result = benchmark_function(client.detect_dangerous_code, code, iterations=50)
         results.append(result)
         print(format_result(result))
 
     # Benchmark firewall check
     print("\n4. Firewall Check")
     for ip in ["8.8.8.8", "127.0.0.1"]:
-        result = benchmark_function(
-            lambda ip=ip: client.check_firewall(ip=ip),
-            iterations=50
-        )
+        result = benchmark_function(lambda ip=ip: client.check_firewall(ip=ip), iterations=50)
         results.append(result)
         print(format_result(result))
 
@@ -205,43 +191,28 @@ def run_rust_benchmarks():
     # Benchmark prompt injection detection
     print("\n1. Prompt Injection Detection")
     for prompt in MALICIOUS_PROMPTS[:3]:
-        result = benchmark_function(
-            client.detect_prompt_injection,
-            prompt,
-            iterations=50
-        )
+        result = benchmark_function(client.detect_prompt_injection, prompt, iterations=50)
         results.append(result)
         print(format_result(result))
 
     # Benchmark secret scanning
     print("\n2. Secret Scanning")
     for content in SECRET_CONTENTS[:3]:
-        result = benchmark_function(
-            client.scan_secrets,
-            content,
-            iterations=50
-        )
+        result = benchmark_function(client.scan_secrets, content, iterations=50)
         results.append(result)
         print(format_result(result))
 
     # Benchmark dangerous code detection
     print("\n3. Dangerous Code Detection")
     for code in DANGEROUS_CODES[:3]:
-        result = benchmark_function(
-            client.detect_dangerous_code,
-            code,
-            iterations=50
-        )
+        result = benchmark_function(client.detect_dangerous_code, code, iterations=50)
         results.append(result)
         print(format_result(result))
 
     # Benchmark firewall check
     print("\n4. Firewall Check")
     for ip in ["8.8.8.8", "127.0.0.1"]:
-        result = benchmark_function(
-            lambda ip=ip: client.check_firewall(ip=ip),
-            iterations=50
-        )
+        result = benchmark_function(lambda ip=ip: client.check_firewall(ip=ip), iterations=50)
         results.append(result)
         print(format_result(result))
 
@@ -262,7 +233,9 @@ def compare_results(python_results, rust_results):
 
     for py_result, rust_result in zip(python_results, rust_results):
         speedup = py_result.mean_latency_ms / rust_result.mean_latency_ms
-        print(f"{py_result.name:<30} {py_result.mean_latency_ms:<15.3f} {rust_result.mean_latency_ms:<15.3f} {speedup:<10.2f}x")
+        print(
+            f"{py_result.name:<30} {py_result.mean_latency_ms:<15.3f} {rust_result.mean_latency_ms:<15.3f} {speedup:<10.2f}x"
+        )
 
     # Summary
     py_total = sum(r.mean_latency_ms for r in python_results[:4])

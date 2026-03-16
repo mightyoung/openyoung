@@ -1,0 +1,64 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Documentation
+*.md
+docs/
+README*
+
+# Testing
+tests/
+test/
+.pytest_cache/
+coverage/
+htmlcov/
+
+# Build artifacts
+*.log
+*.tmp
+output/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Import workspaces
+github-import-workspace/
+github-import-workspace/
+
+# Large directories that shouldn't be in Docker
+packages/
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Config with secrets (will be mounted)
+.env
+.env.*

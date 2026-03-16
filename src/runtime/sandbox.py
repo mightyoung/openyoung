@@ -438,6 +438,7 @@ class SandboxInstance:
     def _get_code_hash(cls, code: str) -> str:
         """生成代码哈希用于缓存"""
         import hashlib
+
         return hashlib.sha256(code.encode()).hexdigest()[:16]
 
     @classmethod
@@ -618,10 +619,13 @@ class SandboxInstance:
                     "next_state": response.next_state,
                     "should_continue": response.should_continue,
                 }
-                self._set_eval_cache(code_hash, {
-                    "evaluation": eval_result,
-                    "logs": collected_logs,
-                })
+                self._set_eval_cache(
+                    code_hash,
+                    {
+                        "evaluation": eval_result,
+                        "logs": collected_logs,
+                    },
+                )
                 return {
                     "execution": execution_result,
                     "evaluation": eval_result,
@@ -723,9 +727,7 @@ class SandboxInstance:
             }
 
             # 4. 真正的并行：启动日志消费任务
-            log_task = asyncio.create_task(
-                self._consume_logs_background(log_consumer, log_queue)
-            )
+            log_task = asyncio.create_task(self._consume_logs_background(log_consumer, log_queue))
 
             # 5. 流式评估
             responses = []
@@ -884,14 +886,16 @@ class SandboxInstance:
 
             # 1. 执行当前代码
             execution_result = await self.execute(current_code, language)
-            all_execution_results.append({
-                "step": iteration + 1,
-                "action": "execute",
-                "thought": f"Executing {language} code (iteration {iteration + 1})",
-                "observation": execution_result.output or execution_result.error or "",
-                "output": execution_result.output,
-                "traces": [],
-            })
+            all_execution_results.append(
+                {
+                    "step": iteration + 1,
+                    "action": "execute",
+                    "thought": f"Executing {language} code (iteration {iteration + 1})",
+                    "observation": execution_result.output or execution_result.error or "",
+                    "output": execution_result.output,
+                    "traces": [],
+                }
+            )
 
             # 如果执行失败，停止迭代
             if execution_result.exit_code != 0:

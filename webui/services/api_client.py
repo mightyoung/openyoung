@@ -13,6 +13,7 @@ from typing import AsyncGenerator, Optional
 
 import httpx
 from httpx_sse import aconnect_sse
+
 from webui.utils.config import config
 
 
@@ -92,9 +93,7 @@ class APIClient:
         response.raise_for_status()
         return response.json()
 
-    async def send_message_stream(
-        self, session_id: str, message: str
-    ) -> AsyncGenerator[str, None]:
+    async def send_message_stream(self, session_id: str, message: str) -> AsyncGenerator[str, None]:
         """Send message and stream response (SSE)"""
         try:
             # Use POST to send message and get SSE stream
@@ -197,9 +196,7 @@ class APIClient:
 
     # ========== Task API ==========
 
-    async def run_task(
-        self, agent_name: str, task: str, session_id: Optional[str] = None
-    ) -> dict:
+    async def run_task(self, agent_name: str, task: str, session_id: Optional[str] = None) -> dict:
         """Run a task"""
         client = await self._get_client()
 

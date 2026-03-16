@@ -8,10 +8,10 @@ CLI Commands Package - 模块化 CLI 命令
 - eval: 评估命令
 """
 
-from .run import run_group
-from .config import config_group
 from .agent import agent_group
+from .config import config_group
 from .eval import eval_group
+from .run import run_group
 
 __all__ = [
     "run_group",

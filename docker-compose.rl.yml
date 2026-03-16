@@ -1,0 +1,60 @@
+# RL 训练服务 Docker Compose 配置
+
+version: '3.8'
+
+services:
+  # RL 训练服务
+  rl-trainer:
+    build:
+      context: .
+      dockerfile: Dockerfile.rl
+    container_name: openyoung-rl-trainer
+    environment:
+      - RL_ENABLED=true
+      - RL_MODE=${RL_MODE:-gigpo}
+      - RL_DEVICE=${RL_DEVICE:-nvidia}
+      - DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY}
+      - RL_GRPO_LR=1e-5
+      - RL_GRPO_GROUP=4
+      - RL_BUFFER_SIZE=10000
+    volumes:
+      - rl-data:/app/data
+      - ./config:/app/config:ro
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+    networks:
+      - openyoung-net
+
+  # 可选的 RL API 服务
+  rl-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.rl
+    container_name: openyoung-rl-api
+    command: python -m src.agents.rl.api
+    environment:
+      - RL_ENABLED=true
+      - RL_MODE=${RL_MODE:-gigpo}
+      - RL_DEVICE=${RL_DEVICE:-nvidia}
+      - DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY}
+    ports:
+      - "8001:8001"
+    depends_on:
+      - rl-trainer
+    volumes:
+      - rl-data:/app/data
+    networks:
+      - openyoung-net
+
+volumes:
+  rl-data:
+
+networks:
+  openyoung-net:
+    driver: bridge

@@ -1,0 +1,8 @@
+# RL 训练依赖
+torch>=2.1.0
+transformers>=4.35.0
+accelerate>=0.25.0
+numpy>=1.24.0
+pyyaml>=6.0
+datasets>=2.14.0  # HuggingFace 数据集加载
+tqdm>=4.65.0       # 进度条

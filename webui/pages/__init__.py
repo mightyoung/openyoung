@@ -1,4 +1,4 @@
 # WebUI Pages
-from webui.pages import chat, agents, sessions, settings
+from webui.pages import agents, chat, sessions, settings
 
 __all__ = ["chat", "agents", "sessions", "settings"]

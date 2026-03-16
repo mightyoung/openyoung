@@ -4,9 +4,10 @@ Config Command - 配置命令
 提供配置管理命令
 """
 
-import click
 import os
 from pathlib import Path
+
+import click
 
 
 @click.group(name="config")
@@ -20,6 +21,7 @@ def config_group():
 def config_get(key: str):
     """获取配置值"""
     from src.cli.config_manager import get_config
+
     value = get_config(key)
     if value is not None:
         click.echo(f"{key} = {value}")
@@ -33,6 +35,7 @@ def config_get(key: str):
 def config_set(key: str, value: str):
     """设置配置值"""
     from src.cli.config_manager import set_config
+
     set_config(key, value)
     click.echo(f"Set {key} = {value}")
 
@@ -41,6 +44,7 @@ def config_set(key: str, value: str):
 def config_list():
     """列出所有配置"""
     from src.cli.config_manager import get_config
+
     # TODO: Implement full config listing
     click.echo("Configuration:")
     click.echo(f"  API Key: {'*' * 8 if get_config('api_key') else 'not set'}")

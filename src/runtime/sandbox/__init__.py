@@ -6,21 +6,18 @@ Sandbox - 沙箱执行模块
 """
 
 # 安全策略
-from .security_policy import (
-    RiskLevel,
-    SandboxPolicy,
-    SecurityPolicyEngine,
-    create_strict_policy,
-    create_relaxed_policy,
-)
+# 从 sandbox.py 导入遗留类 (保持向后兼容)
+import importlib.util
 
 # E2B 适配器
 from .e2b_adapter import (
-    E2BSandbox,
-    E2BFallback,
-    ExecutionResult as E2BExecutionResult,
-    create_e2b_sandbox,
     E2B_AVAILABLE,
+    E2BFallback,
+    E2BSandbox,
+    create_e2b_sandbox,
+)
+from .e2b_adapter import (
+    ExecutionResult as E2BExecutionResult,
 )
 
 # 沙箱管理器
@@ -34,16 +31,20 @@ from .manager import (
 
 # MCP 安全
 from .mcp_security import (
-    MCPSecurityConfig,
     MCPSecurityAdapter,
+    MCPSecurityConfig,
     get_mcp_security,
 )
+from .security_policy import (
+    RiskLevel,
+    SandboxPolicy,
+    SecurityPolicyEngine,
+    create_relaxed_policy,
+    create_strict_policy,
+)
 
-# 从 sandbox.py 导入遗留类 (保持向后兼容)
-import importlib.util
 _sandbox_spec = importlib.util.spec_from_file_location(
-    "_legacy_sandbox",
-    "/Users/muyi/Downloads/dev/openyoung/src/runtime/sandbox.py"
+    "_legacy_sandbox", "/Users/muyi/Downloads/dev/openyoung/src/runtime/sandbox.py"
 )
 _sandbox_mod = importlib.util.module_from_spec(_sandbox_spec)
 try:
@@ -81,6 +82,7 @@ except Exception:
 
     def create_sandbox_config(**kwargs):
         return None
+
 
 __all__ = [
     # Legacy (from sandbox.py)

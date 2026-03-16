@@ -7,6 +7,7 @@ Based on LangChain streamlit-agent patterns:
 """
 
 import streamlit as st
+
 from webui.utils.config import config
 
 
@@ -37,6 +38,7 @@ def init_session_state():
     # API client
     if "api_client" not in st.session_state:
         from webui.services.api_client import get_api_client
+
         st.session_state.api_client = get_api_client()
 
 

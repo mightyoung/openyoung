@@ -1,0 +1,65 @@
+# RL 配置模板
+
+# RL 系统配置
+rl:
+  # 启用 RL 系统
+  enabled: true
+
+  # 运行模式
+  # - collection_only: 仅收集经验 (默认)
+  # - grpo: 轻量 GRPO 训练 (M1/中等 GPU)
+  # - gigpo: 完整 GiGPO 训练 (需要 NVIDIA GPU)
+  mode: collection_only
+
+  # 硬件配置
+  device: auto  # auto/nvidia/metal/cpu
+
+  hardware:
+    # 自动检测
+    auto_detect: true
+
+    # NVIDIA GPU 配置
+    nvidia:
+      enabled: true
+      cuda_devices: [0, 1]
+      allow_growth: true
+
+    # Apple Silicon 配置
+    apple_silicon:
+      enabled: true
+      use_mps: true
+
+    # ARM (RK3588) 配置
+    rockchip:
+      enabled: false
+
+  # GRPO 配置 (mode=grpo 时使用)
+  grpo:
+    learning_rate: 1.0e-5
+    clip_epsilon: 0.2
+    kl_beta: 0.01
+    group_size: 4
+    batch_size: 8
+    max_steps: 100
+
+  # GiGPO 配置 (mode=gigpo 时使用)
+  gigpo:
+    episode_advantage_weight: 1.0
+    step_advantage_weight: 0.5
+    use_gae: true
+    gae_lambda: 0.95
+    gamma: 0.99
+
+  # 经验收集配置
+  collection:
+    buffer_size: 10000
+    min_samples_for_training: 100
+    embedding_batch_size: 100
+
+  # 奖励配置
+  rewards:
+    task_completion_positive: 1.0
+    task_completion_negative: -0.5
+    evaluation_weight: 0.3
+    efficiency_weight: 0.2
+    error_penalty: -0.1

@@ -22,16 +22,16 @@ class MCPSecurityConfig:
     # 网络隔离
     enable_network_isolation: bool = True
     allowed_domains: list[str] = field(default_factory=list)
-    blocked_domains: list[str] = field(default_factory=lambda: [
-        "localhost", "127.0.0.1", "0.0.0.0", "metadata.google.internal"
-    ])
+    blocked_domains: list[str] = field(
+        default_factory=lambda: ["localhost", "127.0.0.1", "0.0.0.0", "metadata.google.internal"]
+    )
 
     # 路径限制
     enable_path_restriction: bool = True
     allowed_paths: list[str] = field(default_factory=list)  # 空=无限制
-    denied_paths: list[str] = field(default_factory=lambda: [
-        "/etc/passwd", "/etc/shadow", "/root/.ssh", "/home/*/.ssh"
-    ])
+    denied_paths: list[str] = field(
+        default_factory=lambda: ["/etc/passwd", "/etc/shadow", "/root/.ssh", "/home/*/.ssh"]
+    )
 
     # 进程限制
     enable_process_limit: bool = True
@@ -100,17 +100,11 @@ class MCPSecurityAdapter:
         # 危险方法检查
         dangerous_methods = ["exec", "run", "spawn", "write_file", "delete_file"]
         if method in dangerous_methods:
-            self._log_audit("dangerous_method", mcp_name, {
-                "method": method,
-                "allowed": False
-            })
+            self._log_audit("dangerous_method", mcp_name, {"method": method, "allowed": False})
             return False, f"Method '{method}' is not allowed for MCP servers"
 
         # 记录正常请求
-        self._log_audit("request", mcp_name, {
-            "method": method,
-            "allowed": True
-        })
+        self._log_audit("request", mcp_name, {"method": method, "allowed": True})
 
         return True, ""
 
@@ -130,18 +124,22 @@ class MCPSecurityAdapter:
 
         # 检查危险命令
         dangerous_commands = [
-            "rm -rf", "dd if=", "mkfs", "fdisk",
-            "curl | sh", "wget | sh", "bash -c",
-            "nc ", "netcat", "socat",
+            "rm -rf",
+            "dd if=",
+            "mkfs",
+            "fdisk",
+            "curl | sh",
+            "wget | sh",
+            "bash -c",
+            "nc ",
+            "netcat",
+            "socat",
         ]
 
         full_cmd = command + " " + " ".join(args)
         for dangerous in dangerous_commands:
             if dangerous in full_cmd:
-                self._log_audit("dangerous_command", "mcp", {
-                    "command": full_cmd,
-                    "blocked": True
-                })
+                self._log_audit("dangerous_command", "mcp", {"command": full_cmd, "blocked": True})
                 return False, f"Dangerous command blocked: {dangerous}"
 
         return True, ""
@@ -158,8 +156,13 @@ class MCPSecurityAdapter:
         """
         # 需要移除的敏感变量
         sensitive_vars = [
-            "API_KEY", "SECRET", "PASSWORD", "TOKEN",
-            "PRIVATE_KEY", "ACCESS_KEY", "CREDENTIAL",
+            "API_KEY",
+            "SECRET",
+            "PASSWORD",
+            "TOKEN",
+            "PRIVATE_KEY",
+            "ACCESS_KEY",
+            "CREDENTIAL",
         ]
 
         sanitized = {}
@@ -169,9 +172,13 @@ class MCPSecurityAdapter:
 
             if is_sensitive:
                 sanitized[key] = "***REDACTED***"
-                self._log_audit("sensitive_env_blocked", "mcp", {
-                    "key": key,
-                })
+                self._log_audit(
+                    "sensitive_env_blocked",
+                    "mcp",
+                    {
+                        "key": key,
+                    },
+                )
             else:
                 sanitized[key] = value
 
@@ -194,10 +201,14 @@ class MCPSecurityAdapter:
         # 检查拒绝路径
         for denied in self.config.denied_paths:
             if path.startswith(denied.replace("*", "")):
-                self._log_audit("path_denied", "mcp", {
-                    "path": path,
-                    "operation": operation,
-                })
+                self._log_audit(
+                    "path_denied",
+                    "mcp",
+                    {
+                        "path": path,
+                        "operation": operation,
+                    },
+                )
                 return False, f"Path access denied: {path}"
 
         # 检查允许路径 (如果有配置)
@@ -239,10 +250,14 @@ class MCPSecurityAdapter:
         clean_env = self.sanitize_env(env)
 
         # 添加审计日志
-        self._log_audit("process_spawn", "mcp", {
-            "command": command,
-            "args": args,
-        })
+        self._log_audit(
+            "process_spawn",
+            "mcp",
+            {
+                "command": command,
+                "args": args,
+            },
+        )
 
         return {
             "command": command,

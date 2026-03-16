@@ -14,6 +14,7 @@ from typing import Any
 
 class EvaluationStatus(str, Enum):
     """评估状态"""
+
     PENDING = "pending"
     RUNNING = "running"
     SUCCESS = "success"
@@ -23,6 +24,7 @@ class EvaluationStatus(str, Enum):
 
 class EvaluatorType(str, Enum):
     """评估器类型"""
+
     CODE = "code"
     TASK = "task"
     LLM_JUDGE = "llm_judge"
@@ -177,8 +179,7 @@ class EvaluationRecord:
 
         # 使用每个维度的阈值
         return all(
-            d.passed or d.score >= (d.threshold or default_threshold)
-            for d in self.dimensions
+            d.passed or d.score >= (d.threshold or default_threshold) for d in self.dimensions
         )
 
     def update(self):

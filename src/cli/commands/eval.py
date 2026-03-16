@@ -19,11 +19,11 @@ def eval_group():
 @click.option("--output", "-o", help="Output file")
 def eval_run(dataset: str, agent: str, output: str):
     """运行评估"""
-    click.echo(f"Running evaluation:")
-    click.echo(f"  Dataset: {dataset}")
-    click.echo(f"  Agent: {agent}")
+    click.echo("Running evaluation:")
+    click.echo("  Dataset: " + dataset)
+    click.echo("  Agent: " + agent)
     if output:
-        click.echo(f"  Output: {output}")
+        click.echo("  Output: " + output)
     # TODO: Implement actual evaluation
 
 
@@ -31,7 +31,7 @@ def eval_run(dataset: str, agent: str, output: str):
 @click.argument("run_id")
 def eval_report(run_id: str):
     """查看评估报告"""
-    click.echo(f"Evaluation Report: {run_id}")
+    click.echo("Evaluation Report: " + run_id)
     # TODO: Implement actual report
 
 
@@ -40,7 +40,7 @@ def eval_report(run_id: str):
 @click.argument("run_id_2")
 def eval_compare(run_id_1: str, run_id_2: str):
     """比较评估结果"""
-    click.echo(f"Comparing evaluations:")
-    click.echo(f"  Run 1: {run_id_1}")
-    click.echo(f"  Run 2: {run_id_2}")
+    click.echo("Comparing evaluations:")
+    click.echo("  Run 1: " + run_id_1)
+    click.echo("  Run 2: " + run_id_2)
     # TODO: Implement actual comparison

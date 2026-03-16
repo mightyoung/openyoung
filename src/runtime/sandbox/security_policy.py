@@ -13,6 +13,7 @@ from typing import Optional
 
 class RiskLevel(Enum):
     """风险级别"""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -30,46 +31,71 @@ class SandboxPolicy:
     min_risk_level: RiskLevel = RiskLevel.LOW
 
     # 命令白名单
-    allowed_commands: set = field(default_factory=lambda: {
-        "python", "python3", "pip", "pip3",
-        "npm", "node", "npx",
-        "git", "curl", "wget",
-        "ls", "cd", "pwd", "cat", "head", "tail",
-        "mkdir", "rmdir", "touch", "cp", "mv",
-        "docker", "docker-compose",
-    })
+    allowed_commands: set = field(
+        default_factory=lambda: {
+            "python",
+            "python3",
+            "pip",
+            "pip3",
+            "npm",
+            "node",
+            "npx",
+            "git",
+            "curl",
+            "wget",
+            "ls",
+            "cd",
+            "pwd",
+            "cat",
+            "head",
+            "tail",
+            "mkdir",
+            "rmdir",
+            "touch",
+            "cp",
+            "mv",
+            "docker",
+            "docker-compose",
+        }
+    )
 
     # 危险模式 (阻止执行)
-    blocked_patterns: list = field(default_factory=lambda: [
-        r"rm\s+-rf",           # 删除根目录
-        r"dd\s+if=",            # 磁盘写入
-        r">\s*/dev/",          # 设备文件
-        r"import\s+os.*system",  # OS命令执行
-        r"subprocess.*shell\s*=\s*True",  # Shell执行
-        r"eval\s*\(",          # 动态执行
-        r"exec\s*\(",          # 代码执行
-        r"__import__\s*\(\s*['\"]os",  # OS导入
-        r"import\s+pty",       # 终端操作
-        r"import\s+socket",    # 网络操作
-    ])
+    blocked_patterns: list = field(
+        default_factory=lambda: [
+            r"rm\s+-rf",  # 删除根目录
+            r"dd\s+if=",  # 磁盘写入
+            r">\s*/dev/",  # 设备文件
+            r"import\s+os.*system",  # OS命令执行
+            r"subprocess.*shell\s*=\s*True",  # Shell执行
+            r"eval\s*\(",  # 动态执行
+            r"exec\s*\(",  # 代码执行
+            r"__import__\s*\(\s*['\"]os",  # OS导入
+            r"import\s+pty",  # 终端操作
+            r"import\s+socket",  # 网络操作
+        ]
+    )
 
     # 敏感路径 (只读)
-    read_only_paths: set = field(default_factory=lambda: {
-        "/etc/passwd",
-        "/etc/shadow",
-        "/root/.ssh",
-        "/home/*/.ssh",
-    })
+    read_only_paths: set = field(
+        default_factory=lambda: {
+            "/etc/passwd",
+            "/etc/shadow",
+            "/root/.ssh",
+            "/home/*/.ssh",
+        }
+    )
 
     # 网络限制
     allow_network: bool = False  # 默认禁止网络
     allowed_domains: list = field(default_factory=list)  # 白名单域名
     allowed_ips: list = field(default_factory=list)  # 白名单IP
-    blocked_domains: list = field(default_factory=lambda: [
-        "localhost",
-        "127.0.0.1",
-        "0.0.0.0",
-    ])
+    blocked_domains: list = field(
+        default_factory=lambda: [
+            "localhost",
+            "127.0.0.1",
+            "0.0.0.0",
+        ]
+    )
 
     # MCP服务器专用网络配置
     mcp_allowed_servers: list = field(default_factory=list)  # 允许的MCP服务器名称
@@ -260,14 +286,14 @@ class SecurityPolicyEngine:
 
         # 2. 检查路径穿越模式
         dangerous_patterns = [
-            r"\.\.",           # 双点穿越
-            r"\./",            # 当前目录穿越
-            r"~/",             # home目录穿越
-            r"/proc",          # procfs
-            r"/sys",          # sysfs
-            r"/dev",          # 设备文件
-            r"%2e%2e",        # URL编码穿越
-            r"\.\.%2f",       # URL编码穿越
+            r"\.\.",  # 双点穿越
+            r"\./",  # 当前目录穿越
+            r"~/",  # home目录穿越
+            r"/proc",  # procfs
+            r"/sys",  # sysfs
+            r"/dev",  # 设备文件
+            r"%2e%2e",  # URL编码穿越
+            r"\.\.%2f",  # URL编码穿越
         ]
 
         for pattern in dangerous_patterns:
@@ -284,7 +310,10 @@ class SecurityPolicyEngine:
 
             # 检查路径是否在工作目录内
             if not normalized_path.startswith(working_dir):
-                return False, f"Path outside working directory. Allowed: {working_dir}, Requested: {path}"
+                return (
+                    False,
+                    f"Path outside working directory. Allowed: {working_dir}, Requested: {path}",
+                )
 
         # 4. 检查允许路径列表
         if self.policy.allowed_paths:
@@ -373,14 +402,17 @@ class SecurityPolicyEngine:
             return
 
         import datetime
+
         if not hasattr(self, "_audit_log"):
             self._audit_log = []
 
-        self._audit_log.append({
-            "timestamp": datetime.datetime.now().isoformat(),
-            "event_type": event_type,
-            "details": details,
-        })
+        self._audit_log.append(
+            {
+                "timestamp": datetime.datetime.now().isoformat(),
+                "event_type": event_type,
+                "details": details,
+            }
+        )
 
         # 限制日志大小
         if len(self._audit_log) > 1000:

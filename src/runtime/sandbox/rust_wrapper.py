@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 RUST_AVAILABLE = False
 try:
     import ironclaw_sandbox
+
     RUST_AVAILABLE = True
     logger.info("Rust sandbox module loaded successfully")
 except ImportError:
@@ -108,7 +109,7 @@ class RustSandbox:
 
     def _init_fallback(self):
         """初始化 Python 回退实现"""
-        from .manager import SandboxManager, SandboxConfig
+        from .manager import SandboxConfig, SandboxManager
 
         config = SandboxConfig(
             timeout=int(self.max_execution_time_ms / 1000),
@@ -159,9 +160,14 @@ class RustSandbox:
         try:
             if language == "python":
                 # 在受限环境中执行 Python 代码
-                result = self._fallback.execute(code) if self._fallback else self._execute_local(code)
+                result = (
+                    self._fallback.execute(code) if self._fallback else self._execute_local(code)
+                )
             else:
-                result = {"output": f"Language {language} not supported in fallback", "exit_code": 1}
+                result = {
+                    "output": f"Language {language} not supported in fallback",
+                    "exit_code": 1,
+                }
 
             duration_ms = int((time.time() - start) * 1000)
 
@@ -240,7 +246,7 @@ class RustSandbox:
 
     def _check_security_fallback(self, code: str) -> SecurityCheckResult:
         """使用 Python 进行安全检查"""
-        from .security_policy import SecurityPolicyEngine, create_strict_policy, RiskLevel
+        from .security_policy import RiskLevel, SecurityPolicyEngine, create_strict_policy
 
         policy = create_strict_policy()
         engine = SecurityPolicyEngine(policy)

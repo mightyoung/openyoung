@@ -5,31 +5,30 @@ Skill Marketplace - 技能市场模块
 基于 npm registry 和 Vercel Skills 设计
 """
 
+from .discovery import DiscoveryService
+from .install import InstallService
 from .models import (
-    # Enums
-    SkillStatus,
-    ReleaseType,
-    SkillCategory,
-    # Models
-    SkillManifest,
+    InstallOptions,
     MarketplaceSkill,
-    SkillReview,
-    SkillDownload,
-    SkillUpdate,
+    PublishOptions,
+    ReleaseType,
+    ReviewList,
     SearchFilters,
     SearchResult,
-    InstallOptions,
-    PublishOptions,
+    SkillCategory,
+    SkillDownload,
     # Type aliases
     SkillList,
-    ReviewList,
+    # Models
+    SkillManifest,
+    SkillReview,
+    # Enums
+    SkillStatus,
+    SkillUpdate,
 )
-
-from .registry import MarketplaceRegistry
-from .discovery import DiscoveryService
 from .publish import PublishService
-from .install import InstallService
 from .rating import RatingService
+from .registry import MarketplaceRegistry
 
 __all__ = [
     # Enums

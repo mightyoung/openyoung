@@ -11,19 +11,20 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
 
-from .security_policy import SandboxPolicy, SecurityPolicyEngine, RiskLevel
 from .e2b_adapter import (
-    E2BSandbox,
-    create_e2b_sandbox,
-    ExecutionResult,
     E2B_AVAILABLE,
+    E2BSandbox,
+    ExecutionResult,
+    create_e2b_sandbox,
 )
+from .security_policy import RiskLevel, SandboxPolicy, SecurityPolicyEngine
 
 logger = logging.getLogger(__name__)
 
 
 class SandboxBackend(str, Enum):
     """沙箱后端类型"""
+
     E2B = "e2b"
     DOCKER = "docker"
     PROCESS = "process"
@@ -32,6 +33,7 @@ class SandboxBackend(str, Enum):
 @dataclass
 class SandboxConfig:
     """沙箱配置"""
+
     backend: SandboxBackend = SandboxBackend.E2B
     template: str = "python3"
     timeout: int = 300

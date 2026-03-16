@@ -15,11 +15,11 @@ logger = logging.getLogger(__name__)
 
 from .models import (
     MarketplaceSkill,
+    SearchFilters,
+    SearchResult,
     SkillCategory,
     SkillReview,
     SkillStatus,
-    SearchFilters,
-    SearchResult,
 )
 
 
@@ -126,7 +126,8 @@ class MarketplaceRegistry:
         cursor = conn.cursor()
 
         try:
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT OR REPLACE INTO skills (
                     id, name, display_name, description, version, latest_version,
                     category, tags, author, author_email, author_url,
@@ -134,33 +135,35 @@ class MarketplaceRegistry:
                     download_count, rating, rating_count, status,
                     created_at, updated_at, published_at, manifest_json, engines
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                skill.id,
-                skill.name,
-                skill.display_name,
-                skill.description,
-                skill.version,
-                skill.latest_version,
-                skill.category.value if skill.category else None,
-                json.dumps(skill.tags),
-                skill.author,
-                skill.author_email,
-                skill.author_url,
-                skill.repository_url,
-                skill.homepage,
-                skill.license,
-                skill.tarball_url,
-                skill.file_size,
-                skill.download_count,
-                skill.rating,
-                skill.rating_count,
-                skill.status.value if skill.status else None,
-                skill.created_at.isoformat() if skill.created_at else None,
-                skill.updated_at.isoformat() if skill.updated_at else None,
-                skill.published_at.isoformat() if skill.published_at else None,
-                json.dumps({}) if not skill.manifest else json.dumps(skill.manifest.__dict__),
-                json.dumps(skill.engines),
-            ))
+            """,
+                (
+                    skill.id,
+                    skill.name,
+                    skill.display_name,
+                    skill.description,
+                    skill.version,
+                    skill.latest_version,
+                    skill.category.value if skill.category else None,
+                    json.dumps(skill.tags),
+                    skill.author,
+                    skill.author_email,
+                    skill.author_url,
+                    skill.repository_url,
+                    skill.homepage,
+                    skill.license,
+                    skill.tarball_url,
+                    skill.file_size,
+                    skill.download_count,
+                    skill.rating,
+                    skill.rating_count,
+                    skill.status.value if skill.status else None,
+                    skill.created_at.isoformat() if skill.created_at else None,
+                    skill.updated_at.isoformat() if skill.updated_at else None,
+                    skill.published_at.isoformat() if skill.published_at else None,
+                    json.dumps({}) if not skill.manifest else json.dumps(skill.manifest.__dict__),
+                    json.dumps(skill.engines),
+                ),
+            )
             conn.commit()
             return True
         except Exception as e:
@@ -189,14 +192,10 @@ class MarketplaceRegistry:
         cursor = conn.cursor()
 
         if version:
-            cursor.execute(
-                "SELECT * FROM skills WHERE name = ? AND version = ?",
-                (name, version)
-            )
+            cursor.execute("SELECT * FROM skills WHERE name = ? AND version = ?", (name, version))
         else:
             cursor.execute(
-                "SELECT * FROM skills WHERE name = ? AND version = latest_version",
-                (name,)
+                "SELECT * FROM skills WHERE name = ? AND version = latest_version", (name,)
             )
 
         row = cursor.fetchone()
@@ -249,7 +248,9 @@ class MarketplaceRegistry:
         rows = cursor.fetchall()
 
         # 获取总数
-        count_query = query.replace(f" LIMIT {filters.page_size} OFFSET {offset}", "").replace("SELECT *", "SELECT COUNT(*)")
+        count_query = query.replace(f" LIMIT {filters.page_size} OFFSET {offset}", "").replace(
+            "SELECT *", "SELECT COUNT(*)"
+        )
         cursor.execute(count_query, params)
         total = cursor.fetchone()[0]
 
@@ -324,27 +325,30 @@ class MarketplaceRegistry:
         cursor = conn.cursor()
 
         try:
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO reviews (
                     id, skill_id, skill_version, user_id, user_name,
                     rating, title, comment, helpful_count, not_helpful_count,
                     is_verified, created_at, updated_at
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                review.id,
-                review.skill_id,
-                review.skill_version,
-                review.user_id,
-                review.user_name,
-                review.rating,
-                review.title,
-                review.comment,
-                review.helpful_count,
-                review.not_helpful_count,
-                1 if review.is_verified else 0,
-                review.created_at.isoformat(),
-                review.updated_at.isoformat(),
-            ))
+            """,
+                (
+                    review.id,
+                    review.skill_id,
+                    review.skill_version,
+                    review.user_id,
+                    review.user_name,
+                    review.rating,
+                    review.title,
+                    review.comment,
+                    review.helpful_count,
+                    review.not_helpful_count,
+                    1 if review.is_verified else 0,
+                    review.created_at.isoformat(),
+                    review.updated_at.isoformat(),
+                ),
+            )
             conn.commit()
 
             # 更新技能评分
@@ -364,7 +368,7 @@ class MarketplaceRegistry:
 
         cursor.execute(
             "SELECT * FROM reviews WHERE skill_id = ? ORDER BY created_at DESC LIMIT ?",
-            (skill_id, limit)
+            (skill_id, limit),
         )
         rows = cursor.fetchall()
         conn.close()
@@ -394,7 +398,8 @@ class MarketplaceRegistry:
         conn = self._get_connection()
         cursor = conn.cursor()
 
-        cursor.execute("""
+        cursor.execute(
+            """
             UPDATE skills
             SET rating = (
                 SELECT AVG(rating) FROM reviews WHERE skill_id = ?
@@ -403,7 +408,9 @@ class MarketplaceRegistry:
                 SELECT COUNT(*) FROM reviews WHERE skill_id = ?
             )
             WHERE id = ?
-        """, (skill_id, skill_id, skill_id))
+        """,
+            (skill_id, skill_id, skill_id),
+        )
 
         conn.commit()
         conn.close()
@@ -423,15 +430,25 @@ class MarketplaceRegistry:
             client_version = client_info.get("version") if client_info else ""
             platform = client_info.get("platform") if client_info else ""
 
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO downloads (id, skill_id, version, client_id, client_version, platform, downloaded_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (download_id, skill_id, version, client_id, client_version, platform, datetime.now().isoformat()))
+            """,
+                (
+                    download_id,
+                    skill_id,
+                    version,
+                    client_id,
+                    client_version,
+                    platform,
+                    datetime.now().isoformat(),
+                ),
+            )
 
             # 更新下载计数
             cursor.execute(
-                "UPDATE skills SET download_count = download_count + 1 WHERE id = ?",
-                (skill_id,)
+                "UPDATE skills SET download_count = download_count + 1 WHERE id = ?", (skill_id,)
             )
 
             conn.commit()

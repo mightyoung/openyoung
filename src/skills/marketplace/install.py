@@ -9,10 +9,10 @@ import os
 import shutil
 import tarfile
 import tempfile
+import urllib.error
+import urllib.request
 from pathlib import Path
 from typing import Optional
-import urllib.request
-import urllib.error
 
 from .models import (
     InstallOptions,
@@ -262,5 +262,5 @@ class InstallService:
             with open(manifest_path) as f:
                 manifest = json.load(f)
                 return "name" in manifest and "version" in manifest
-        except (json.JSONDecodeError, IOError):
+        except (OSError, json.JSONDecodeError):
             return False

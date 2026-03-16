@@ -8,7 +8,7 @@ SSE流式输出支持
 import asyncio
 import json
 from dataclasses import dataclass
-from typing import Optional, AsyncGenerator
+from typing import AsyncGenerator, Optional
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
@@ -23,8 +23,10 @@ except ImportError:
 
 # ========== 请求模型 ==========
 
+
 class CreateSessionRequest(BaseModel):
     """创建会话请求"""
+
     agent_name: str
     initial_context: dict = {}
     session_id: Optional[str] = None
@@ -32,13 +34,16 @@ class CreateSessionRequest(BaseModel):
 
 class MessageRequest(BaseModel):
     """消息请求"""
+
     message: str
 
 
 # ========== 响应模型 ==========
 
+
 class SessionResponse(BaseModel):
     """会话响应"""
+
     session_id: str
     status: str
     agent_name: str
@@ -47,12 +52,14 @@ class SessionResponse(BaseModel):
 
 class MessageResponse(BaseModel):
     """消息响应"""
+
     session_id: str
     response: str
     status: str
 
 
 # ========== SSE 事件生成器 ==========
+
 
 async def chat_response_generator(
     session_id: str,
@@ -131,6 +138,7 @@ async def chat_response_generator(
 
 
 # ========== API 实现 ==========
+
 
 def create_session_api(app: FastAPI, session_manager, agent_executor=None):
     """创建会话API"""
@@ -230,9 +238,7 @@ def create_session_api(app: FastAPI, session_manager, agent_executor=None):
         session = session_manager.get_persistent_session(session_id)
         if not session:
             return EventSourceResponse(
-                iter([
-                    f"event: error\ndata: {json.dumps({'error': 'Session not found'})}\n\n"
-                ])
+                iter([f"event: error\ndata: {json.dumps({'error': 'Session not found'})}\n\n"])
             )
 
         # 如果提供了消息，先保存用户消息
@@ -265,9 +271,7 @@ def create_session_api(app: FastAPI, session_manager, agent_executor=None):
         session = session_manager.get_persistent_session(session_id)
         if not session:
             return EventSourceResponse(
-                iter([
-                    f"event: error\ndata: {json.dumps({'error': 'Session not found'})}\n\n"
-                ])
+                iter([f"event: error\ndata: {json.dumps({'error': 'Session not found'})}\n\n"])
             )
 
         # 保存用户消息
@@ -289,8 +293,7 @@ def create_session_api(app: FastAPI, session_manager, agent_executor=None):
         return {
             "session_id": session_id,
             "messages": [
-                {"role": m.role, "content": m.content, "timestamp": m.timestamp}
-                for m in messages
+                {"role": m.role, "content": m.content, "timestamp": m.timestamp} for m in messages
             ],
         }
 

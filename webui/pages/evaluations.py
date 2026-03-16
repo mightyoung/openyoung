@@ -8,6 +8,7 @@ Based on Streamlit best practices for data visualization:
 """
 
 import streamlit as st
+
 from webui.utils.config import config
 
 
@@ -103,9 +104,7 @@ def render():
 
     with col4:
         avg_score = (
-            sum(e.get("score", 0) for e in evaluations) / len(evaluations)
-            if evaluations
-            else 0
+            sum(e.get("score", 0) for e in evaluations) / len(evaluations) if evaluations else 0
         )
         st.metric("Avg Score", f"{avg_score:.2%}")
 

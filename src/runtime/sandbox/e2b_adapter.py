@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 E2B_AVAILABLE = False
 try:
     import e2b_code_interpreter
+
     E2B_AVAILABLE = True
 except ImportError:
     logger.warning("E2B SDK not available, using fallback")
@@ -23,6 +24,7 @@ except ImportError:
 @dataclass
 class ExecutionResult:
     """执行结果"""
+
     output: str
     error: str
     exit_code: int
@@ -105,12 +107,8 @@ class E2BSandbox:
             artifacts = []
 
             if results.logs:
-                output = "\n".join([
-                    str(log) for log in results.logs.stdout
-                ])
-                error = "\n".join([
-                    str(log) for log in results.logs.stderr
-                ])
+                output = "\n".join([str(log) for log in results.logs.stdout])
+                error = "\n".join([str(log) for log in results.logs.stderr])
 
             # 检查错误
             exit_code = 0
@@ -119,10 +117,7 @@ class E2BSandbox:
 
             # 提取artifacts (生成的文件)
             if results.files:
-                artifacts = [
-                    {"name": f.name, "content": f.content}
-                    for f in results.files
-                ]
+                artifacts = [{"name": f.name, "content": f.content} for f in results.files]
 
             duration_ms = int((time.time() - start_time) * 1000)
 

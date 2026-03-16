@@ -3,8 +3,9 @@ Sessions Page - Manage persistent sessions
 """
 
 import asyncio
-import streamlit as st
 from datetime import datetime
+
+import streamlit as st
 
 
 def run_async(coro):
@@ -13,6 +14,7 @@ def run_async(coro):
         loop = asyncio.get_event_loop()
         if loop.is_running():
             import concurrent.futures
+
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 future = executor.submit(asyncio.run, coro)
                 return future.result()
