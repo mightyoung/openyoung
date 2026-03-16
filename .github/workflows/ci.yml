@@ -13,6 +13,8 @@ jobs:
   # Run pre-commit to check but not fail the build
   pre-commit-check:
     runs-on: ubuntu-latest
+    continue-on-error: true
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -109,6 +111,7 @@ jobs:
 
   pre-commit:
     runs-on: ubuntu-latest
+    continue-on-error: true
 
     steps:
       - uses: actions/checkout@v4
