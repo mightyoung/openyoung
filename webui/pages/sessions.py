@@ -7,6 +7,9 @@ from datetime import datetime
 
 import streamlit as st
 
+from webui.components.ui.card import render_card_expanded
+from webui.components.ui.button import render_button
+
 
 def run_async(coro):
     """Run async coroutine in Streamlit"""
@@ -26,17 +29,29 @@ def run_async(coro):
 
 def render():
     """Render sessions page"""
-    st.title("📋 Sessions")
+    st.title("Sessions")
 
-    # Actions
+    # Apply title styling
+    st.markdown("""
+        <style>
+        .sessions-title {
+            font-size: var(--text-2xl);
+            font-weight: var(--weight-semibold);
+            color: var(--foreground);
+            margin-bottom: var(--space-6);
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # Actions row
     col1, col2 = st.columns([1, 1])
 
     with col1:
-        if st.button("🔄 Refresh"):
+        if render_button("Refresh", variant="outline", key="refresh_sessions"):
             st.rerun()
 
     with col2:
-        if st.button("➕ New Session"):
+        if render_button("New Session", variant="primary", key="new_session"):
             st.session_state.messages = []
             st.session_state.current_session_id = None
             st.rerun()
@@ -52,69 +67,74 @@ def render():
             st.info("No active sessions. Start a new conversation to create one.")
             return
 
-        # Display sessions
+        # Display sessions as cards
         for session in sessions:
-            with st.container():
-                col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
+            session_id = session.get("session_id", "N/A")
+            status = session.get("status", "unknown")
+            agent_name = session.get("agent_name", "Unknown")
 
-                session_id = session.get("session_id", "N/A")
-                status = session.get("status", "unknown")
-                agent_name = session.get("agent_name", "Unknown")
+            # Status display
+            status_colors = {
+                "running": "🟢",
+                "idle": "🔵",
+                "suspended": "🟡",
+                "completed": "⚪",
+                "failed": "🔴",
+            }
+            status_icon = status_colors.get(status, "⚪")
+            status_display = f"{status_icon} {status.capitalize()}"
 
-                with col1:
-                    st.markdown(f"**Session:** `{session_id[:8]}...`")
-                    st.markdown(f"**Agent:** {agent_name}")
+            # Render session card
+            render_card_expanded(
+                title=f"Session: `{session_id[:8]}...`",
+                description=f"Agent: {agent_name} | Status: {status_display}",
+                border=True,
+                SessionID=session_id,
+                Agent=agent_name,
+                Status=status.capitalize(),
+            )
 
-                with col2:
-                    # Status badge
-                    status_colors = {
-                        "running": "🟢",
-                        "idle": "🔵",
-                        "suspended": "🟡",
-                        "completed": "⚪",
-                        "failed": "🔴",
-                    }
-                    status_icon = status_colors.get(status, "⚪")
-                    st.markdown(f"{status_icon} {status.capitalize()}")
-
-                with col3:
-                    if status == "idle" or status == "running":
-                        if st.button(
-                            "⏸️ Suspend",
-                            key=f"suspend_{session_id}",
-                            use_container_width=True,
-                        ):
-                            try:
-                                run_async(client.suspend_session(session_id))
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"Error: {e}")
-
-                with col4:
-                    if status == "suspended":
-                        if st.button(
-                            "▶️ Resume",
-                            key=f"resume_{session_id}",
-                            use_container_width=True,
-                        ):
-                            try:
-                                run_async(client.resume_session(session_id))
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"Error: {e}")
-
-                    if st.button(
-                        "🗑️ Delete",
-                        key=f"delete_{session_id}",
-                        use_container_width=True,
+            # Action buttons row
+            action_cols = st.columns([1, 1, 1])
+            with action_cols[0]:
+                if status in ("idle", "running"):
+                    if render_button(
+                        "Suspend",
+                        variant="outline",
+                        key=f"suspend_{session_id}",
                     ):
                         try:
-                            run_async(client.delete_session(session_id))
+                            run_async(client.suspend_session(session_id))
                             st.rerun()
                         except Exception as e:
                             st.error(f"Error: {e}")
 
-                st.markdown("---")
+            with action_cols[1]:
+                if status == "suspended":
+                    if render_button(
+                        "Resume",
+                        variant="primary",
+                        key=f"resume_{session_id}",
+                    ):
+                        try:
+                            run_async(client.resume_session(session_id))
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Error: {e}")
+
+            with action_cols[2]:
+                if render_button(
+                    "Delete",
+                    variant="ghost",
+                    key=f"delete_{session_id}",
+                ):
+                    try:
+                        run_async(client.delete_session(session_id))
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error: {e}")
+
+            st.markdown("---")
 
     except Exception as e:
         st.error(f"Error loading sessions: {str(e)}")
@@ -128,29 +148,29 @@ def render():
         ]
 
         for session in demo_sessions:
-            with st.container():
-                col1, col2, col3 = st.columns([3, 1, 1])
+            status = session["status"]
+            status_colors = {
+                "running": "🟢",
+                "idle": "🔵",
+                "suspended": "🟡",
+            }
+            status_display = f"{status_colors.get(status, '⚪')} {status.capitalize()}"
 
-                with col1:
-                    st.markdown(f"**Session:** `{session['session_id']}`")
-                    st.markdown(f"**Agent:** {session['agent_name']}")
+            render_card_expanded(
+                title=f"Session: `{session['session_id']}`",
+                description=f"Agent: {session['agent_name']} | Status: {status_display}",
+                border=True,
+                SessionID=session["session_id"],
+                Agent=session["agent_name"],
+                Status=status.capitalize(),
+            )
 
-                with col2:
-                    status = session["status"]
-                    status_colors = {
-                        "running": "🟢",
-                        "idle": "🔵",
-                        "suspended": "🟡",
-                    }
-                    st.markdown(f"{status_colors.get(status, '⚪')} {status.capitalize()}")
+            if render_button(
+                "Continue",
+                variant="primary",
+                key=f"cont_{session['session_id']}",
+            ):
+                st.session_state.current_session_id = session["session_id"]
+                st.rerun()
 
-                with col3:
-                    if st.button(
-                        "💬 Continue",
-                        key=f"cont_{session['session_id']}",
-                        use_container_width=True,
-                    ):
-                        st.session_state.current_session_id = session["session_id"]
-                        st.rerun()
-
-                st.markdown("---")
+            st.markdown("---")

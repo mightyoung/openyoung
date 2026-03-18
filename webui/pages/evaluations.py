@@ -2,19 +2,22 @@
 Evaluation Page - Evaluation results and metrics display
 
 Based on Streamlit best practices for data visualization:
-- Uses st.metrics for key metrics
-- Uses charts for trend visualization
+- Uses render_metric_card for key metrics
+- Uses render_card for evaluation results
 - Provides filtering and search capabilities
 """
 
 import streamlit as st
 
+from webui.components.ui.metric import render_metric_card
+from webui.components.ui.card import render_card, render_card_expanded
+from webui.components.ui.button import render_button
 from webui.utils.config import config
 
 
 def render():
     """Render evaluation page"""
-    st.title("📊 Evaluation")
+    st.title("Evaluation")
 
     # Get API client
     client = st.session_state.get("api_client")
@@ -86,59 +89,93 @@ def render():
         evaluations = []
         total = 0
 
-    # Display metrics
+    # Display metrics using render_metric_card
     st.markdown("### Overview")
+
+    passed_count = sum(1 for e in evaluations if e.get("passed"))
+    failed_count = sum(1 for e in evaluations if not e.get("passed"))
+    avg_score = (
+        sum(e.get("score", 0) for e in evaluations) / len(evaluations) if evaluations else 0
+    )
 
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-        st.metric("Total Evaluations", total)
+        render_metric_card(
+            label="Total Evaluations",
+            value=total,
+            help_text="Total number of evaluations run"
+        )
 
     with col2:
-        passed_count = sum(1 for e in evaluations if e.get("passed"))
-        st.metric("Passed", passed_count)
+        render_metric_card(
+            label="Passed",
+            value=passed_count,
+            help_text="Evaluations that passed their criteria"
+        )
 
     with col3:
-        failed_count = sum(1 for e in evaluations if not e.get("passed"))
-        st.metric("Failed", failed_count)
+        render_metric_card(
+            label="Failed",
+            value=failed_count,
+            help_text="Evaluations that did not meet criteria"
+        )
 
     with col4:
-        avg_score = (
-            sum(e.get("score", 0) for e in evaluations) / len(evaluations) if evaluations else 0
+        render_metric_card(
+            label="Avg Score",
+            value=f"{avg_score:.2%}",
+            help_text="Average score across all evaluations"
         )
-        st.metric("Avg Score", f"{avg_score:.2%}")
 
     st.markdown("---")
 
-    # Display evaluation list
+    # Display evaluation list using render_card
     st.markdown("### Evaluation Results")
 
     if evaluations:
-        # Create a table-like display
         for eval_record in evaluations:
+            score = eval_record.get("score", 0)
+            passed = eval_record.get("passed", False)
+            status_color = "var(--success)" if passed else "var(--error)"
+
             with st.container():
-                col1, col2, col3, col4 = st.columns([2, 2, 1, 1])
-
-                with col1:
-                    st.markdown(f"**{eval_record.get('evaluation_id', 'N/A')}**")
-                    st.caption(f"Execution: {eval_record.get('execution_id', 'N/A')}")
-
-                with col2:
-                    st.markdown(f"Type: {eval_record.get('evaluator_type', 'N/A')}")
-                    st.caption(f"Time: {eval_record.get('created_at', 'N/A')}")
-
-                with col3:
-                    score = eval_record.get("score", 0)
-                    st.metric("Score", f"{score:.2%}")
-
-                with col4:
-                    passed = eval_record.get("passed", False)
-                    if passed:
-                        st.success("✓ Passed")
-                    else:
-                        st.error("✗ Failed")
-
-                st.markdown("---")
+                st.markdown(f"""
+                <div style="
+                    border: 1px solid var(--border);
+                    border-radius: var(--radius-lg);
+                    padding: var(--space-4);
+                    margin-bottom: var(--space-3);
+                    background: var(--background);
+                ">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <strong style="font-size: var(--text-lg);">{eval_record.get('evaluation_id', 'N/A')}</strong>
+                            <span style="color: var(--foreground-muted); margin-left: var(--space-2);">
+                                Execution: {eval_record.get('execution_id', 'N/A')}
+                            </span>
+                        </div>
+                        <div style="text-align: right;">
+                            <span style="
+                                display: inline-block;
+                                padding: var(--space-1) var(--space-3);
+                                border-radius: var(--radius-full);
+                                background: {status_color};
+                                color: var(--primary-foreground);
+                                font-size: var(--text-sm);
+                                font-weight: var(--weight-medium);
+                            ">
+                                {'Passed' if passed else 'Failed'}
+                            </span>
+                        </div>
+                    </div>
+                    <div style="margin-top: var(--space-3); color: var(--foreground-muted);">
+                        <span>Type: {eval_record.get('evaluator_type', 'N/A')}</span>
+                        <span style="margin-left: var(--space-4);">Score: {score:.2%}</span>
+                        <span style="margin-left: var(--space-4);">{eval_record.get('created_at', 'N/A')}</span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
     else:
         st.info("No evaluation records found")
 
@@ -177,28 +214,43 @@ def render():
 
     if executions:
         for exec_record in executions:
+            status = exec_record.get("status", "unknown")
+            status_color = "var(--success)" if status == "success" else "var(--error)" if status == "failed" else "var(--info)"
+            status_text = "✓ Success" if status == "success" else "✗ Failed" if status == "failed" else "⟳ Running" if status == "running" else f"○ {status}"
+
             with st.container():
-                col1, col2, col3 = st.columns([2, 2, 1])
-
-                with col1:
-                    st.markdown(f"**{exec_record.get('execution_id', 'N/A')}**")
-
-                with col2:
-                    st.markdown(f"Agent: {exec_record.get('agent_name', 'N/A')}")
-                    st.caption(f"Time: {exec_record.get('created_at', 'N/A')}")
-
-                with col3:
-                    status = exec_record.get("status", "unknown")
-                    if status == "success":
-                        st.success(f"✓ {status}")
-                    elif status == "failed":
-                        st.error(f"✗ {status}")
-                    elif status == "running":
-                        st.info(f"⟳ {status}")
-                    else:
-                        st.warning(f"○ {status}")
-
-                st.markdown("---")
+                st.markdown(f"""
+                <div style="
+                    border: 1px solid var(--border-subtle);
+                    border-radius: var(--radius-md);
+                    padding: var(--space-3) var(--space-4);
+                    margin-bottom: var(--space-2);
+                    background: var(--background-muted);
+                ">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <strong>{exec_record.get('execution_id', 'N/A')}</strong>
+                            <span style="color: var(--foreground-muted); margin-left: var(--space-3);">
+                                Agent: {exec_record.get('agent_name', 'N/A')}
+                            </span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: var(--space-3);">
+                            <span style="color: var(--foreground-muted); font-size: var(--text-sm);">
+                                {exec_record.get('created_at', 'N/A')}
+                            </span>
+                            <span style="
+                                padding: var(--space-1) var(--space-2);
+                                border-radius: var(--radius-sm);
+                                background: {status_color};
+                                color: var(--primary-foreground);
+                                font-size: var(--text-xs);
+                            ">
+                                {status_text}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
     else:
         st.info("No execution records found")
 

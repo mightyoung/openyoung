@@ -1,7 +1,7 @@
 """
 OpenYoung WebUI - Main Application
 
-Based on LangChain streamlit-agent patterns:
+Modernized with Design Tokens (P1.1) and Base UI Components (P1.2)
 - https://github.com/langchain-ai/streamlit-agent
 - https://github.com/crewAIInc/crewai_flows_streamlit_ui
 """
@@ -11,18 +11,66 @@ import streamlit as st
 from webui.utils.config import config
 
 
+def load_css():
+    """Load custom CSS with design tokens"""
+    try:
+        with open("webui/styles/tokens.css") as f:
+            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    except FileNotFoundError:
+        pass  # Tokens not ready yet
+
+
+def load_component_css():
+    """Load component-specific styles"""
+    try:
+        with open("webui/styles/components.css") as f:
+            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    except FileNotFoundError:
+        pass  # Components CSS not ready yet
+
+
+def apply_keyboard_shortcuts():
+    """Add keyboard shortcuts for common actions"""
+    keyboard_shortcuts_css = """
+    <script>
+    document.addEventListener('keydown', function(e) {
+        // Cmd/Ctrl + K for command palette focus
+        if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+            e.preventDefault();
+            const input = document.query('input[type="text"]');
+            if (input) input.focus();
+        }
+        // Cmd/Ctrl + N for new chat
+        if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+            e.preventDefault();
+            window.location.href = '?page=new_chat';
+        }
+    });
+    </script>
+    """
+    st.markdown(keyboard_shortcuts_css, unsafe_allow_html=True)
+
+
 def setup_page():
     """Setup Streamlit page configuration"""
     st.set_page_config(
-        page_title="OpenYoung - AI Agent Platform",
-        page_icon=config.PAGE_ICON,
-        layout=config.LAYOUT,
-        initial_sidebar_state=config.INITIAL_SIDEBAR_STATE,
+        page_title="OpenYoung",
+        page_icon="🤖",
+        layout="wide",
+        initial_sidebar_state="expanded",
     )
+    # Load design tokens and component styles
+    load_css()
+    load_component_css()
+    apply_keyboard_shortcuts()
 
 
 def init_session_state():
     """Initialize session state variables"""
+    # App initialization flag
+    if "app_initialized" not in st.session_state:
+        st.session_state.app_initialized = True
+
     # Chat history
     if "messages" not in st.session_state:
         st.session_state.messages = []

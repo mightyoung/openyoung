@@ -10,6 +10,7 @@ import asyncio
 
 import streamlit as st
 
+from webui.components.ui.chat_bubble import render_chat_bubble, render_message_list
 from webui.utils.config import config
 
 
@@ -46,17 +47,16 @@ def render():
 
     st.markdown("---")
 
-    # Display chat history
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+    # Display chat history using design system
+    render_message_list(st.session_state.messages, show_timestamps=False)
 
     # Chat input
     if prompt := st.chat_input("Message your agent..."):
         # Add user message
         st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
+
+        # Render user message with design system
+        render_chat_bubble(role="user", content=prompt)
 
         # Get response
         with st.chat_message("assistant"):
