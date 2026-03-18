@@ -213,26 +213,23 @@ npx @claude-flow/cli@latest doctor --fix
 
 > 基于Anthropic Context Engineering最佳实践
 
-**当前任务**: T1 - 完善Chat流式输出
+**当前任务**: 全部完成 ✅
 
 ### 任务索引 (Layer 0)
 
 | ID | 任务 | 状态 |
 |----|------|------|
-| T1 | Chat流式输出 | pending |
-| T2 | Skills管理页面 | pending |
-| T3 | 评估运行功能 | pending |
-| T4 | Settings完整CRUD | pending |
-| T5 | 统一API服务层 | pending |
+| T1 | Chat流式输出 | ✅ completed |
+| T2 | Skills管理页面 | ✅ completed |
+| T3 | 评估运行功能 | ✅ completed |
+| T4 | Settings完整CRUD | ✅ completed |
+| T5 | 统一API服务层 | ✅ completed |
 
 ### 使用方法
 
 ```bash
-# 查看当前任务详情
-head -40 docs/plans/2026-03-17-cli-to-webui-migration-plan-v2.md
-
-# 查看T1详细方案
-sed -n '/## Layer 1/,/^##/p' docs/plans/2026-03-17-cli-to-webui-migration-plan-v2.md
+# 查看任务详情
+cat docs/plans/2026-03-17-cli-to-webui-migration-plan-v2.md
 ```
 
 详细计划: `docs/plans/2026-03-17-cli-to-webui-migration-plan-v2.md`
