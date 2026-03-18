@@ -1,7 +1,10 @@
 # OpenYoung 用户手册
 
-> **版本**: 1.1.0
-> **更新日期**: 2026-03-06
+> **版本**: 1.2.0
+> **更新日期**: 2026-03-19
+> **更新内容**: R1-R9 重构完成，Harness驱动的AI软件工厂架构
+
+---
 
 ---
 
@@ -832,7 +835,88 @@ config = loader.load_all()
 
 ---
 
-## 13. 常见问题
+## 13. Harness 驱动的 AI 软件工厂
+
+### 13.1 核心概念
+
+Harness 是 OpenYoung 的核心调度引擎，负责协调多阶段评估和反馈循环。
+
+```
+用户需求 → Harness编排 → 多Agent协作 → 标准化输出
+                    ↑
+              SemanticMemory (知识沉淀)
+              WorkingMemory (执行上下文)
+              Checkpoint (状态恢复)
+```
+
+### 13.2 执行阶段
+
+Harness 采用三阶段评估模型：
+
+| 阶段 | 说明 | 超时时间 | 最大重试 |
+|------|------|----------|----------|
+| UNIT | 单元测试阶段 | 60s | 3次 |
+| INTEGRATION | 集成测试阶段 | 120s | 2次 |
+| E2E | 端到端测试阶段 | 180s | 1次 |
+
+### 13.3 反馈动作
+
+| 动作 | 说明 |
+|------|------|
+| RETRY | 重试当前任务 |
+| REPLAN | 重新规划任务 |
+| ESCALATE | 升级处理 |
+| COMPLETE | 任务完成 |
+| FAIL | 任务失败 |
+
+### 13.4 流式执行
+
+Harness 支持流式输出，实时返回执行进度：
+
+```python
+from src.agents.harness.engine import HarnessEngine, HarnessConfig
+
+# 创建引擎
+config = HarnessConfig(
+    max_iterations=10,
+    enable_phases=True
+)
+engine = HarnessEngine(config)
+
+# 设置执行器
+async def executor(task, context):
+    # 执行任务
+    return {"result": "output"}
+
+engine.set_executor(executor)
+
+# 流式执行
+async for partial_result in engine.execute_streaming("任务描述"):
+    print(f"阶段: {partial_result.phase}")
+    print(f"进度: {partial_result.progress}")
+    print(f"状态: {partial_result.status}")
+```
+
+### 13.5 配置示例
+
+```python
+from src.agents.harness.engine import HarnessEngine, HarnessConfig, PhaseConfig, ExecutionPhase
+
+config = HarnessConfig(
+    max_iterations=10,
+    max_total_time=3600.0,  # 最大总时间
+    budget_per_task=100.0,
+    phases=[
+        PhaseConfig(phase=ExecutionPhase.UNIT, max_retries=3, timeout=60.0),
+        PhaseConfig(phase=ExecutionPhase.INTEGRATION, max_retries=2, timeout=120.0),
+        PhaseConfig(phase=ExecutionPhase.E2E, max_retries=1, timeout=180.0),
+    ]
+)
+```
+
+---
+
+## 14. 常见问题
 
 ### 13.1 如何设置 Agent 权限?
 
@@ -852,7 +936,7 @@ config = loader.load_all()
 
 ---
 
-## 14. 附录
+## 15. 附录
 
 ### 14.1 API 快速参考
 
@@ -880,7 +964,7 @@ config = loader.load_all()
 
 ---
 
-## 15. CLI 命令行工具
+## 16. CLI 命令行工具
 
 ### 15.1 基本用法
 
@@ -1127,7 +1211,7 @@ openyoung mcp stop <server>
 
 ---
 
-## 16. 外部系统集成
+## 17. 外部系统集成
 
 ### 16.1 PackageManager 集成
 
@@ -1200,7 +1284,7 @@ corrected = await agent._self_correct(
 
 ---
 
-## 17. E2E 测试
+## 18. E2E 测试
 
 ### 17.1 运行测试
 
