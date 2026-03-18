@@ -4,7 +4,7 @@
 
 1. **[CLI到WebUI迁移](./2026-03-17-cli-to-webui-migration-plan-v2.md)** - 全部完成 ✅
 2. **[分层记忆系统实现](./hierarchical-memory-implementation-plan.md)** - 全部完成 ✅
-3. **[记忆系统迁移计划](./memory-migration-plan.md)** - 新建
+3. **[Harness驱动的AI软件工厂](./harness-ai-factory-refactor-plan.md)** - 新建，核心重构
 
 ## 已完成归档
 

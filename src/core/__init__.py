@@ -113,7 +113,15 @@ from .exception_handler import (
     Recoverability,
     get_exception_handler,
     handle_exceptions,
+    handle_error,
+    with_error_handling,
     set_exception_handler,
+    AgentErrorHandler,
+    ExecutionErrorHandler,
+    DAGErrorHandler,
+    agent_error_handler,
+    execution_error_handler,
+    dag_error_handler,
 )
 
 # 异常处理
@@ -230,6 +238,14 @@ __all__ = [
     "get_exception_handler",
     "set_exception_handler",
     "handle_exceptions",
+    "handle_error",
+    "with_error_handling",
+    "AgentErrorHandler",
+    "ExecutionErrorHandler",
+    "DAGErrorHandler",
+    "agent_error_handler",
+    "execution_error_handler",
+    "dag_error_handler",
     # LangGraph 状态和工作流
     "AgentState",
     "TaskPhase",

@@ -50,6 +50,7 @@ from .middleware import (
 )
 from .runner import EvalRunner, RunnerConfig, run_quick_eval
 from .entropy import EntropyManager, EntropyReport, EntropyIssue, EntropyType, Severity
+from .memory_integration import MemoryIntegrationMiddleware, HarnessMemoryConnector
 
 __all__ = [
     # Legacy (keep for backwards compat)
@@ -104,4 +105,7 @@ __all__ = [
     "EntropyIssue",
     "EntropyType",
     "Severity",
+    # Memory Integration
+    "MemoryIntegrationMiddleware",
+    "HarnessMemoryConnector",
 ]

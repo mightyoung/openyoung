@@ -15,8 +15,17 @@ import asyncio
 import logging
 import time
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, Optional
+from typing import Any, AsyncGenerator, Callable, Optional
+
+from src.agents.harness.types import (
+    EvaluationResult,
+    ExecutionPhase,
+    ExecutionStatus,
+    FeedbackAction,
+    StreamingExecutionResult,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -305,6 +314,123 @@ class HarnessEngine:
             "iterations": iteration,
             "phases": {k: v.result for k, v in phase_results.items()},
         }
+
+    async def execute_streaming(
+        self,
+        task_description: str,
+        context: Optional[dict[str, Any]] = None,
+    ) -> AsyncGenerator[StreamingExecutionResult, None]:
+        """Streaming execution - yields at each phase/step.
+
+        Args:
+            task_description: 任务描述
+            context: 上下文
+
+        Yields:
+            StreamingExecutionResult at each phase/step
+        """
+        logger.info(f"Starting streaming harness execution for task: {task_description}")
+
+        context = context or {}
+        start_time = time.time()
+
+        current_phase = ExecutionPhase.UNIT if self.config.enable_phases else ExecutionPhase.E2E
+        phase_results = {}
+        iteration = 0
+
+        while iteration < self.config.max_iterations:
+            # Check total time budget
+            elapsed = time.time() - start_time
+            if elapsed >= self.config.max_total_time:
+                logger.warning(f"Total time budget exceeded: {elapsed:.1f}s")
+                break
+
+            # Yield progress before phase
+            yield StreamingExecutionResult(
+                phase=current_phase,
+                iteration=iteration,
+                status=ExecutionStatus.RUNNING,
+                partial_output=f"Starting {current_phase.value} phase...",
+            )
+
+            # Get phase config
+            phase_config = self._get_phase_config(current_phase)
+            if not phase_config or not phase_config.enabled:
+                logger.info(f"Phase {current_phase.value} disabled, skipping")
+                current_phase = current_phase.next() or current_phase
+                continue
+
+            # Execute phase
+            try:
+                result = await self._execute_phase(
+                    task_description,
+                    current_phase,
+                    phase_config,
+                    context,
+                )
+
+                phase_results[current_phase.value] = result
+
+                # Yield result after phase
+                yield StreamingExecutionResult(
+                    phase=result.phase,
+                    iteration=iteration,
+                    status=ExecutionStatus.COMPLETED if result.evaluation == EvaluationResult.PASS else ExecutionStatus.FAILED,
+                    evaluation=result.evaluation,
+                    feedback_action=result.feedback_action,
+                    result=result.result,
+                    partial_output=f"Completed {result.phase.value} phase",
+                    error=result.error,
+                    duration=result.duration,
+                    metadata={"phase_result": result.evaluation.value},
+                    timestamp=datetime.now(),
+                )
+
+                # Determine feedback action
+                feedback = await self._determine_feedback_action(
+                    result,
+                    iteration,
+                    phase_results,
+                )
+
+                if feedback == FeedbackAction.COMPLETE:
+                    logger.info("Task completed successfully")
+                    break
+
+                elif feedback in (FeedbackAction.RETRY, FeedbackAction.REPLAN):
+                    iteration += 1
+
+                elif feedback == FeedbackAction.ESCALATE:
+                    logger.warning("Escalating task")
+                    break
+
+                elif feedback == FeedbackAction.FAIL:
+                    logger.error(f"Task failed at phase {current_phase.value}")
+                    break
+
+            except Exception as e:
+                logger.error(f"Phase {current_phase.value} raised exception: {e}")
+                yield StreamingExecutionResult(
+                    phase=current_phase,
+                    iteration=iteration,
+                    status=ExecutionStatus.FAILED,
+                    error=str(e),
+                    partial_output=f"Error in {current_phase.value} phase: {str(e)}",
+                    timestamp=datetime.now(),
+                )
+                iteration += 1
+
+            # Move to next phase
+            next_phase = current_phase.next()
+            if next_phase:
+                current_phase = next_phase
+            else:
+                # All phases completed
+                if any(v.evaluation == EvaluationResult.FAIL for v in phase_results.values()):
+                    break
+                break
+
+            iteration += 1
 
     def _get_phase_config(self, phase: ExecutionPhase) -> Optional[PhaseConfig]:
         """获取阶段配置"""

@@ -72,6 +72,9 @@ class EventType(Enum):
     LEARNING_LOGGED = "learning_logged"
     ERROR_LOGGED = "error_logged"
 
+    # Streaming 进度
+    TASK_PROGRESS = "task_progress"
+
 
 # 事件处理器类型
 EventHandler = Callable[["Event"], Awaitable[None] | None]
@@ -253,6 +256,25 @@ class Event:
             self.type = EventType(self.type)
         if isinstance(self.priority, int):
             self.priority = EventPriority(self.priority)
+
+
+@dataclass
+class TaskProgress(Event):
+    """Streaming progress event.
+
+    用于在任务执行过程中发布进度更新，
+    支持 UI/WebSocket 实时显示执行进度。
+    """
+
+    task_id: str = ""
+    phase: str = ""
+    progress: float = 0.0
+    iteration: int = 0
+    partial_output: str | None = None
+
+    def __post_init__(self):
+        super().__post_init__()
+        self.type = EventType.TASK_PROGRESS
 
 
 class EventBus:

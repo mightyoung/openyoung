@@ -27,7 +27,7 @@
 - **File Size Limits** (HARDCONSTRAINT):
   - Maximum 400 lines per file (500 lines for special cases like main.py)
   - If file exceeds 400 lines, MUST split into modules
-  - Giant files to fix: cli/main.py (2338 lines), young_agent.py (1752 lines)
+  - Giant files to fix: None (已通过R1,R2修复)
 - Use typed interfaces for all public APIs
 - Prefer TDD London School (mock-first) for new code
 - Use event sourcing for state changes
@@ -213,26 +213,37 @@ npx @claude-flow/cli@latest doctor --fix
 
 > 基于Anthropic Context Engineering最佳实践
 
-**当前任务**: 全部完成 ✅
+**当前任务**: P0 - 架构重构 (Harness驱动的AI软件工厂)
 
-### 任务索引 (Layer 0)
+### 任务索引
 
-| ID | 任务 | 状态 |
-|----|------|------|
-| T1 | Chat流式输出 | ✅ completed |
-| T2 | Skills管理页面 | ✅ completed |
-| T3 | 评估运行功能 | ✅ completed |
-| T4 | Settings完整CRUD | ✅ completed |
-| T5 | 统一API服务层 | ✅ completed |
+| ID | 任务 | 状态 | 优先级 |
+|----|------|------|--------|
+| R1 | 拆分 young_agent.py (1665行→5+模块) | ✅ completed | P0 |
+| R2 | 拆分 cli/main.py (2167行→5+模块) | ✅ completed | P0 |
+| R3 | 删除废弃代码 | ✅ completed | P0 |
+| R4 | Harness驱动Agent执行 | ✅ completed | P1 |
+| R5 | 统一评估系统 | ✅ completed | P1 |
+| R6 | 合并错误处理系统 | ✅ completed | P1 |
+| R7 | 修复硬编码路径 | ✅ completed | P2 |
+| R8 | Memory-Harness集成 | ✅ completed | P2 |
+| R9 | 编写Harness核心测试 | ✅ completed | P3 |
+
+### 成果统计
+
+- **young_agent.py**: 1665行 → 406行 + 5个子模块
+- **cli/main.py**: 2167行 → 96行 + 16个命令模块
+- **测试覆盖**: 新增 119 tests (R9)
+- **代码删除**: event_bus.py, error_handler.py, evaluation/
 
 ### 使用方法
 
 ```bash
-# 查看任务详情
-cat docs/plans/2026-03-17-cli-to-webui-migration-plan-v2.md
+# 查看重构计划详情
+cat docs/plans/harness-ai-factory-refactor-plan.md
 ```
 
-详细计划: `docs/plans/2026-03-17-cli-to-webui-migration-plan-v2.md`
+详细计划: `docs/plans/harness-ai-factory-refactor-plan.md`
 
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
