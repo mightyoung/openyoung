@@ -59,6 +59,17 @@ class ParallelFlow(FlowSkill):
                 break
 
         return [t.strip() for t in tasks if t.strip()]
+        """识别可并行的子任务"""
+        # 按关键词分割
+        separators = ["同时", "并且", "and also", "parallel"]
+        tasks = [user_input]
+
+        for sep in separators:
+            if sep in user_input:
+                tasks = user_input.split(sep)
+                break
+
+        return [t.strip() for t in tasks if t.strip()]
 
     async def should_delegate(self, task: str, context: dict) -> bool:
         """多个任务时委托"""

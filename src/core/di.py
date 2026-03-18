@@ -147,6 +147,22 @@ class Container:
 
 # 全局容器实例
 _container: Optional[Container] = None
+_initialized = False
+
+
+def _register_dependencies() -> None:
+    """注册所有 YoungAgent 依赖"""
+    global _container, _initialized
+    if _initialized or _container is None:
+        return
+
+    try:
+        from src.core.dependencies import register_young_agent_dependencies
+        register_young_agent_dependencies(_container)
+        _initialized = True
+    except ImportError as e:
+        # dependencies 模块可能不存在，静默失败
+        pass
 
 
 def get_container() -> Container:
@@ -154,6 +170,8 @@ def get_container() -> Container:
     global _container
     if _container is None:
         _container = Container()
+        # 首次创建容器时注册依赖
+        _register_dependencies()
     return _container
 
 

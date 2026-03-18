@@ -147,7 +147,7 @@ class GitHubImporter:
 
                     try:
                         content = base64.b64decode(content).decode("utf-8")
-                    except:
+                    except (binascii.Error, UnicodeDecodeError):
                         pass
 
                     gh_file = GitHubFile(

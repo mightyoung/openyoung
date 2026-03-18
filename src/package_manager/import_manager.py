@@ -299,7 +299,7 @@ class ImportManager:
         if self.registry_path.exists():
             try:
                 self._registry_cache = json.loads(self.registry_path.read_text(encoding="utf-8"))
-            except:
+            except (json.JSONDecodeError, ValueError, OSError):
                 self._registry_cache = {}
         else:
             self._registry_cache = {}
@@ -337,7 +337,7 @@ class ImportManager:
 
                 config = yaml.safe_load(agent_yaml.read_text(encoding="utf-8"))
                 return config.get("version", "1.0.0") if config else "1.0.0"
-            except:
+            except (yaml.YAMLError, OSError, ValueError):
                 return "1.0.0"
         return "unknown"
 

@@ -199,7 +199,7 @@ class HooksLoader:
             with open(package_yaml, encoding="utf-8") as f:
                 config = yaml.safe_load(f)
                 return config.get("type") == "hooks"
-        except:
+        except (yaml.YAMLError, OSError, ValueError):
             return False
 
     def load_hooks(self, hooks_name: str = None) -> list[HookConfig]:

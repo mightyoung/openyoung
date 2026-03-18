@@ -52,16 +52,9 @@ class ExecutionConfig:
 
 # ============================================================================
 # 2.5 Flow Skill Type
+# 从 agent.py 导入（避免重复定义）
 # ============================================================================
-
-
-class FlowSkillType(Enum):
-    """Flow Skill 类型"""
-
-    DEVELOPMENT = "development"
-    RESEARCH = "research"
-    ANALYSIS = "analysis"
-    GENERAL = "general"
+from src.core.types.agent import FlowSkillType, SubAgentType
 
 
 # ============================================================================
@@ -130,17 +123,6 @@ class AgentConfig:
 # ============================================================================
 # 4.1 SubAgent Type
 # ============================================================================
-
-
-class SubAgentType(Enum):
-    """预定义 SubAgent 类型 - 对标 OpenCode"""
-
-    EXPLORE = "explore"  # 快速探索代码库（只读）
-    GENERAL = "general"  # 通用任务处理
-    SEARCH = "search"  # 复杂搜索任务
-    BUILDER = "builder"  # 构建和执行
-    REVIEWER = "reviewer"  # 代码审查
-    EVAL = "eval"  # 评估任务
 
 
 # ============================================================================

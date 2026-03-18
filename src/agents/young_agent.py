@@ -25,7 +25,14 @@ from src.core.types import (
     SubAgentConfig,
     Task,
 )
-from src.evaluation.planner import EvalPlanner
+# Core 模块 - EventBus, Heartbeat, Knowledge
+from src.core.events import Event, EventType, get_event_bus, SystemEvents, EventPriority
+from src.core.heartbeat import HeartbeatScheduler, HeartbeatConfig, get_heartbeat_scheduler
+from src.core.knowledge import KnowledgeManager, get_knowledge_manager
+from src.core.logger import get_logger
+
+# 模块级 logger
+logger = get_logger(__name__)
 from src.package_manager.manager import PackageManager
 
 # AI Docker - Runtime
@@ -157,7 +164,104 @@ def validate_file_creation(task_description: str, agent_result: str) -> dict:
     }
 
 
+# ============================================================================
+# Evaluation Store - lightweight replacement for EvaluationHub
+# ============================================================================
+
+
+class _EvalStore:
+    """Lightweight in-memory evaluation store.
+
+    Replaces src.evaluation.hub.EvaluationHub for young_agent.py.
+    Evaluation functionality is now handled by the Harness system (src/hub/evaluate/).
+    This store keeps a simple in-memory list for API compatibility.
+    """
+
+    def __init__(self):
+        self._results: list = []
+
+    def add_result(self, result: dict) -> None:
+        self._results.append(result)
+
+    def get_latest_result(self) -> dict | None:
+        return self._results[-1] if self._results else None
+
+    def get_results(self) -> list:
+        return self._results
+
+
 class YoungAgent:
+    # DI 依赖标识符（类级别常量）
+    _DI_TOKENS = {
+        "package_manager": "package_manager",
+        "tool_executor": "tool_executor",
+        "checkpoint_manager": "checkpoint_manager",
+        "harness": "harness",
+        "datacenter": "datacenter",
+        "evolver": "evolver",
+    }
+
+    def _resolve_dependency(self, token: str, default_factory=None):
+        """从容器解析依赖，如果容器中没有则使用默认工厂
+
+        Args:
+            token: DI 容器中的依赖标识符
+            default_factory: 如果容器中没有，返回默认工厂函数
+
+        Returns:
+            解析到的依赖实例
+        """
+        if self._container is None:
+            if default_factory:
+                return default_factory()
+            return None
+
+        try:
+            resolved = self._container.resolve(token)
+            if resolved is not None:
+                return resolved
+        except Exception as e:
+            logger.debug(f"Container resolve {token} failed: {e}")
+
+        # 如果容器解析失败，使用默认工厂
+        if default_factory:
+            return default_factory()
+        return None
+
+    def _create_harness(self):
+        """创建 Harness 实例"""
+        try:
+            from src.harness import Harness
+            return Harness()
+        except Exception as e:
+            logger.warning(f"Harness init failed: {e}")
+            return None
+
+    def _create_datacenter(self):
+        """创建 DataCenter 实例"""
+        try:
+            from src.datacenter.datacenter import DataCenter
+            return DataCenter()
+        except Exception as e:
+            logger.warning(f"DataCenter init failed: {e}")
+            return None
+
+    def _create_eval_store(self):
+        """Create lightweight in-memory evaluation store (replaces EvaluationHub)."""
+        return _EvalStore()
+
+    def _create_evolver(self):
+        """创建 EvolutionEngine 实例"""
+        try:
+            from src.evolver.engine import EvolutionEngine
+            engine = EvolutionEngine()
+            # 预加载基础 genes
+            self._init_default_genes()
+            return engine
+        except Exception as e:
+            logger.warning(f"EvolutionEngine init failed: {e}")
+            return None
+
     def __init__(
         self,
         config,
@@ -166,13 +270,15 @@ class YoungAgent:
         llm_client=None,
         tool_executor=None,
         checkpoint_manager=None,
+        memory_facade=None,
         harness=None,
         datacenter=None,
-        evaluation_hub=None,
         evolver=None,
         # AI Docker - Runtime sandbox
         sandbox=None,
         sandbox_pool=None,
+        # DI Container (optional)
+        container=None,
     ):
         """Initialize YoungAgent with optional dependency injection.
 
@@ -182,10 +288,11 @@ class YoungAgent:
             llm_client: LLM client instance (optional, for testing)
             tool_executor: Tool executor instance (optional, for testing)
             checkpoint_manager: Checkpoint manager instance (optional, for testing)
+            memory_facade: Memory facade instance for layered memory (optional, for testing)
             harness: Test harness instance (optional, for testing)
             datacenter: Data center instance (optional, for testing)
-            evaluation_hub: Evaluation hub instance (optional, for testing)
             evolver: Evolution engine instance (optional, for testing)
+            container: DI container for resolving dependencies (optional)
             sandbox: AISandbox instance (optional, for AI Docker)
             sandbox_pool: SandboxPool instance (optional, for AI Docker)
         """
@@ -202,13 +309,23 @@ class YoungAgent:
         self._package_manager = package_manager or PackageManager()
 
         # ========== Dependency Injection ==========
+        # Use container if provided
+        if container:
+            from src.core.di import get_container
+
+            self._container = container
+        else:
+            from src.core.di import get_container
+
+            self._container = get_container()
+
         # Use injected dependencies if provided, otherwise create internally
         self._llm = llm_client
         self._tool_executor_injected = tool_executor is not None
         self._checkpoint_manager_injected = checkpoint_manager is not None
+        self._memory_facade_injected = memory_facade is not None
         self._harness_injected = harness is not None
         self._datacenter_injected = datacenter is not None
-        self._evaluation_hub_injected = evaluation_hub is not None
         self._evolver_injected = evolver is not None
 
         # 初始化 FlowSkill
@@ -227,11 +344,21 @@ class YoungAgent:
         self._mcp_manager = None
         self._init_mcp_servers()
 
-        # Initialize components (use injected or create)
-        self._harness = harness
-        self._datacenter = datacenter
-        self._evaluation_hub = evaluation_hub
-        self._evolver = evolver
+        # Initialize components (use injected, container, or create)
+        # 优先级: 注入 > 容器 > 默认创建
+        self._harness = harness or self._resolve_dependency(
+            self._DI_TOKENS["harness"],
+            lambda: None  # 不自动创建，需要时再创建
+        )
+        self._datacenter = datacenter or self._resolve_dependency(
+            self._DI_TOKENS["datacenter"],
+            lambda: None
+        )
+        self._eval_store = self._create_eval_store()
+        self._evolver = evolver or self._resolve_dependency(
+            self._DI_TOKENS["evolver"],
+            lambda: None
+        )
 
         # Data persistence directory - 默认项目本地，可通过配置修改
         import os
@@ -246,57 +373,33 @@ class YoungAgent:
         self._checkpoint_manager = checkpoint_manager
         self._init_checkpoint()
 
-        # Harness - use injected or create internally
-        if not self._harness_injected:
-            try:
-                from src.harness import Harness
+        # Memory Facade (use injected or create internally)
+        self._memory_facade = memory_facade
+        self._init_memory_facade()
 
-                self._harness = Harness()
-            except Exception as e:
-                print(f"[Warning] Harness init failed: {e}")
+        # Harness - use injected > container > create
+        if self._harness is None:
+            self._harness = self._resolve_dependency(
+                self._DI_TOKENS["harness"],
+                lambda: self._create_harness()
+            )
 
-        # DataCenter - use injected or create internally
-        if not self._datacenter_injected:
-            try:
-                from src.datacenter.datacenter import DataCenter
+        # DataCenter - use injected > container > create
+        if self._datacenter is None:
+            self._datacenter = self._resolve_dependency(
+                self._DI_TOKENS["datacenter"],
+                lambda: self._create_datacenter()
+            )
 
-                self._datacenter = DataCenter()
-            except Exception as e:
-                print(f"[Warning] DataCenter init failed: {e}")
+        # Evaluation uses Harness system (src/hub/evaluate/) — no longer uses EvaluationHub
+        # EvalPlanner removed — use BenchmarkTask + Grader pattern from harness instead
 
-        # EvaluationHub - use injected or create internally
-        if not self._evaluation_hub_injected:
-            try:
-                from src.evaluation.hub import EvaluationHub
-
-                self._evaluation_hub = EvaluationHub()
-                # P2: 加载历史评估记录
-                eval_path = os.path.join(self._data_dir, "evaluations.json")
-                if os.path.exists(eval_path):
-                    try:
-                        self._evaluation_hub.load_results(eval_path)
-                        print(
-                            f"[EvaluationHub] Loaded {len(self._evaluation_hub._results)} historical results"
-                        )
-                    except Exception as load_err:
-                        print(f"[Warning] Failed to load historical evaluations: {load_err}")
-            except Exception as e:
-                print(f"[Warning] EvaluationHub init failed: {e}")
-
-        # EvalPlanner - 评估计划生成器
-        self._eval_planner = EvalPlanner()
-        print("[EvalPlanner] Initialized for dynamic evaluation planning")
-
-        # EvolEngine - use injected or create internally
-        if not self._evolver_injected:
-            try:
-                from src.evolver.engine import EvolutionEngine
-
-                self._evolver = EvolutionEngine()
-                # 预加载一些基础 genes
-                self._init_default_genes()
-            except Exception as e:
-                print(f"[Warning] EvolutionEngine init failed: {e}")
+        # EvolEngine - use injected > container > create
+        if self._evolver is None:
+            self._evolver = self._resolve_dependency(
+                self._DI_TOKENS["evolver"],
+                lambda: self._create_evolver()
+            )
 
         self._packages = {}
         self._loaded_skills = {}
@@ -313,16 +416,50 @@ class YoungAgent:
             self._tool_executor.set_sandbox_pool(self._sandbox_pool)
             print("[YoungAgent] AI Docker Sandbox enabled")
 
+        # ========== EventBus 和 Heartbeat 初始化 (Phase 4) ==========
+        # 获取或创建 EventBus
+        self._event_bus = get_event_bus()
+
+        # 获取或创建 KnowledgeManager
+        self._knowledge_manager = get_knowledge_manager()
+
+        # 初始化 Heartbeat Scheduler (可选，可以通过配置禁用)
+        self._heartbeat = None
+        self._heartbeat_enabled = getattr(config, "heartbeat_enabled", True)
+        if self._heartbeat_enabled:
+            try:
+                # 创建 Heartbeat 配置
+                heartbeat_config = getattr(config, "heartbeat_config", None)
+                if heartbeat_config is None:
+                    heartbeat_config = HeartbeatConfig(
+                        interval_seconds=getattr(config, "heartbeat_interval", 14400),  # 默认4小时
+                        enabled=True,
+                    )
+
+                # 创建 Heartbeat Scheduler，集成 EventBus 和 KnowledgeManager
+                self._heartbeat = HeartbeatScheduler(
+                    config=heartbeat_config,
+                    event_bus=self._event_bus,
+                    knowledge_manager=self._knowledge_manager,
+                )
+                print(f"[YoungAgent] Heartbeat enabled (interval={heartbeat_config.interval_seconds}s)")
+            except Exception as e:
+                print(f"[YoungAgent] Heartbeat init failed: {e}")
+                self._heartbeat = None
+
         # 从配置读取执行参数（支持外部配置）
         # 兼容旧 dict 格式和新 ExecutionConfig 类型
         execution_config = getattr(config, "execution", None)
-        if execution_config is None:
-            execution_config = {}
-        elif hasattr(execution_config, "max_tool_calls"):  # 新类型: ExecutionConfig
+        # 设置默认值
+        self._max_tool_calls = 10
+        self._timeout_seconds = 300
+        self._checkpoint_enabled = True
+
+        if execution_config is not None and hasattr(execution_config, "max_tool_calls"):  # 新类型: ExecutionConfig
             self._max_tool_calls = execution_config.max_tool_calls
             self._timeout_seconds = execution_config.timeout_seconds
             self._checkpoint_enabled = execution_config.checkpoint_enabled
-        else:  # 旧格式: dict
+        elif execution_config:  # 旧格式: dict (非空)
             self._max_tool_calls = execution_config.get("max_tool_calls", 10)
             self._timeout_seconds = execution_config.get("timeout_seconds", 300)
             self._checkpoint_enabled = execution_config.get("checkpoint_enabled", True)
@@ -340,13 +477,13 @@ class YoungAgent:
 
                 self._llm = LLMClient()
             except Exception as e:
-                print(f"[Warning] LLM client init failed: {e}")
+                logger.warning(f"LLM client init failed: {e}")
 
         # R1-1: 初始化 EvaluationCoordinator (在 LLM 初始化之后)
         try:
             self._eval_coordinator = EvaluationCoordinator(llm_client=self._llm)
         except Exception as e:
-            print(f"[Warning] EvaluationCoordinator init failed: {e}")
+            logger.warning(f"EvaluationCoordinator init failed: {e}")
             self._eval_coordinator = None
 
         # 初始化 TaskExecutor
@@ -556,7 +693,7 @@ class YoungAgent:
             )
             self._evolver._matcher.register_gene(gene)
         except Exception as e:
-            print(f"[Warning] Default genes init failed: {e}")
+            logger.warning(f"Default genes init failed: {e}")
 
     def _init_flow_skill(self, config):
         """初始化 FlowSkill - 执行流程编排
@@ -588,7 +725,7 @@ class YoungAgent:
         try:
             self._load_flow_skill_by_name(flow_name, flow_config)
         except Exception as e:
-            print(f"[Warning] FlowSkill init failed: {e}")
+            logger.warning(f"FlowSkill init failed: {e}")
             self._flow_skill = None
 
     def _load_flow_skill_by_name(self, flow_name: str, flow_config: dict = None):
@@ -688,7 +825,7 @@ class YoungAgent:
             if self._hooks:
                 print(f"[Hooks] Loaded {len(self._hooks)} hooks")
         except Exception as e:
-            print(f"[Warning] Hooks init failed: {e}")
+            logger.warning(f"Hooks init failed: {e}")
             self._hooks = []
 
     def _init_mcp_servers(self):
@@ -707,7 +844,7 @@ class YoungAgent:
             print(f"[MCP] Found {len(servers)} MCP servers: {', '.join(servers.keys())}")
             print("[MCP] Use 'openyoung mcp start <name>' to start a server")
         except Exception as e:
-            print(f"[Warning] MCP init failed: {e}")
+            logger.warning(f"MCP init failed: {e}")
             self._mcp_manager = None
 
     def _init_checkpoint(self):
@@ -717,14 +854,39 @@ class YoungAgent:
             return
 
         try:
-            from src.memory.checkpoint import CheckpointManager
+            from src.core.memory.impl.checkpoint import CheckpointManager
 
             checkpoint_dir = self._data_dir + "/checkpoints"
             self._checkpoint_manager = CheckpointManager(checkpoint_dir=checkpoint_dir)
             print(f"[Checkpoint] Initialized at {checkpoint_dir}")
         except Exception as e:
-            print(f"[Warning] Checkpoint init failed: {e}")
+            logger.warning(f"Checkpoint init failed: {e}")
             self._checkpoint_manager = None
+
+    def _init_memory_facade(self):
+        """初始化 MemoryFacade 分层记忆系统"""
+        # Skip if memory_facade was already injected
+        if self._memory_facade_injected and self._memory_facade is not None:
+            return
+
+        try:
+            # 使用 Bridge 层创建记忆系统，支持自动降级
+            from src.core.memory import get_memory_facade
+            import asyncio
+
+            # 获取 event loop，如果不存在则创建
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+
+            # 尝试获取 MemoryFacade
+            self._memory_facade = loop.run_until_complete(get_memory_facade())
+            print(f"[MemoryFacade] Initialized (Layered Memory System)")
+        except Exception as e:
+            logger.warning(f"MemoryFacade init failed: {e}")
+            self._memory_facade = None
 
     # ========== AI Docker Sandbox Methods ==========
 
@@ -816,7 +978,7 @@ class YoungAgent:
             if checkpoint_id:
                 print(f"[Checkpoint] Created: {checkpoint_id}")
         except Exception as e:
-            print(f"[Warning] Checkpoint save failed: {e}")
+            logger.warning(f"Checkpoint save failed: {e}")
 
     def _trigger_hooks(self, trigger: str, context: dict = None) -> list:
         """触发指定类型的 hooks"""
@@ -851,7 +1013,7 @@ class YoungAgent:
                     )
                     print(f"[Hooks] Triggered: {hook.name} ({trigger})")
             except Exception as e:
-                print(f"[Warning] Hook trigger failed: {e}")
+                logger.warning(f"Hook trigger failed: {e}")
 
         return triggered
 
@@ -915,6 +1077,30 @@ class YoungAgent:
         if self._harness:
             self._harness.start()
 
+        # ========== Heartbeat: 启动调度器 (Phase 4) ==========
+        if self._heartbeat and not self._heartbeat.is_running():
+            try:
+                await self._heartbeat.start()
+            except Exception as e:
+                print(f"[YoungAgent] Heartbeat start failed: {e}")
+
+        # ========== EventBus: 任务开始事件 (Phase 4) ==========
+        if self._event_bus:
+            try:
+                start_event = Event(
+                    type=EventType.TASK_STARTED,
+                    data={
+                        "input": user_input[:200] if user_input else "",
+                        "session_id": self._session_id,
+                        "agent_name": self.config.name,
+                    },
+                    priority=EventPriority.NORMAL,
+                    source="young_agent",
+                )
+                self._event_bus.publish(start_event)
+            except Exception as e:
+                print(f"[YoungAgent] EventBus start event error: {e}")
+
         # ========== Hooks: pre_task ==========
         self._trigger_hooks("pre_task", {"input": user_input})
 
@@ -931,18 +1117,7 @@ class YoungAgent:
 
         task = await self._parse_input(user_input)
 
-        # ========== EvalPlanner - 生成评估计划 ==========
-        eval_plan = None
-        if self._eval_planner:
-            try:
-                eval_plan = await self._eval_planner.generate_plan(user_input)
-                print(f"[EvalPlanner] Generated plan for task type: {eval_plan.task_type}")
-                print(f"[EvalPlanner] Success criteria: {len(eval_plan.success_criteria)} items")
-                print(
-                    f"[EvalPlanner] Validation methods: {len(eval_plan.validation_methods)} items"
-                )
-            except Exception as e:
-                print(f"[EvalPlanner] Failed to generate plan: {e}")
+        # EvalPlanner removed — use Harness BenchmarkTask + Grader pattern for evaluation
 
         # 记录开始时间
         start_time = datetime.now()
@@ -972,6 +1147,41 @@ class YoungAgent:
         # 记录结束时间
         end_time = datetime.now()
         duration_ms = int((end_time - start_time).total_seconds() * 1000)
+
+        # ========== EventBus: 任务完成事件 (Phase 4) ==========
+        task_success = not result.startswith("Error") and not result.startswith("error")
+        if self._event_bus:
+            try:
+                # 发送任务完成事件
+                event = Event(
+                    type=EventType.TASK_COMPLETED,
+                    data={
+                        "task": task.description if task else "",
+                        "success": task_success,
+                        "duration_ms": duration_ms,
+                        "session_id": self._session_id,
+                        "agent_name": self.config.name,
+                    },
+                    priority=EventPriority.HIGH if task_success else EventPriority.CRITICAL,
+                    source="young_agent",
+                )
+                self._event_bus.publish(event)
+
+                # 如果失败，发送错误事件
+                if not task_success:
+                    error_event = Event(
+                        type=SystemEvents.ERROR,
+                        data={
+                            "task": task.description if task else "",
+                            "error": result[:500] if result else "Unknown error",
+                            "session_id": self._session_id,
+                        },
+                        priority=EventPriority.CRITICAL,
+                        source="young_agent",
+                    )
+                    self._event_bus.publish(error_event)
+            except Exception as e:
+                print(f"[YoungAgent] EventBus error: {e}")
 
         # ========== 1. DataCenter - 记录 Trace ==========
         if self._datacenter:
@@ -1028,61 +1238,14 @@ class YoungAgent:
                 elif file_validation["files_found"]:
                     print(f"[FileValidation] Files verified: {file_validation['files_found']}")
 
-                # 记录到 EvaluationHub（保持兼容性）
-                if self._evaluation_hub:
-                    from src.evaluation.hub import EvaluationResult
-
-                    # 处理 judge_result 可能是 JudgeScore 对象或 dict 的情况
-                    jr = eval_report.judge_result
-                    if hasattr(jr, "get"):
-                        # 是 dict
-                        jr_input = jr.get("input", "")
-                        jr_output = jr.get("output", "")
-                        jr_scores = jr.get("scores", [])
-                        jr_total = jr.get("total_score", 0)
-                        jr_avg = jr.get("average_score", 0)
-                    else:
-                        # 是 JudgeScore 对象
-                        jr_input = getattr(jr, "input", "")
-                        jr_output = getattr(jr, "output", "")
-                        jr_scores = getattr(jr, "scores", [])
-                        jr_total = getattr(jr, "total_score", 0)
-                        jr_avg = getattr(jr, "average_score", 0)
-
-                    judge_result_serializable = {
-                        "input": jr_input,
-                        "output": jr_output,
-                        "scores": [
-                            {
-                                "dimension": getattr(s, "dimension", ""),
-                                "score": getattr(s, "score", 0),
-                                "reasoning": getattr(s, "reasoning", ""),
-                            }
-                            for s in jr_scores
-                        ],
-                        "total_score": jr_total,
-                        "average_score": jr_avg,
-                    }
-
-                    eval_details = {
-                        "judge_result": judge_result_serializable,
-                        "eval_plan": eval_report.eval_plan.to_dict()
-                        if hasattr(eval_report.eval_plan, "to_dict")
-                        else {},
-                        "completion_rate": eval_report.completion_rate,
-                        "task_type": eval_report.task_type,
-                        "threshold_violations": eval_report.threshold_violations,
-                        "weights_used": eval_report.weights_used,
-                        "file_validation": file_validation,
-                    }
-
-                    eval_result = EvaluationResult(
-                        metric="task_completion",
-                        score=quality_score,
-                        details=eval_details,
-                        evaluator="evaluation_coordinator",
-                    )
-                    self._evaluation_hub._results.append(eval_result)
+                # 记录到轻量 eval store（Harness 系统使用 BenchmarkTask 评估）
+                self._eval_store.add_result({
+                    "metric": "task_completion",
+                    "score": quality_score,
+                    "task_type": eval_report.task_type,
+                    "completion_rate": eval_report.completion_rate,
+                    "file_validation": file_validation,
+                })
 
             except Exception as e:
                 print(f"[EvaluationCoordinator] Error: {e}, using default score")
@@ -1120,87 +1283,55 @@ class YoungAgent:
         # ========== 5. Auto-save all components ==========
         self._save_all()
 
-        # ========== 6. Checkpoint - 保存状态 ==========
+        # ========== 6. Result analysis ==========
+        await self._apply_result_analysis(result)
+
+        # ========== 7. Checkpoint - 保存状态 ==========
         # 任务完成后自动保存 checkpoint
         await self._save_checkpoint(reason="task_complete")
 
-        # ========== 7. 评估反馈优化 ==========
-        # 根据评估结果自动优化配置
-        await self._apply_evaluation_optimization(result, quality_score)
-
         return result
 
-    async def _apply_evaluation_optimization(self, result: str, quality_score: float):
-        """根据评估结果自动优化 agent 配置"""
-        if not self._evaluation_hub:
-            return
+    async def _apply_result_analysis(self, result: str) -> None:
+        """Analyze execution result and generate FlowSkill suggestions.
 
+        Refactored from _apply_evaluation_optimization — EvaluationHub
+        config optimization removed (use Harness system instead).
+        """
         try:
-            # 获取最新的评估结果
-            latest_eval = self._evaluation_hub.get_latest_result()
-            if not latest_eval:
-                return
+            from src.evolver.result_analyzer import ResultAnalyzer
 
-            # 调用优化方法
-            config_updates = self._evaluation_hub.optimize_agent_config(
-                self.config.name, latest_eval
-            )
+            # 获取任务描述
+            task_desc = ""
+            if self._history:
+                for msg in reversed(self._history):
+                    if msg.role.value == "user":
+                        task_desc = msg.content
+                        break
 
-            # 如果有需要更新的配置
-            if any(config_updates.values()) and config_updates.get("reason"):
-                print(f"[Evaluation] Optimization: {config_updates['reason']}")
+            analyzer = ResultAnalyzer()
+            analysis = analyzer.analyze(task_desc, result)
 
-                # 保存评估历史
-                self._evaluation_hub.save_history(self.config.name, latest_eval)
+            # 如果成功，生成 FlowSkill 配置建议
+            if analysis.get("success"):
+                flowskill_config = analyzer.generate_flowskill_config()
+                if flowskill_config:
+                    print(f"[ResultAnalyzer] Generated FlowSkill: {flowskill_config.get('name')}")
+                    print(f"[ResultAnalyzer] Workflow: {flowskill_config.get('workflow', [])}")
 
-                # 显示配置更新建议
-                updates = [f"{k}={v}" for k, v in config_updates.items() if v and k != "reason"]
-                if updates:
-                    print(f"[Evaluation] Suggested updates: {', '.join(updates)}")
-                    print(
-                        f"[Evaluation] Run 'openyoung config set agent.model {config_updates.get('model', '')}' to apply"
-                    )
+                    # 保存分析结果
+                    import os
+                    import json
 
-            # ========== 执行结果回写 ==========
-            # 分析执行结果，提取模式
-            try:
-                from src.evolver.result_analyzer import ResultAnalyzer
-
-                # 获取任务描述
-                task_desc = ""
-                if self._history:
-                    for msg in reversed(self._history):
-                        if msg.role.value == "user":
-                            task_desc = msg.content
-                            break
-
-                analyzer = ResultAnalyzer()
-                analysis = analyzer.analyze(task_desc, result)
-
-                # 如果成功，生成 FlowSkill 配置建议
-                if analysis.get("success"):
-                    flowskill_config = analyzer.generate_flowskill_config()
-                    if flowskill_config:
-                        print(
-                            f"[ResultAnalyzer] Generated FlowSkill: {flowskill_config.get('name')}"
-                        )
-                        print(f"[ResultAnalyzer] Workflow: {flowskill_config.get('workflow', [])}")
-
-                        # 保存分析结果
-                        import os
-
-                        os.makedirs(self._data_dir, exist_ok=True)
-                        import json
-
-                        analysis_path = os.path.join(self._data_dir, "analysis.json")
-                        with open(analysis_path, "w") as f:
-                            json.dump(analysis, f, indent=2, ensure_ascii=False)
-                        print(f"[ResultAnalyzer] Saved to {analysis_path}")
-            except Exception as e:
-                print(f"[ResultAnalyzer] Error: {e}")
-
+                    os.makedirs(self._data_dir, exist_ok=True)
+                    analysis_path = os.path.join(self._data_dir, "analysis.json")
+                    with open(analysis_path, "w") as f:
+                        json.dump(analysis, f, indent=2, ensure_ascii=False)
+                    print(f"[ResultAnalyzer] Saved to {analysis_path}")
+        except ImportError:
+            pass  # ResultAnalyzer not available
         except Exception as e:
-            print(f"[Evaluation] Optimization error: {e}")
+            print(f"[ResultAnalyzer] Error: {e}")
 
     def _save_all(self):
         """保存所有组件数据到磁盘"""
@@ -1217,14 +1348,16 @@ class YoungAgent:
             except Exception as e:
                 print(f"[DataCenter] Save error: {e}")
 
-        # 保存 EvaluationHub results
-        if self._evaluation_hub:
+        # 保存 eval store results (lightweight — Harness system handles full evaluation)
+        if self._eval_store:
             try:
+                import json
                 path = os.path.join(self._data_dir, "evaluations.json")
-                self._evaluation_hub.save_results(path)
-                print(f"[EvaluationHub] Saved results to {path}")
+                with open(path, "w") as f:
+                    json.dump(self._eval_store._results, f, indent=2, default=str)
+                print(f"[EvalStore] Saved {len(self._eval_store._results)} results to {path}")
             except Exception as e:
-                print(f"[EvaluationHub] Save error: {e}")
+                print(f"[EvalStore] Save error: {e}")
 
         # 保存 EvolutionEngine genes and capsules
         if self._evolver:
@@ -1438,14 +1571,18 @@ class YoungAgent:
             return self._harness.get_status()
         return {}
 
+    def get_memory_facade(self):
+        """获取 MemoryFacade 实例"""
+        return self._memory_facade
+
     def get_datacenter_traces(self) -> list:
         if self._datacenter:
             return self._datacenter.trace_collector._traces
         return []
 
     def get_evaluation_results(self) -> list:
-        if self._evaluation_hub:
-            return self._evaluation_hub._results
+        if self._eval_store:
+            return self._eval_store._results
         return []
 
     def get_evolver_genes(self) -> list:
@@ -1465,7 +1602,47 @@ class YoungAgent:
             "evaluation_results_count": len(self.get_evaluation_results()),
             "evolver_genes_count": len(self.get_evolver_genes()),
             "evolver_capsules_count": len(self.get_evolver_capsules()),
+            "memory_enabled": self._memory_facade is not None,
         }
+
+    async def store_knowledge(self, content: str, layer: str = "semantic", **kwargs) -> bool:
+        """存储知识到分层记忆系统
+
+        Args:
+            content: 知识内容
+            layer: 存储层 (working/semantic/checkpoint)
+            **kwargs: 额外参数
+
+        Returns:
+            是否存储成功
+        """
+        if not self._memory_facade:
+            return False
+        try:
+            await self._memory_facade.store(content=content, layer=layer, **kwargs)
+            return True
+        except Exception as e:
+            logger.warning(f"store_knowledge failed: {e}")
+            return False
+
+    async def retrieve_knowledge(self, query: str, limit: int = 5, **kwargs) -> list:
+        """从分层记忆系统检索知识
+
+        Args:
+            query: 查询内容
+            limit: 返回结果数量
+            **kwargs: 额外参数
+
+        Returns:
+            检索结果列表
+        """
+        if not self._memory_facade:
+            return []
+        try:
+            return await self._memory_facade.retrieve(query=query, limit=limit, **kwargs)
+        except Exception as e:
+            logger.warning(f"retrieve_knowledge failed: {e}")
+            return []
 
     def get_evaluation_trend(self, limit: int = 10) -> dict[str, Any]:
         """获取评估趋势数据
@@ -1476,6 +1653,13 @@ class YoungAgent:
         Returns:
             趋势数据字典
         """
-        if not self._evaluation_hub:
-            return {"error": "EvaluationHub not initialized"}
-        return self._evaluation_hub.get_trend(limit)
+        # Evaluation now uses Harness system (src/hub/evaluate/)
+        # Return simple trend from _eval_store
+        results = self._eval_store._results[-limit:] if self._eval_store._results else []
+        if not results:
+            return {"error": "No evaluation results yet"}
+        return {
+            "trend": [r.get("score", 0) for r in results],
+            "task_types": [r.get("task_type", "unknown") for r in results],
+            "count": len(results),
+        }

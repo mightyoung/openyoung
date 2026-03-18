@@ -5,11 +5,14 @@ MCP Server 管理器 - 支持先决加载和动态启动
 """
 
 import json
+import logging
 import subprocess
 import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -79,7 +82,7 @@ class MCPServerManager:
                             )
                         ]
                 except Exception as e:
-                    print(f"[Warning] Failed to parse mcp.json in {item.name}: {e}")
+                    logger.warning(f"Failed to parse mcp.json in {item.name}: {e}")
 
             # 方法2: 查找 package.yaml
             package_yaml = item / "package.yaml"
@@ -116,7 +119,7 @@ class MCPServerManager:
                     # 没有 yaml 库，跳过 package.yaml
                     pass
                 except Exception as e:
-                    print(f"[Warning] Failed to parse package.yaml in {item.name}: {e}")
+                    logger.warning(f"Failed to parse package.yaml in {item.name}: {e}")
 
         return servers
 
@@ -285,7 +288,7 @@ class MCPServerManager:
                 break
 
         if not server_config:
-            print(f"[Warning] MCP Server config not found: {mcp_name}")
+            logger.warning(f"MCP Server config not found: {mcp_name}")
             return False
 
         # 启动 Server

@@ -3,6 +3,10 @@ Session API - 会话API服务器
 
 提供REST和WebSocket接口用于持久Agent会话
 SSE流式输出支持
+
+Note: 支持两种模式:
+1. Router模式: 使用 create_session_router() 创建router
+2. App模式: 使用 create_session_api() 直接注册到app
 """
 
 import asyncio
@@ -10,7 +14,7 @@ import json
 from dataclasses import dataclass
 from typing import AsyncGenerator, Optional
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -19,6 +23,10 @@ try:
     from sse_starlette import EventSourceResponse
 except ImportError:
     EventSourceResponse = None
+
+
+# 创建Router
+router = APIRouter(prefix="/api/sessions", tags=["Sessions"])
 
 
 # ========== 请求模型 ==========

@@ -24,11 +24,33 @@
 ## Project Architecture
 
 - Follow Domain-Driven Design with bounded contexts
-- Keep files under 500 lines
+- **File Size Limits** (HARDCONSTRAINT):
+  - Maximum 400 lines per file (500 lines for special cases like main.py)
+  - If file exceeds 400 lines, MUST split into modules
+  - Giant files to fix: cli/main.py (2338 lines), young_agent.py (1752 lines)
 - Use typed interfaces for all public APIs
 - Prefer TDD London School (mock-first) for new code
 - Use event sourcing for state changes
 - Ensure input validation at system boundaries
+
+### Code Organization Rules
+
+- **Avoid Duplicate Abstractions**: Before creating new Loader/Registry/Manager classes:
+  - Use `src.core.registry.BaseRegistry` as base class for all registry-like implementations
+  - Check `src/core/registry/` for base implementations first
+  - Check existing loaders: cli/loader.py, agents/loader.py, skills/loader.py
+  - Reuse existing abstractions instead of creating new ones
+- **Registry Pattern**: All Manager/Loader classes should inherit from `BaseRegistry[T]`:
+  ```python
+  from src.core.registry import BaseRegistry
+
+  class MyLoader(BaseRegistry[MyItem]):
+      def __init__(self):
+          super().__init__("my_loader")
+          # Your initialization
+  ```
+- **Module Ownership**: Each src/* directory should have clear, single responsibility
+- **No DEPRECATED code**: Marked deprecated code should be removed within 1 release cycle
 
 ### Project Config
 
@@ -186,6 +208,34 @@ npx @claude-flow/cli@latest doctor --fix
 
 - Documentation: https://github.com/ruvnet/claude-flow
 - Issues: https://github.com/ruvnet/claude-flow/issues
+
+## Active Plans (Progressive Disclosure)
+
+> 基于Anthropic Context Engineering最佳实践
+
+**当前任务**: T1 - 完善Chat流式输出
+
+### 任务索引 (Layer 0)
+
+| ID | 任务 | 状态 |
+|----|------|------|
+| T1 | Chat流式输出 | pending |
+| T2 | Skills管理页面 | pending |
+| T3 | 评估运行功能 | pending |
+| T4 | Settings完整CRUD | pending |
+| T5 | 统一API服务层 | pending |
+
+### 使用方法
+
+```bash
+# 查看当前任务详情
+head -40 docs/plans/2026-03-17-cli-to-webui-migration-plan-v2.md
+
+# 查看T1详细方案
+sed -n '/## Layer 1/,/^##/p' docs/plans/2026-03-17-cli-to-webui-migration-plan-v2.md
+```
+
+详细计划: `docs/plans/2026-03-17-cli-to-webui-migration-plan-v2.md`
 
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence

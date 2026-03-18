@@ -318,7 +318,7 @@ class AgentEvaluator:
 
                 if global_action == "allow":
                     warnings.append("Permission set to allow all - security risk")
-            except:
+            except (yaml.YAMLError, ValueError):
                 pass
 
         # 检查是否有危险的 shell 命令
@@ -327,7 +327,7 @@ class AgentEvaluator:
                 content = py_file.read_text(encoding="utf-8")
                 if "os.system" in content or "subprocess.run" in content:
                     warnings.append(f"Shell execution in {py_file.name}")
-            except:
+            except (UnicodeDecodeError, OSError):
                 pass
 
         score = 1.0 if not warnings else 0.5

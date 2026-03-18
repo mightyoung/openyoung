@@ -133,15 +133,78 @@ class APIClient:
         response.raise_for_status()
         return response.json()
 
-    # ========== Stream API ==========
+    # ========== Evaluation APIs ==========
 
-    async def stream_chat(self, session_id: str) -> AsyncGenerator[str, None]:
-        """流式获取聊天响应"""
-        async with self.client.stream("GET", f"/api/sessions/{session_id}/stream") as response:
+    async def list_datasets(self) -> List[Dict[str, Any]]:
+        """列出可用数据集"""
+        response = await self.client.get("/api/v1/datasets")
+        response.raise_for_status()
+        return response.json().get("items", [])
+
+    async def run_evaluation(
+        self,
+        agent_id: str,
+        dataset_id: str,
+        config: Dict[str, Any] = None,
+    ) -> Dict[str, Any]:
+        """运行评估"""
+        data = {
+            "agent_id": agent_id,
+            "dataset_id": dataset_id,
+            **(config or {}),
+        }
+        response = await self.client.post("/api/v1/evaluations/run", json=data)
+        response.raise_for_status()
+        return response.json()
+
+    async def stream_evaluation(
+        self, evaluation_id: str
+    ) -> AsyncGenerator[Dict[str, Any], None]:
+        """流式获取评估进度"""
+        async with self.client.stream(
+            "GET", f"/api/v1/evaluations/{evaluation_id}/stream"
+        ) as response:
             response.raise_for_status()
             async for line in response.aiter_lines():
                 if line.startswith("data:"):
-                    yield line[5:].strip()
+                    try:
+                        data = line[5:].strip()
+                        yield json.loads(data)
+                    except json.JSONDecodeError:
+                        pass
+
+    # ========== Stream API ==========
+
+    async def stream_chat(
+        self, session_id: str, message: str
+    ) -> AsyncGenerator[Dict[str, Any], None]:
+        """
+        流式获取聊天响应 (POST版本)
+
+        使用SSE协议，支持实时流式输出
+        """
+        async with self.client.stream(
+            "POST",
+            f"/api/sessions/{session_id}/stream",
+            json={"message": message},
+        ) as response:
+            response.raise_for_status()
+            async for line in response.aiter_lines():
+                if line.startswith("data:"):
+                    try:
+                        data = line[5:].strip()
+                        # 解析SSE事件格式: event:chunk\ndata:{...}
+                        if data.startswith("event:"):
+                            # 处理event:开头的SSE格式
+                            parts = data.split("\n", 1)
+                            if len(parts) > 1:
+                                event_type = parts[0].replace("event:", "").strip()
+                                event_data = parts[1].replace("data:", "").strip()
+                                yield {"event": event_type, "data": json.loads(event_data)}
+                        else:
+                            yield json.loads(data)
+                    except json.JSONDecodeError:
+                        pass
 
     async def stream_execution(self, task_id: str) -> AsyncGenerator[Dict[str, Any], None]:
         """流式获取执行状态"""

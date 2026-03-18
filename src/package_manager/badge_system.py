@@ -120,7 +120,7 @@ class BadgeSystem:
                 days_since = (datetime.now() - created).days
                 if days_since <= 30:
                     badges.append(BADGE_DEFINITIONS[BadgeType.NEW])
-            except:
+            except (ValueError, OSError):
                 pass
 
         # 5. Trending - 计算趋势分数

@@ -3,6 +3,9 @@ Evaluation Coordinator - 评估协调器
 
 负责协调整个评估流程，从 YoungAgent 中提取评估逻辑。
 
+Note: 评估功能已迁移到 src/hub/evaluate/ (Harness 系统)
+本文件保留以维持 young_agent.py 兼容性，核心逻辑已停用。
+
 集成统一异常处理:
 - 异常转换
 - 上下文增强
@@ -19,8 +22,23 @@ from src.core.exception_handler import (
     get_exception_handler,
     handle_exceptions,
 )
-from src.evaluation.llm_judge import LLMJudgeEval
-from src.evaluation.planner import EvalPlanner
+
+
+# ========== Stubs — 替换 src.evaluation 依赖 ==========
+
+
+class EvalPlanner:
+    """评估计划生成器 (stub) — 评估迁移到 Harness 系统"""
+
+    async def generate_plan(self, task_description: str) -> Any:
+        class _StubPlan:
+            task_type = "general"
+            success_criteria = []
+            validation_methods = []
+        return _StubPlan()
+
+
+# ========== Dataclasses ==========
 
 
 @dataclass
@@ -54,6 +72,10 @@ class EvaluationCoordinator:
     """评估协调器
 
     从 YoungAgent 提取的评估逻辑，统一管理评估流程。
+
+    Note: 评估功能已迁移到 src/hub/evaluate/ (Harness 系统)
+    本类核心逻辑已停用，仅保留结构和占位实现。
+
     支持：
     - LLM-as-Judge 智能评估
     - 基于评估计划的完成度计算
@@ -94,10 +116,9 @@ class EvaluationCoordinator:
         }
 
     def _get_judge(self):
-        """获取或创建 LLMJudge 实例"""
-        if self._judge is None:
-            self._judge = LLMJudgeEval(judge_client=self._llm_client)
-        return self._judge
+        """获取或创建 LLMJudge 实例 (stub)"""
+        # LLMJudgeEval 已移除 — 评估使用 Harness 系统
+        return None
 
     @handle_exceptions(reraise=False, default=None)
     async def evaluate(self, context: EvaluationContext) -> EvaluationReport:

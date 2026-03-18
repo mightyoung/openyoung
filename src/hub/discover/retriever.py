@@ -46,10 +46,10 @@ class AgentRetriever:
 
         # 初始化向量存储
         try:
-            from src.memory.vector_store import VectorStore
+            from src.core.memory.impl.vector_store import VectorStore
 
             # 使用默认路径，让 VectorStore 使用自己的默认 db_path
-            self._vector_store = VectorStore(vector_store_path)
+            self._vector_store = VectorStore(db_path=vector_store_path)
         except Exception as e:
             print(f"[AgentRetriever] VectorStore init warning: {e}")
             self._vector_store = None
@@ -132,7 +132,7 @@ class AgentRetriever:
                 # 解析 JSON 字符串
                 try:
                     tags = json.loads(tags_str) if isinstance(tags_str, str) else tags_str
-                except:
+                except (json.JSONDecodeError, TypeError, ValueError):
                     tags = []
 
                 agent_name = tags[0] if tags else None

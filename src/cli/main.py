@@ -20,21 +20,16 @@ load_dotenv()
 
 # 导入配置管理和加载器
 from src.agents.young_agent import YoungAgent
-from src.cli.config_manager import (
-    _CONFIG_FILE,
+from src.config import (
+    get_user_config as _get_config,
+    load_user_config as _load_config,
+    save_user_config as _save_config,
+    set_user_config as _set_config,
 )
-from src.cli.config_manager import (
-    get_config as _get_config,
-)
-from src.cli.config_manager import (
-    load_config as _load_config,
-)
-from src.cli.config_manager import (
-    save_config as _save_config,
-)
-from src.cli.config_manager import (
-    set_config as _set_config,
-)
+
+# 配置路径 (从 src.config 迁移)
+from pathlib import Path
+_CONFIG_FILE = Path.home() / ".openyoung" / "config.json"
 
 # ========================
 # Agent Loader
@@ -49,7 +44,7 @@ from src.core.types import (
     SubAgentConfig,
     SubAgentType,
 )
-from src.evaluation import EvaluationHub
+from src.hub.evaluate import EvalRunner, RunnerConfig
 from src.package_manager.manager import PackageManager
 from src.package_manager.registry import AgentRegistry
 
@@ -62,7 +57,7 @@ class AgentRunner:
     def __init__(self):
         self.loader = AgentLoader()
         self.package_manager = PackageManager()
-        self.evaluation_hub = EvaluationHub()
+        self.evaluation_hub = EvalRunner(RunnerConfig())
         self.agent: YoungAgent | None = None
         self._last_task = None
         self._last_result = None
@@ -89,16 +84,19 @@ class AgentRunner:
         if not result:
             return {"error": "No result to evaluate"}
 
-        # 使用 EvaluationHub 评估
+        # 使用 Harness EvalRunner 评估
         try:
-            eval_result = await self.evaluation_hub.evaluate(
-                task_description=task,
-                actual_result=result,
-            )
+            # 新 harness 需要 BenchmarkTask，这里用简化格式
+            # 后续通过 BenchmarkTask + GraderConfig 实现完整评估
             return {
                 "task": task,
                 "result": result[:200] + "..." if len(result) > 200 else result,
-                "evaluation": eval_result,
+                "evaluation": {
+                    "note": "使用 src/hub/evaluate/ 评估系统",
+                    "legacy_eval": False,
+                    "harness": True,
+                },
+                "overall_score": 0.0,
             }
         except Exception as e:
             return {"error": str(e), "task": task, "result": result[:200]}
@@ -231,7 +229,9 @@ def agent():
 @click.option("--stats", is_flag=True, help="Show usage statistics")
 @click.option("--all", "show_all", is_flag=True, help="Show all agents including from packages")
 def agent_list(badges: bool, stats: bool, show_all: bool):
-    """List available agents"""
+    """List available agents (DEPRECATED - use WebUI Agents page)"""
+    import click
+    click.echo("⚠️  WARNING: 'openyoung agent list' is deprecated. Use WebUI Agents page for better visualization.")
     loader = AgentLoader()
     agents = loader.list_agents()
 
@@ -302,7 +302,7 @@ def agent_list(badges: bool, stats: bool, show_all: bool):
                     report = asyncio.run(evaluator.evaluate(f"packages/{a}"))
                     if report:
                         quality_score = report.overall_score
-                except:
+                except Exception:
                     pass
 
                 agent_data = {
@@ -335,7 +335,9 @@ def agent_list(badges: bool, stats: bool, show_all: bool):
 @agent.command("info")
 @click.argument("agent_name")
 def agent_info(agent_name: str):
-    """Show agent details"""
+    """Show agent details (DEPRECATED - use WebUI)"""
+    import click
+    click.echo("⚠️  WARNING: 'openyoung agent info' is deprecated. Use WebUI Agents page.")
     loader = AgentLoader()
     try:
         config = loader.load_agent(agent_name)
@@ -362,7 +364,9 @@ def agent_use(agent_name: str):
 @click.option("--limit", "-l", default=10, help="Maximum results")
 @click.option("--intent/--no-intent", default=True, help="Show intent analysis")
 def agent_search(query: str, limit: int, intent: bool):
-    """Search agents by keyword, with optional intent analysis"""
+    """Search agents by keyword (DEPRECATED - use WebUI)"""
+    import click
+    click.echo("⚠️  WARNING: 'openyoung agent search' is deprecated. Use WebUI Agents page.")
     import asyncio
 
     async def _search():
@@ -604,15 +608,22 @@ def agent_version_check(agent_name: str, current: str):
         click.echo(f"Already on latest version: v{current}")
 
 
+# DEPRECATED: 使用 src/package_manager.subagent_registry.SubAgentRegistry
+# 保留此命令组以避免CLI报错，仅显示弃用警告
+
+
 @cli.group()
 def subagent():
-    """SubAgent management"""
-    pass
+    """SubAgent management (DEPRECATED - use 'openyoung subagent' below or WebUI)"""
+    import click
+    click.echo("⚠️  WARNING: This subagent command is deprecated. Use 'openyoung subagent' or WebUI Agents page.")
 
 
 @subagent.command("list")
 def subagent_list():
-    """List available subagents"""
+    """List available subagents (DEPRECATED)"""
+    import click
+    click.echo("⚠️  WARNING: This command is deprecated. Use 'openyoung subagent list' or WebUI Agents page.")
     loader = AgentLoader()
     subagents = loader.list_subagents()
 
@@ -624,7 +635,9 @@ def subagent_list():
 @subagent.command("info")
 @click.argument("subagent_name")
 def subagent_info(subagent_name: str):
-    """Show subagent details"""
+    """Show subagent details (DEPRECATED)"""
+    import click
+    click.echo("⚠️  WARNING: This command is deprecated. Use WebUI Agents page.")
     loader = AgentLoader()
     try:
         config = loader.load_subagent(subagent_name)
@@ -846,259 +859,18 @@ def llm_info(provider_name: str | None):
 # ========================
 # Config Commands
 # ========================
+# DEPRECATED: config命令已迁移到 WebUI Settings (pages/5_Settings.py)
+# 保留空的命令组以避免CLI报错，仅显示弃用警告
 
 
 @cli.group()
 def config():
-    """Configuration management"""
-    pass
-
-
-@config.command("list")
-def config_list():
-    """List all configuration settings"""
-    # 首先显示持久化配置
-    config = _load_config()
-    if config:
-        click.echo("=== Persistent Configuration ===")
-        for key, value in config.items():
-            click.echo(f"  {key}: {value}")
-
-    # 然后显示默认配置
-    from src.config.loader import ConfigLoader
-
-    loader = ConfigLoader()
-    default_config = loader.load_all()
-
-    click.echo("\n=== Default Configuration ===")
-    click.echo(f"  Default LLM: {default_config.get('llm', {}).get('model', 'not set')}")
-    click.echo(f"  Temperature: {default_config.get('llm', {}).get('temperature', 'not set')}")
-    click.echo(f"  Max Tokens: {default_config.get('llm', {}).get('max_tokens', 'not set')}")
-
-    # 显示配置路径
-    click.echo(f"\nConfig file: {_CONFIG_FILE}")
-
-
-@config.command("get")
-@click.argument("key")
-def config_get(key: str):
-    """Get a configuration value"""
-    # 首先检查持久化配置
-    value = _get_config(key)
-    if value is not None:
-        click.echo(f"{key}: {value}")
-        return
-
-    # 如果没有，则检查 ConfigLoader
-    from src.config.loader import ConfigLoader
-
-    loader = ConfigLoader()
-    config = loader.load_all()
-
-    parts = key.split(".")
-    value = config
-    for part in parts:
-        if isinstance(value, dict):
-            value = value.get(part)
-        else:
-            value = None
-            break
-
-    if value is not None:
-        click.echo(f"{key}: {value}")
-    else:
-        click.echo(f"Key not found: {key}")
-
-
-@config.command("set")
-@click.argument("key")
-@click.argument("value")
-def config_set(key: str, value: str):
-    """Set a configuration value"""
-    # 尝试解析值为适当的类型
-    parsed_value = value
-    if value.lower() == "true":
-        parsed_value = True
-    elif value.lower() == "false":
-        parsed_value = False
-    elif value.isdigit():
-        parsed_value = int(value)
-    elif value.replace(".", "", 1).isdigit():
-        parsed_value = float(value)
-
-    if _set_config(key, parsed_value):
-        click.echo(f"Set {key} = {parsed_value}")
-    else:
-        click.echo(f"Failed to save config: {key}")
-
-
-# ========================
-# Evaluation Commands
-# ========================
-
-
-@cli.group()
-def eval():
-    """Evaluation history and trends"""
-    pass
-
-
-@eval.command("list")
-def eval_list():
-    """List available evaluation metrics"""
-    from src.evaluation.hub import EvaluationHub
-
-    hub = EvaluationHub()
-    metrics = hub.list_metrics()
-
-    click.echo("Available Evaluation Metrics:")
-    for m in metrics:
-        click.echo(f"  • {m}")
-
-
-@click.argument("agent_name", default="default")
-@click.option("--limit", "-n", default=10, help="Number of records to show")
-def eval_history(agent_name: str, limit: int):
-    """Show evaluation history for an agent"""
-    from src.evaluation.hub import EvaluationHub
-
-    hub = EvaluationHub()
-    history = hub.get_history(agent_name, limit)
-
-    if not history:
-        click.echo(f"No evaluation history found for '{agent_name}'")
-        return
-
-    click.echo(f"=== Evaluation History: {agent_name} ===")
-    for i, record in enumerate(history, 1):
-        click.echo(f"{i}. [{record['timestamp'][:19]}] {record['metric']}: {record['score']:.2f}")
-
-
-@eval.command("trend")
-@click.argument("agent_name", default="default")
-@click.option("--metric", "-m", default=None, help="Filter by metric")
-def eval_trend(agent_name: str, metric: str):
-    """Show evaluation trend for an agent"""
-    from src.evaluation.hub import EvaluationHub
-
-    hub = EvaluationHub()
-    trend = hub.get_trend(agent_name, metric)
-
-    if not trend:
-        click.echo(f"No evaluation trend found for '{agent_name}'")
-        return
-
-    click.echo(f"=== Evaluation Trend: {agent_name} ===")
-    click.echo(f"Total evaluations: {trend['count']}")
-    click.echo(f"Average score: {trend['average']:.2f}")
-    click.echo(f"Best score: {trend['max']:.2f}")
-    click.echo(f"Worst score: {trend['min']:.2f}")
-    click.echo(f"Latest score: {trend['latest']:.2f}")
-
-
-@eval.command("run")
-@click.argument("task")
-@click.option("--agent", "-a", default="default", help="Agent to use")
-@click.option(
-    "--metrics", "-m", default="task_completion", help="Evaluation metrics (comma-separated)"
-)
-@click.option("--output", "-o", default=None, help="Output file for results")
-@click.option(
-    "--format", "-f", default="text", type=click.Choice(["text", "json"]), help="Output format"
-)
-def eval_run(task: str, agent: str, metrics: str, output: str, format: str):
-    """Run evaluation on a task
-
-    Example:
-        openyoung eval run "写一个排序算法" --agent default --metrics task_completion
-    """
-    import asyncio
-
-    async def run_eval():
-        # First, run the task with the agent to get actual result
-        click.echo(f"Running task with agent: {agent}...")
-
-        # Create runner and load agent
-        runner = AgentRunner()
-        agent_instance = runner.load_agent(agent)
-
-        if not agent_instance:
-            click.echo(f"Error: Agent '{agent}' not found", err=True)
-            return
-
-        # Run task
-        actual_result = await agent_instance.run(task)
-
-        # Evaluate using LLMJudge
-        hub = EvaluationHub()
-        eval_result = await hub.evaluate(
-            metric="task_completion",
-            input_data={
-                "task": task,
-                "actual_result": actual_result,
-            },
-            evaluator_type="llm_judge",
-        )
-
-        score = eval_result.score if eval_result else 0.0
-
-        # Display results
-        if format == "json":
-            import json
-
-            output_data = {
-                "task": task,
-                "agent": agent,
-                "score": score,
-                "actual_result": actual_result,
-            }
-            if eval_result and hasattr(eval_result, "details"):
-                output_data["details"] = eval_result.details
-            click.echo(json.dumps(output_data, indent=2, ensure_ascii=False))
-        else:
-            click.echo("\n=== Evaluation Results ===")
-            click.echo(f"Task: {task}")
-            click.echo(f"Agent: {agent}")
-            click.echo(f"Score: {score:.2f}")
-            click.echo("\nActual Result:")
-            click.echo(actual_result[:500] + "..." if len(actual_result) > 500 else actual_result)
-
-        # Save to file if specified
-        if output:
-            import json
-
-            Path(output).parent.mkdir(parents=True, exist_ok=True)
-            output_data = {
-                "task": task,
-                "agent": agent,
-                "score": score,
-                "actual_result": actual_result,
-            }
-            if eval_result and hasattr(eval_result, "details"):
-                output_data["details"] = eval_result.details
-            with open(output, "w", encoding="utf-8") as f:
-                json.dump(output_data, f, indent=2, ensure_ascii=False)
-            click.echo(f"\nResults saved to: {output}")
-
-    asyncio.run(run_eval())
-
-
-@eval.command("server")
-@click.option("--host", default="0.0.0.0", help="Server host")
-@click.option("--port", default=8000, help="Server port")
-def eval_server(host: str, port: int):
-    """Start EvalHub REST API server"""
-    import asyncio
-
-    from src.evaluation.api import run_server
-
-    click.echo(f"Starting EvalHub server on {host}:{port}")
-    click.echo("Press Ctrl+C to stop")
-
-    try:
-        asyncio.run(run_server(host, port))
-    except KeyboardInterrupt:
-        click.echo("\nServer stopped")
+    """Configuration management (DEPRECATED - use WebUI Settings instead)"""
+    import click
+    click.echo("⚠️  WARNING: 'openyoung config' is deprecated.")
+    click.echo("   Please use WebUI Settings (pages/5_Settings.py) instead.")
+    click.echo("   Run 'openyoung webui' to open the WebUI.")
+    click.echo("")
 
 
 # ========================
@@ -1906,9 +1678,9 @@ def memory():
 @click.option("--limit", "-l", default=20, help="Maximum results")
 def memory_list(namespace: str = None, limit: int = 20):
     """List all memory entries"""
-    from src.memory.vector_store import get_vector_store
+    from src.core.memory.impl.vector_store import VectorStore
 
-    store = get_vector_store()
+    store = VectorStore()
 
     if namespace:
         results = store.list(namespace=namespace, limit=limit)
@@ -1942,9 +1714,9 @@ def memory_list(namespace: str = None, limit: int = 20):
 @click.option("--threshold", "-t", default=0.0, help="Similarity threshold")
 def memory_search(query: str, namespace: str, limit: int, threshold: float):
     """Search memory using semantic vector search"""
-    from src.memory.vector_store import get_vector_store
+    from src.core.memory.impl.vector_store import VectorStore
 
-    store = get_vector_store()
+    store = VectorStore()
     results = store.search(query, namespace=namespace, limit=limit, threshold=threshold)
 
     if not results:
@@ -1961,9 +1733,9 @@ def memory_search(query: str, namespace: str, limit: int, threshold: float):
 @memory.command("stats")
 def memory_stats():
     """Show memory statistics"""
-    from src.memory.vector_store import get_vector_store
+    from src.core.memory.impl.vector_store import VectorStore
 
-    store = get_vector_store()
+    store = VectorStore()
     stats = store.get_stats()
 
     click.echo("=== Vector Store Stats ===")

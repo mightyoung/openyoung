@@ -137,7 +137,7 @@ class AgentRegistry(BaseRegistry):
             text = self._build_index_text(agent)
 
             # 获取向量存储（使用默认路径）
-            from src.memory.vector_store import VectorStore
+            from src.core.memory.impl.vector_store import VectorStore
 
             vs = VectorStore()  # 使用默认 db_path
 

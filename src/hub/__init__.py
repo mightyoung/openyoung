@@ -83,11 +83,25 @@ try:
 except ImportError:
     ImportManager = None
 
-# 版本管理
+# 版本管理 (统一使用 package_manager 版本)
 try:
-    from .version import VersionManager
+    from src.package_manager.version_manager import (
+        VersionManager,
+        VersionError,
+        VersionHistory,
+        AgentVersion,
+        parse_semver,
+        compare_versions,
+        get_version_manager,
+    )
 except ImportError:
     VersionManager = None
+    VersionError = None
+    VersionHistory = None
+    AgentVersion = None
+    parse_semver = None
+    compare_versions = None
+    get_version_manager = None
 
 # IO
 try:

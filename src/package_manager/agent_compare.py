@@ -140,7 +140,7 @@ class AgentComparer:
         evaluator = AgentEvaluator()
         try:
             report = await evaluator.evaluate(f"packages/{agent_name}")
-        except:
+        except Exception:
             report = None
 
         # 获取使用统计

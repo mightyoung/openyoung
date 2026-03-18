@@ -20,7 +20,7 @@ def config_group():
 @click.argument("key")
 def config_get(key: str):
     """获取配置值"""
-    from src.cli.config_manager import get_config
+    from src.config import get_user_config as get_config
 
     value = get_config(key)
     if value is not None:
@@ -34,7 +34,7 @@ def config_get(key: str):
 @click.argument("value")
 def config_set(key: str, value: str):
     """设置配置值"""
-    from src.cli.config_manager import set_config
+    from src.config import set_user_config as set_config
 
     set_config(key, value)
     click.echo(f"Set {key} = {value}")
@@ -43,7 +43,7 @@ def config_set(key: str, value: str):
 @config_group.command(name="list")
 def config_list():
     """列出所有配置"""
-    from src.cli.config_manager import get_config
+    from src.config import get_user_config as get_config
 
     # TODO: Implement full config listing
     click.echo("Configuration:")

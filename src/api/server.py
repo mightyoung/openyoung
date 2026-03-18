@@ -15,7 +15,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from src.api.session_api import create_session_api
-from src.evaluation_api.routers import evaluations, executions, exports, stream
+from src.api.routes import get_all_routers
+
+# 直接导入 (方案B - 分散注册，保留兼容)
+# from src.evaluation_api.routers import evaluations, executions, exports, stream
 
 # =====================
 # 简单的内存会话管理器
@@ -175,11 +178,15 @@ def create_app() -> FastAPI:
     # 注册 Session API
     create_session_api(app, session_manager)
 
-    # 注册 Evaluation API
-    app.include_router(executions.router, prefix="/api/v1", tags=["Executions"])
-    app.include_router(evaluations.router, prefix="/api/v1", tags=["Evaluations"])
-    app.include_router(exports.router, prefix="/api/v1", tags=["Exports"])
-    app.include_router(stream.router, prefix="/api/v1", tags=["Stream"])
+    # 统一路由注册 (方案A - 使用 get_all_routers())
+    for router, prefix, tags in get_all_routers():
+        app.include_router(router, prefix=prefix, tags=tags)
+
+    # 方式1: 分散注册 (已弃用)
+    # app.include_router(executions.router, prefix="/api/v1", tags=["Executions"])
+    # app.include_router(evaluations.router, prefix="/api/v1", tags=["Evaluations"])
+    # app.include_router(exports.router, prefix="/api/v1", tags=["Exports"])
+    # app.include_router(stream.router, prefix="/api/v1", tags=["Stream"])
 
     # 健康检查
     @app.get("/health")

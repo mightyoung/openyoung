@@ -1,8 +1,10 @@
 """
 Config Manager - 配置管理模块
 
-从 main.py 提取的配置管理功能。
-支持 Pydantic 配置验证。
+⚠️ DEPRECATED: 此模块已弃用
+功能已迁移到 src/config/ 模块
+
+保留仅用于向后兼容
 """
 
 import json
@@ -11,6 +13,35 @@ from typing import Any, Optional
 
 from pydantic import ValidationError
 
+# 使用统一的配置入口
+from src.config import (
+    load_user_config,
+    save_user_config,
+    get_user_config,
+    set_user_config,
+    UserConfigManager,
+)
+
+# 兼容函数
+def load_config() -> dict:
+    """加载配置 (兼容旧接口)"""
+    return load_user_config()
+
+
+def save_config(config: dict) -> bool:
+    """保存配置 (兼容旧接口)"""
+    return save_user_config(config)
+
+
+def get_config(key: str, default: Any = None) -> Any:
+    """获取配置值 (兼容旧接口)"""
+    return get_user_config(key, default)
+
+
+def set_config(key: str, value: str) -> bool:
+    """设置配置值 (兼容旧接口)"""
+    return set_user_config(key, value)
+
 # 导入配置模型
 from src.cli.config_models import (
     AgentConfigModel,
@@ -18,36 +49,22 @@ from src.cli.config_models import (
     LLMConfig,
 )
 
-# 配置路径
+# 保持路径兼容
 _CONFIG_DIR = Path.home() / ".openyoung"
 _CONFIG_FILE = _CONFIG_DIR / "config.json"
 
 
-def load_config() -> dict:
-    """加载配置"""
-    if _CONFIG_FILE.exists():
-        try:
-            return json.loads(_CONFIG_FILE.read_text())
-        except Exception:
-            pass
-    return {}
+# 保留 ConfigManager 类，但内部使用新实现
 
 
-def save_config(config: dict) -> bool:
-    """保存配置"""
-    try:
-        _CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-        _CONFIG_FILE.write_text(json.dumps(config, indent=2))
-        return True
-    except Exception as e:
-        print(f"Config save error: {e}")
-        return False
+class ConfigManager(UserConfigManager):
+    """配置管理器类 - 支持 Pydantic 验证"""
 
-
-def get_config(key: str, default: Any = None) -> Any:
-    """获取配置值"""
-    config = load_config()
-    return config.get(key, default)
+    def __init__(self, config_dir: Optional[Path] = None):
+        super().__init__(config_dir)
+        # 兼容旧接口
+        self.config_dir = config_dir or _CONFIG_DIR
+        self.config_file = self.config_dir / "config.json"
 
 
 def set_config(key: str, value: str) -> bool:

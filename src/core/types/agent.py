@@ -2,28 +2,13 @@
 Core Types - Agent Module
 
 Agent-related type definitions
+定义 FlowSkillType 和 SubAgentType 作为主定义位置
 """
 
 import os
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
-
-
-class AgentMode(Enum):
-    """Agent 模式 - 对标 OpenCode"""
-
-    PRIMARY = "primary"  # 主 Agent，直接与用户交互
-    SUBAGENT = "subagent"  # 子 Agent，被主 Agent 调用
-    ALL = "all"  # 两者皆可
-
-
-class PermissionAction(Enum):
-    """权限动作 - 对标 OpenCode"""
-
-    ALLOW = "allow"  # 无需批准直接执行
-    ASK = "ask"  # 提示用户确认
-    DENY = "deny"  # 阻止执行
 
 
 class FlowSkillType(Enum):
@@ -44,6 +29,22 @@ class SubAgentType(Enum):
     BUILDER = "builder"  # 构建和执行
     REVIEWER = "reviewer"  # 代码审查
     EVAL = "eval"  # 评估任务
+
+
+class AgentMode(Enum):
+    """Agent 模式 - 对标 OpenCode"""
+
+    PRIMARY = "primary"  # 主 Agent，直接与用户交互
+    SUBAGENT = "subagent"  # 子 Agent，被主 Agent 调用
+    ALL = "all"  # 两者皆可
+
+
+class PermissionAction(Enum):
+    """权限动作 - 对标 OpenCode"""
+
+    ALLOW = "allow"  # 无需批准直接执行
+    ASK = "ask"  # 提示用户确认
+    DENY = "deny"  # 阻止执行
 
 
 @dataclass

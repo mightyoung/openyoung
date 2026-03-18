@@ -19,13 +19,33 @@ from .external_sources import (
     SourceType,
     get_external_sources_fetcher,
 )
-from .heartbeat import (
-    HeartbeatConfig,
-    HeartbeatPhase,
-    HeartbeatResult,
-    HeartbeatScheduler,
-    get_heartbeat_scheduler,
-)
+# Heartbeat - 优先从 core 导入（保持向后兼容）
+try:
+    from src.core.heartbeat import (
+        HeartbeatConfig,
+        HeartbeatPhase,
+        HeartbeatResult,
+        HeartbeatScheduler,
+        get_heartbeat_scheduler,
+    )
+except ImportError:
+    # 备用：直接从 skills 导入
+    from .heartbeat import (
+        HeartbeatConfig,
+        HeartbeatPhase,
+        HeartbeatResult,
+        HeartbeatScheduler,
+        get_heartbeat_scheduler,
+    )
+
+# Knowledge - 从 core 导入
+try:
+    from src.core.knowledge import (
+        KnowledgeManager,
+        get_knowledge_manager,
+    )
+except ImportError:
+    pass  # 可选模块
 from .learnings import (
     LearningEntry,
     LearningsManager,

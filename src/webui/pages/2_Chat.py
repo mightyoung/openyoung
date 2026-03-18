@@ -104,62 +104,60 @@ def main():
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # 调用 API 获取响应
+        # 调用 API 获取响应 - 真实流式输出
         with st.chat_message("assistant"):
-            placeholder = st.empty()
             full_response = ""
 
-            # 显示加载状态
-            with st.spinner("Thinking..."):
-                try:
-                    client = APIClient(config.API_BASE_URL, config.API_KEY)
+            try:
+                import asyncio
 
-                    # 调用 API (这里使用简化实现)
-                    # 实际应该使用流式 API
-                    response = await_client_chat(
-                        client, st.session_state.current_session_id, prompt
-                    )
+                client = APIClient(config.API_BASE_URL, config.API_KEY)
 
-                    # 流式显示响应
-                    for chunk in response:
-                        full_response += chunk
-                        placeholder.markdown(full_response + "▌")
+                # 使用SSE流式API
+                response_placeholder = st.empty()
 
-                    placeholder.markdown(full_response)
+                async def stream_and_display():
+                    """异步流式处理函数"""
+                    nonlocal full_response
 
-                    # 保存响应
-                    assistant_message = {"role": "assistant", "content": full_response}
-                    st.session_state.messages.append(assistant_message)
-                    session_service.add_message(
-                        st.session_state.current_session_id, "assistant", full_response
-                    )
+                    with st.spinner("Thinking..."):
+                        async for event in client.stream_chat(
+                            st.session_state.current_session_id, prompt
+                        ):
+                            event_type = event.get("event", "")
+                            event_data = event.get("data", {})
 
-                    client.close()
+                            if event_type == "chunk":
+                                content = event_data.get("content", "")
+                                full_response += content
+                                response_placeholder.markdown(full_response + "▌")
+                            elif event_type == "done":
+                                response_placeholder.markdown(full_response)
+                                # 保存响应
+                                st.session_state.messages.append(
+                                    {"role": "assistant", "content": full_response}
+                                )
+                                session_service.add_message(
+                                    st.session_state.current_session_id, "assistant", full_response
+                                )
+                            elif event_type == "error":
+                                error_msg = event_data.get("error", "Unknown error")
+                                response_placeholder.error(f"Error: {error_msg}")
+                                st.session_state.messages.append(
+                                    {"role": "assistant", "content": f"Error: {error_msg}"}
+                                )
 
-                except Exception as e:
-                    error_msg = f"Error: {str(e)}"
-                    placeholder.error(error_msg)
-                    st.session_state.messages.append({"role": "assistant", "content": error_msg})
+                    await client.close()
+
+                # 运行异步函数
+                asyncio.run(stream_and_display())
+
+            except Exception as e:
+                error_msg = f"Error: {str(e)}"
+                st.error(error_msg)
+                st.session_state.messages.append({"role": "assistant", "content": error_msg})
 
         st.rerun()
-
-
-async def await_client_chat(client: APIClient, session_id: str, message: str) -> list:
-    """调用 API 并返回响应块"""
-    try:
-        # 尝试发送消息
-        result = await client.send_message(session_id, message)
-        response_text = result.get("response", "")
-
-        # 模拟流式输出
-        chunks = []
-        for i in range(0, len(response_text), 10):
-            chunks.append(response_text[i : i + 10])
-
-        return chunks if chunks else ["No response"]
-    except Exception as e:
-        # 如果 API 不可用，返回模拟响应
-        return [f"Echo: {message} (API error: {str(e)})"]
 
 
 if __name__ == "__main__":

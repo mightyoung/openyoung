@@ -195,6 +195,120 @@ def render_evaluation_details(evaluations: list):
         st.info(feedback)
 
 
+async def load_agents() -> list:
+    """加载可用Agents"""
+    client = APIClient(config.API_BASE_URL, config.API_KEY)
+    try:
+        agents = await client.list_agents()
+        await client.close()
+        return agents
+    except Exception as e:
+        await client.close()
+        return []
+
+
+async def load_datasets() -> list:
+    """加载可用数据集"""
+    client = APIClient(config.API_BASE_URL, config.API_KEY)
+    try:
+        datasets = await client.list_datasets()
+        await client.close()
+        return datasets
+    except Exception as e:
+        await client.close()
+        return []
+
+
+def render_run_evaluation():
+    """渲染评估运行界面"""
+    st.subheader("🚀 Run Evaluation")
+
+    # 加载可用选项
+    with st.spinner("Loading agents and datasets..."):
+        agents = asyncio.run(load_agents())
+        datasets = asyncio.run(load_datasets())
+
+    # Agent选择
+    agent_options = {a.get("id", a.get("name", "Unknown")): a.get("name", "Unknown") for a in agents}
+    selected_agent_id = st.selectbox(
+        "Select Agent",
+        options=list(agent_options.keys()),
+        format_func=lambda x: agent_options.get(x, x),
+    )
+
+    # 数据集选择
+    dataset_options = {d.get("id", d.get("name", "Unknown")): d.get("name", "Unknown") for d in datasets}
+    selected_dataset_id = st.selectbox(
+        "Select Dataset",
+        options=list(dataset_options.keys()),
+        format_func=lambda x: dataset_options.get(x, x),
+    )
+
+    # 配置选项
+    with st.expander("⚙️ Evaluation Config"):
+        config_options = {
+            "max_samples": st.number_input("Max Samples", min_value=1, value=100),
+            "timeout": st.number_input("Timeout (seconds)", min_value=30, value=300),
+        }
+
+    # 运行按钮
+    if st.button("▶️ Start Evaluation", type="primary"):
+        if not selected_agent_id or not selected_dataset_id:
+            st.error("Please select both an agent and a dataset")
+            return
+
+        async def run_eval_async():
+            with st.spinner("Starting evaluation..."):
+                client = APIClient(config.API_BASE_URL, config.API_KEY)
+                try:
+                    result = await client.run_evaluation(
+                        selected_agent_id,
+                        selected_dataset_id,
+                        config_options,
+                    )
+                    st.success(f"Evaluation started! ID: {result.get('id', 'N/A')}")
+
+                    # 进度跟踪
+                    eval_id = result.get("id")
+                    if eval_id:
+                        progress_bar = st.progress(0)
+                        status_text = st.empty()
+
+                        final_result = None
+                        async for event in client.stream_evaluation(eval_id):
+                            progress = event.get("progress", 0)
+                            status = event.get("status", "running")
+                            progress_bar.progress(progress / 100)
+                            status_text.text(f"Status: {status}")
+                            if status == "completed":
+                                final_result = await client.get_evaluation(eval_id)
+
+                        if final_result:
+                            st.success(f"Evaluation complete! Score: {final_result.get('overall_score', 0):.2f}")
+
+                except Exception as e:
+                    st.error(f"Error: {str(e)}")
+                finally:
+                    await client.close()
+
+        asyncio.run(run_eval_async())
+
+    # 历史记录
+    st.markdown("---")
+    st.write("### 📜 Recent Evaluation Runs")
+
+    # 使用已有的load_evaluations
+    evaluations = asyncio.run(load_evaluations())
+    if evaluations:
+        for eval_item in evaluations[:10]:
+            with st.expander(f"Eval {eval_item.get('id', 'N/A')[:8]}... - {eval_item.get('overall_score', 0):.2f}"):
+                st.write(f"**Status**: {eval_item.get('status', 'unknown')}")
+                st.write(f"**Score**: {eval_item.get('overall_score', 0):.2f}")
+                st.write(f"**Date**: {eval_item.get('created_at', 'N/A')}")
+    else:
+        st.info("No evaluation history")
+
+
 def main():
     """主函数"""
     st.title("📊 Dashboard")
@@ -211,8 +325,8 @@ def main():
 
     st.markdown("---")
 
-    # 标签页: 概览 | 执行记录 | 评估详情
-    tab1, tab2, tab3 = st.tabs(["📈 Overview", "📋 Executions", "🎯 Evaluations"])
+    # 标签页: 概览 | 执行记录 | 评估详情 | 运行评估
+    tab1, tab2, tab3, tab4 = st.tabs(["📈 Overview", "📋 Executions", "🎯 Evaluations", "🚀 Run"])
 
     with tab1:
         render_trend_chart(evaluations)
@@ -222,6 +336,9 @@ def main():
 
     with tab3:
         render_evaluation_details(evaluations)
+
+    with tab4:
+        render_run_evaluation()
 
     # 刷新按钮
     st.markdown("---")
