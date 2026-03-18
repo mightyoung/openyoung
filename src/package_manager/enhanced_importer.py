@@ -516,42 +516,6 @@ class EnhancedGitHubImporter:
             print(f"[Metadata] Failed to fetch: {e}")
         return None
 
-    async def execute_imported_agent(self, agent_name: str, task: str) -> str:
-        """执行导入的 agent
-
-        Args:
-            agent_name: Agent 名称
-            task: 任务描述
-
-        Returns:
-            执行结果
-        """
-        from src.agents.young_agent import YoungAgent
-        from src.core.types import AgentConfig, AgentMode
-        from src.package_manager.agent_loader import AgentLoader
-
-        print(f"[Execute] Running agent '{agent_name}' with task: {task[:50]}...")
-
-        # 1. 加载 agent 配置
-        loader = AgentLoader()
-        try:
-            config = loader.load_agent(agent_name)
-        except Exception:
-            # 如果没有配置，创建默认配置
-            config = AgentConfig(
-                name=agent_name,
-                mode=AgentMode.PRIMARY,
-            )
-
-        # 2. 创建 YoungAgent 实例
-        agent = YoungAgent(config)
-
-        # 3. 执行任务
-        result = await agent.run(task)
-
-        # 4. 返回结果
-        return result
-
     def _git_clone(self, owner: str, repo: str) -> Path | None:
         """Git clone 仓库到本地"""
         import subprocess
@@ -997,7 +961,7 @@ class EnhancedGitHubImporter:
             try:
                 content = f.read_text(encoding="utf-8", errors="ignore")[:2000]
                 code_context += f"\n# {f.name}\n{content}\n"
-            except:
+            except (OSError, UnicodeDecodeError):
                 pass
 
         # 解析 CLAUDE.md 获取执行流程
@@ -1093,7 +1057,7 @@ class EnhancedGitHubImporter:
                 config = yaml.safe_load(item.read_text(encoding="utf-8", errors="ignore"))
                 if config:
                     configs["skills"].append({"path": str(item), "config": config})
-            except:
+            except (OSError, UnicodeDecodeError):
                 pass
 
         # 也解析 SKILL.md 文件 (DeerFlow 格式)
@@ -1112,7 +1076,7 @@ class EnhancedGitHubImporter:
                         },
                     }
                 )
-            except:
+            except (OSError, UnicodeDecodeError):
                 pass
 
         # 解析 mcp.json 或 extensions_config.json
@@ -1121,7 +1085,7 @@ class EnhancedGitHubImporter:
                 config = json.loads(item.read_text(encoding="utf-8", errors="ignore"))
                 if config:
                     configs["mcps"].append({"path": str(item), "config": config})
-            except:
+            except (OSError, UnicodeDecodeError):
                 pass
 
         # 也检查 extensions_config.json
@@ -1130,7 +1094,7 @@ class EnhancedGitHubImporter:
                 config = json.loads(item.read_text(encoding="utf-8", errors="ignore"))
                 if config:
                     configs["mcps"].append({"path": str(item), "config": config})
-            except:
+            except (OSError, UnicodeDecodeError):
                 pass
 
         # 解析 hooks
@@ -1139,7 +1103,7 @@ class EnhancedGitHubImporter:
                 config = json.loads(item.read_text(encoding="utf-8", errors="ignore"))
                 if config:
                     configs["hooks"].append({"path": str(item), "config": config})
-            except:
+            except (OSError, UnicodeDecodeError):
                 pass
 
         # 解析 evaluation
@@ -1148,7 +1112,7 @@ class EnhancedGitHubImporter:
                 config = yaml.safe_load(item.read_text(encoding="utf-8", errors="ignore"))
                 if config:
                     configs["evaluations"].append({"path": str(item), "config": config})
-            except:
+            except (OSError, UnicodeDecodeError):
                 pass
 
         return configs

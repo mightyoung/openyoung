@@ -5,32 +5,37 @@ PackageManager - 包管理系统
 - PackageManager: 核心包管理器（安装、卸载、列表）
 - AgentRegistry: Agent 注册与发现
 - ProviderManager: LLM Provider 管理
-- DependencyResolver: 依赖解析
-- DependencyInstaller: 依赖自动安装
-- MCPLoader: MCP 服务器加载
+- MCPServerManager: MCP 服务器管理
+- VersionManager: 版本管理
 - HooksLoader: Hook 加载器
 """
 
 # 包管理核心
-from .agent_io import AgentExporter, AgentImporter
-from .dependency_installer import (
-    DependencyInstaller,
-    InstallResult,
-    install_agent_dependencies,
-)
-
-# 依赖管理
-from .dependency_resolver import (
-    AgentDependency,
-    DependencyInfo,
-    DependencyResolver,
-    resolve_agent_dependencies,
-)
 from .hooks_loader import HookConfig, HooksLoader
 from .manager import PackageManager
 
+# MCP 服务器管理
+from .mcp_manager import (
+    AgentMCPLoader,
+    MCPServerConfig,
+    MCPServerManager,
+    MCPConnectionResult,
+    load_agent_with_mcps,
+    load_agent_with_mcps_strict,
+)
+
+# 版本管理
+from .version_manager import (
+    AgentVersion,
+    VersionError,
+    VersionHistory,
+    VersionManager,
+    compare_versions,
+    get_version_manager,
+    parse_semver,
+)
+
 # 扩展加载
-from .mcp_loader import MCPLoader
 from .provider import ProviderManager
 
 # Agent 注册
@@ -48,18 +53,22 @@ __all__ = [
     # Agent 注册
     "AgentRegistry",
     "AgentSpec",
-    "AgentExporter",
-    "AgentImporter",
+    # MCP 服务器管理
+    "MCPServerManager",
+    "MCPServerConfig",
+    "MCPConnectionResult",
+    "AgentMCPLoader",
+    "load_agent_with_mcps",
+    "load_agent_with_mcps_strict",
+    # 版本管理
+    "VersionManager",
+    "VersionHistory",
+    "VersionError",
+    "AgentVersion",
+    "parse_semver",
+    "compare_versions",
+    "get_version_manager",
     # 扩展加载
-    "MCPLoader",
     "HooksLoader",
     "HookConfig",
-    # 依赖管理
-    "DependencyResolver",
-    "DependencyInfo",
-    "AgentDependency",
-    "resolve_agent_dependencies",
-    "DependencyInstaller",
-    "InstallResult",
-    "install_agent_dependencies",
 ]
