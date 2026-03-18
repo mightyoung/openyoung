@@ -37,6 +37,8 @@ class EntityType(str, Enum):
     CHECKPOINT = "checkpoint"
     WORKSPACE = "workspace"
     USER = "user"
+    EVAL_RESULT = "eval_result"  # 评估结果
+    EVAL_TRIAL = "eval_trial"  # 评估 Trial
 
 
 class Entity(Base):
@@ -114,7 +116,7 @@ class DataStore:
         """反序列化 JSON"""
         try:
             return json.loads(data)
-        except:
+        except (json.JSONDecodeError, TypeError, ValueError):
             return data
 
     # ===== Agent 操作 =====
@@ -402,6 +404,51 @@ class DataStore:
                 }
                 for v in versions
             ]
+
+    # ===== Eval Result 操作 =====
+
+    def save_eval_result(self, task_id: str, data: dict) -> str:
+        """保存评估结果"""
+        entity = Entity(
+            id=task_id,
+            entity_type=EntityType.EVAL_RESULT.value,
+            data=self._serialize(data),
+            created_at=datetime.now(),
+        )
+
+        with self._get_session() as session:
+            existing = session.query(Entity).filter_by(id=task_id).first()
+            if existing:
+                existing.data = entity.data
+                existing.updated_at = datetime.now()
+            else:
+                session.add(entity)
+            session.commit()
+
+        return task_id
+
+    def get_eval_result(self, task_id: str) -> dict | None:
+        """获取评估结果"""
+        with self._get_session() as session:
+            entity = (
+                session.query(Entity)
+                .filter_by(id=task_id, entity_type=EntityType.EVAL_RESULT.value)
+                .first()
+            )
+            return self._deserialize(entity.data) if entity else None
+
+    def list_eval_results(self, suite_id: str | None = None, limit: int = 100) -> list[dict]:
+        """列出评估结果"""
+        with self._get_session() as session:
+            query = session.query(Entity).filter_by(entity_type=EntityType.EVAL_RESULT.value)
+            entities = query.order_by(Entity.created_at.desc()).limit(limit).all()
+
+            results = []
+            for e in entities:
+                data = self._deserialize(e.data)
+                if suite_id is None or data.get("suite_id") == suite_id:
+                    results.append({"id": e.id, **data})
+            return results
 
     # ===== 统计 =====
 

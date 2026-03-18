@@ -182,7 +182,7 @@ class DataQualityScorer:
                     e = datetime.fromisoformat(end.replace("Z", "+00:00"))
                     if e < s:
                         score *= 0.5  # 结束时间早于开始时间
-            except:
+            except (ValueError, TypeError):
                 score *= 0.8
 
         # 检查状态有效性
@@ -257,7 +257,7 @@ class DataQualityScorer:
                     return 0.5
                 else:
                     return 0.3
-        except:
+        except (ValueError, TypeError, OSError):
             pass
 
         return 0.6  # 默认中等

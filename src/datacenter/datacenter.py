@@ -12,8 +12,8 @@ from typing import Any
 
 from src.datacenter.checkpoint import Checkpoint
 
-# CheckpointManager 导入（从 memory.checkpoint）
-from src.memory.checkpoint import CheckpointManager
+# CheckpointManager 导入（从 impl）
+from src.core.memory.impl.checkpoint import CheckpointManager
 
 
 class TraceStatus(str, Enum):
@@ -186,7 +186,7 @@ class TraceCollector:
             if d.get("metadata"):
                 try:
                     d["metadata"] = json.loads(d["metadata"])
-                except:
+                except (json.JSONDecodeError, TypeError, ValueError):
                     pass
             results.append(d)
 
@@ -471,8 +471,8 @@ class DataCenter:
         self.working_memory = WorkingMemory()
 
         # Checkpoint (with SQLite persistence)
-        checkpoint_db = f"{data_dir}/checkpoints.db"
-        self.checkpoint_manager = CheckpointManager(checkpoint_dir, checkpoint_db)
+        checkpoint_dir = f"{data_dir}/checkpoints"
+        self.checkpoint_manager = CheckpointManager(checkpoint_dir=checkpoint_dir)
 
         # SQLite storage (新增)
         db_path = f"{data_dir}/data.db"
