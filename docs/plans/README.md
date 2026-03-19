@@ -5,6 +5,7 @@
 1. **[CLI到WebUI迁移](./2026-03-17-cli-to-webui-migration-plan-v2.md)** - 全部完成 ✅
 2. **[分层记忆系统实现](./hierarchical-memory-implementation-plan.md)** - 全部完成 ✅
 3. **[Harness驱动的AI软件工厂](./harness-ai-factory-refactor-plan.md)** - ✅ 全部完成 (R1-R9)
+4. **[WebUI Design System](./2026-03-17-cli-to-webui-migration-plan-v2.md)** - ✅ Phase 1-2 完成
 
 ## 已完成归档
 
@@ -76,3 +77,31 @@ commit 0fe2898 - R1-R9重构完成
 - T8 (删除config.py): ✅ completed - 已标记弃用
 - T9 (删除config_manager.py): ✅ completed - 已标记弃用
 - T10 (保留run轻量入口): ✅ completed - run+repl已存在
+
+### Phase 4: WebUI Design System (2026-03-19)
+使用 shadcn/ui 模式和 OKLCH 色彩系统现代化 WebUI
+
+#### Phase 4-1: 基础设施
+| 任务 | 描述 | 状态 |
+|------|--------|------|
+| P1.1 | Design Token System | ✅ 完成 - webui/styles/tokens.css |
+| P1.2 | Base UI Components | ✅ 完成 - card, button, metric, chat_bubble |
+| P1.3 | State Management | ✅ 完成 - app_state.py, theme_provider.py |
+| P1.4 | App Entry Integration | ✅ 完成 - app.py 现代化 |
+
+#### Phase 4-2: 页面升级
+| 任务 | 描述 | 状态 |
+|------|--------|------|
+| P2.1 | Chat页面 | ✅ 完成 - render_chat_bubble |
+| P2.2 | Agents页面 | ✅ 完成 - render_card_expanded |
+| P2.3 | Sessions页面 | ✅ 完成 - render_card_expanded |
+| P2.4 | Evaluation页面 | ✅ 完成 - render_metric_card |
+| P2.5 | Settings页面 | ✅ 完成 - render_card_expanded |
+
+#### 设计系统指标
+| 指标 | 值 |
+|------|-----|
+| 设计Token | OKLCH色彩系统 (60-30-10) |
+| 组件数 | 4个可复用组件 |
+| 页面升级 | 5个页面 |
+| Commit | 4937549 (+1828/-256 lines) |

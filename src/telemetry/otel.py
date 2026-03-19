@@ -196,8 +196,8 @@ class OpenTelemetryConfig:
             if self.config.enable_console_export:
                 try:
                     readers.append(ConsoleMetricExporter())
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Failed to initialize metric exporter: {e}")
 
             # OTLP metrics exporter
             if self.config.enable_otlp_export and OTLP_AVAILABLE and OTLPMetricExporter:

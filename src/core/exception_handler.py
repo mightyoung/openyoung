@@ -13,13 +13,29 @@ Exception Handler - 统一异常处理
 参考 Python 最佳实践 (Raymond Hettinger)
 """
 
+from __future__ import annotations
+
 import logging
 import traceback
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from functools import wraps
-from typing import Any, Callable, Optional, Type
+from typing import TYPE_CHECKING, Any, Callable, Optional, Type
+
+if TYPE_CHECKING:
+    from src.core.exceptions import (
+        AgentError,
+        AgentTimeoutError,
+        APITimeoutError,
+        ConfigValidationError,
+        DataNotFoundError,
+        EvaluationError,
+        ExecutionError,
+        NetworkError,
+        OpenYoungError,
+        PermissionDeniedError,
+    )
 
 
 class ErrorSeverity(Enum):
@@ -249,7 +265,7 @@ class ExceptionHandler:
 
     def _convert_exception(
         self, exception: Exception, context: ExceptionContext
-    ) -> "OpenYoungError":
+    ) -> OpenYoungError:
         """转换异常为统一异常
 
         Args:
@@ -259,20 +275,6 @@ class ExceptionHandler:
         Returns:
             统一异常
         """
-        # 避免循环导入
-        from src.core.exceptions import (
-            AgentError,
-            AgentTimeoutError,
-            APITimeoutError,
-            ConfigValidationError,
-            DataNotFoundError,
-            EvaluationError,
-            ExecutionError,
-            NetworkError,
-            OpenYoungError,
-            PermissionDeniedError,
-        )
-
         # 如果已经是统一异常，直接返回
         if isinstance(exception, OpenYoungError):
             return exception

@@ -257,8 +257,8 @@ class DataQualityScorer:
                     return 0.5
                 else:
                     return 0.3
-        except (ValueError, TypeError, OSError):
-            pass
+        except (ValueError, TypeError, OSError) as e:
+            logger.debug(f"Failed to score timeliness: {e}")
 
         return 0.6  # 默认中等
 

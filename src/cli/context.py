@@ -33,8 +33,8 @@ class CLIContext:
         if self.config_file.exists():
             try:
                 return json.loads(self.config_file.read_text())
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"Failed to load config: {e}")
         return {}
 
     def save_config(self, config: dict) -> bool:

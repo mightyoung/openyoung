@@ -244,32 +244,33 @@ class EvalMetrics:
 
 def compute_pass_at_k(results: list[bool], k: int) -> float:
     """
-    计算 pass@k
+    计算 pass@k - 至少有一次在 k 次尝试内成功的概率
 
-    pass@k = 至少有一次在 k 次尝试内成功
+    pass@k 估算的是: 在 k 次独立尝试中, 至少有一次成功的概率
 
-    对于 n 个 trial, 每个 trial 只有 1 个结果 (passed/failed)
-    pass@k = 1 - (所有 trial 都失败) 的概率
-    如果 n 个 trial 都有相同的通过率 p, 则:
-    pass@k = 1 - (1-p)^n  (对于 pass@1 场景的另一种解释)
+    公式: pass@k = 1 - (1-s)^k
+    其中 s = 成功率 = 成功次数 / 总尝试次数
 
-    但对于 eval 中的 n trials 独立执行同一任务:
-    - 每个 trial 是一次独立的执行尝试
-    - pass@k 表示在 n 次独立尝试中, 至少有一次成功
+    这个公式的直觉:
+    - 每次尝试失败的概率是 (1-s)
+    - k 次尝试全部失败的概率是 (1-s)^k
+    - 所以至少成功一次的概率是 1 - (1-s)^k
 
-    简化实现: pass@1 = first trial passed
-    pass@3 = any of first 3 trials passed (如果 n >= 3)
+    对于 pass@1 (k=1): pass@1 = 1 - (1-s)^1 = s, 即第一次尝试的成功率
+    对于 pass@3 (k=3): pass@3 = 1 - (1-s)^3, 即3次尝试内至少成功一次的概率
     """
     n = len(results)
     if n == 0:
         return 0.0
 
-    actual_k = min(k, n)
+    # 统计成功次数
+    successes = sum(1 for r in results if r)
 
-    if actual_k == 1:
-        return float(results[0])
+    # 估计单次成功概率 (empirical success rate)
+    s = successes / n
 
-    return float(any(results[:actual_k]))
+    # pass@k = 1 - (1-s)^k
+    return 1.0 - (1.0 - s) ** k
 
 
 def compute_pass_rate(results: list[bool]) -> float:

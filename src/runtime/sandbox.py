@@ -397,8 +397,8 @@ class SandboxInstance:
             # 限制最大文件大小
             resource.setrlimit(resource.RLIMIT_FSIZE, (100 * 1024 * 1024, 100 * 1024 * 1024))
 
-        except Exception:
-            pass  # 资源限制可能需要特定权限
+        except Exception as e:
+            logger.debug(f"Failed to set resource limits (may require permissions): {e}")
 
     def _get_restricted_env(self) -> dict:
         """获取受限的环境变量"""
@@ -490,8 +490,8 @@ class SandboxInstance:
         if self.working_dir and self.working_dir.exists():
             try:
                 shutil.rmtree(self.working_dir)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Failed to cleanup sandbox directory: {e}")
 
     @handle_exceptions(reraise=False, default={})
     async def evaluate(

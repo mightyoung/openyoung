@@ -256,8 +256,8 @@ class ContextCollector:
                                 env=mcp.get("env", {}),
                             )
                         )
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Failed to collect MCP info: {e}")
 
         self.context.mcps = mcps
         return mcps
@@ -286,8 +286,8 @@ class ContextCollector:
                                         enabled=True,
                                     )
                                 )
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Failed to collect hook info: {e}")
 
         self.context.hooks = hooks
         return hooks
@@ -340,8 +340,8 @@ class ContextCollector:
                             status="connected",
                         )
                     )
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Failed to check connection to {host}: {e}")
             finally:
                 sock.close()
 

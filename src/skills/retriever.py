@@ -31,8 +31,8 @@ class UnifiedSkillRetriever:
         # 尝试初始化 embedding 索引
         try:
             await self._init_embedding_index()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Failed to initialize embedding index: {e}")
 
     async def _init_embedding_index(self):
         """初始化 Embedding 索引"""

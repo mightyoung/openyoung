@@ -70,7 +70,7 @@ class HardwareDetector:
                     device_count=device_count,
                 )
         except ImportError:
-            pass
+            logger.debug("torch not available, skipping CUDA detection")
 
         # 2. 检测 Apple Silicon (MPS)
         try:
@@ -89,7 +89,7 @@ class HardwareDetector:
                     device_count=1,
                 )
         except ImportError:
-            pass
+            logger.debug("torch not available, skipping CUDA detection")
 
         # 3. 检测 Vulkan (ARM GPU)
         # 注意: 需要 vulkan-py 或通过环境变量检测
@@ -128,8 +128,8 @@ class HardwareDetector:
             )
             if result.returncode == 0:
                 return int(result.stdout.strip()) / (1024**3)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Failed to get Apple memory: {e}")
         return 16.0  # 默认估算
 
     @staticmethod
@@ -152,8 +152,8 @@ class HardwareDetector:
                     for line in f:
                         if line.startswith("MemTotal:"):
                             return int(line.split()[1]) / (1024**2)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Failed to get system memory: {e}")
         return 8.0  # 默认估算
 
 

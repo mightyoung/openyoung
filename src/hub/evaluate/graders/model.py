@@ -116,8 +116,8 @@ class ModelGrader(BaseGrader):
             try:
                 with open(rubric_path, encoding="utf-8") as f:
                     return f.read()
-            except OSError:
-                pass
+            except OSError as e:
+                logger.warning(f"Failed to read rubric file {rubric_path}: {e}")
 
         return DEFAULT_CODE_QUALITY_RUBRIC
 
@@ -223,14 +223,14 @@ REASONING: <brief explanation of your decision>
         # 尝试 Anthropic API
         try:
             return await self._call_anthropic(prompt)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Anthropic API failed, trying OpenAI: {e}")
 
         # 尝试 OpenAI API
         try:
             return await self._call_openai(prompt)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"OpenAI API failed: {e}")
 
         return self._fallback_judge(prompt)
 

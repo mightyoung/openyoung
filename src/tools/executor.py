@@ -5,6 +5,7 @@ Tool Executor
 import asyncio
 import os
 import re
+import shlex
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -87,6 +88,12 @@ FORBIDDEN_PATTERNS = [
     r"exec\s*\(",  # exec 执行
 ]
 
+# Dangerous character pattern - blocks shell metacharacters
+DANGEROUS_CHARS_PATTERN = re.compile(r'[;&|`$><>()\[\]{}@!#%^~*?\n\r]')
+
+# Path traversal patterns - blocks .., ~, absolute paths, sensitive files
+TRAVERSAL_PATTERN = re.compile(r'\.\./|\.\.\\|%2e%2e|/etc/passwd|/etc/shadow|~/(?:\.ssh)?')
+
 
 class ToolExecutor:
     def __init__(
@@ -148,45 +155,85 @@ class ToolExecutor:
                 return True
 
             return False
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Path validation error for {file_path}: {e}")
             return False
 
     def _validate_command(self, command: str) -> tuple[bool, str]:
-        """验证命令是否安全"""
-        cmd_lower = command.lower().strip()
+        """验证命令是否安全（综合验证）"""
+        if not command or not command.strip():
+            return False, "Empty command"
 
-        # 检查危险模式
-        for pattern in FORBIDDEN_PATTERNS:
-            if re.search(pattern, cmd_lower):
-                return False, f"Forbidden pattern detected: {pattern}"
+        # 1. Check for dangerous shell metacharacters
+        if DANGEROUS_CHARS_PATTERN.search(command):
+            return False, "Dangerous shell characters detected"
 
-        # 检查是否包含管道或重定向（可能导致命令注入）
-        if re.search(r"\|\s*sh", cmd_lower) or re.search(r"&&\s*", cmd_lower):
-            return False, "Chained commands not allowed for security"
+        # 2. Check for path traversal patterns
+        if TRAVERSAL_PATTERN.search(command):
+            return False, "Path traversal pattern detected"
 
-        # 检查基本命令（简化检查）
-        cmd_parts = cmd_lower.split()
-        if cmd_parts:
-            base_cmd = cmd_parts[0].split("/")[-1]  # 去掉路径
-            # 允许的命令或 git 子命令
-            if base_cmd not in ALLOWED_COMMANDS and base_cmd != "git":
-                # 检查是否是 git 的子命令
-                if cmd_parts[0] == "git" and len(cmd_parts) > 1:
-                    git_allowed = {
-                        "status",
-                        "log",
-                        "diff",
-                        "branch",
-                        "add",
-                        "commit",
-                        "push",
-                        "pull",
-                        "fetch",
-                        "clone",
-                        "init",
-                    }
-                    if cmd_parts[1] not in git_allowed:
-                        return False, f"Git subcommand '{cmd_parts[1]}' not allowed"
+        # 3. Parse command properly with shlex
+        try:
+            parts = shlex.split(command)
+        except ValueError as e:
+            return False, f"Invalid shell syntax: {e}"
+
+        if not parts:
+            return False, "Empty command after parsing"
+
+        # 4. Validate each argument separately
+        for arg in parts[1:]:
+            is_safe, reason = self._is_safe_argument(arg)
+            if not is_safe:
+                return False, reason
+
+        # 5. Check base command against whitelist
+        base_cmd = parts[0].split("/")[-1]  # 去掉路径
+        if base_cmd not in ALLOWED_COMMANDS:
+            # 检查是否是 git 的子命令
+            if parts[0] == "git" and len(parts) > 1:
+                git_allowed = {
+                    "status",
+                    "log",
+                    "diff",
+                    "branch",
+                    "add",
+                    "commit",
+                    "push",
+                    "pull",
+                    "fetch",
+                    "clone",
+                    "init",
+                }
+                if parts[1] not in git_allowed:
+                    return False, f"Git subcommand '{parts[1]}' not allowed"
+            else:
+                return False, f"Command '{base_cmd}' not in whitelist"
+
+        return True, ""
+
+    def _is_safe_argument(self, arg: str) -> tuple[bool, str]:
+        """Validate a single argument for safety"""
+        if not arg:
+            return True, ""
+
+        # Check for path traversal in argument
+        if ".." in arg or arg.startswith("~"):
+            return False, f"Path traversal detected in argument: {arg[:50]}"
+
+        # Block arguments that look like paths to sensitive files
+        sensitive_patterns = ["/etc/passwd", "/etc/shadow", "/etc/sudoers"]
+        for pattern in sensitive_patterns:
+            if pattern in arg:
+                return False, f"Sensitive path blocked: {pattern}"
+
+        # Allow relative paths that don't escape workspace
+        if arg.startswith("/"):
+            # Absolute paths need explicit validation
+            # Allow some common absolute paths
+            allowed_abs = ["/tmp", "/var/tmp", "/Users/muyi"]
+            if not any(arg.startswith(p) for p in allowed_abs):
+                return False, f"Absolute path not in allowed list: {arg[:50]}"
 
         return True, ""
 
@@ -702,8 +749,8 @@ class ToolExecutor:
                         for i, line in enumerate(file, 1):
                             if re.search(pattern, line):
                                 results.append(f"{filepath}:{i}: {line.rstrip()}")
-                except Exception:
-                    pass  # Skip files that can't be read
+                except Exception as e:
+                    logger.debug(f"Failed to read file {filepath}: {e}")
         return "\n".join(results[:50]) if results else "未找到内容"
 
     # ========== 自动依赖管理 ==========
@@ -729,8 +776,8 @@ class ToolExecutor:
                             data = toml.load(file)
                             if "project" in data and "dependencies" in data["project"]:
                                 deps["python"].extend(data["project"]["dependencies"])
-                    except Exception:
-                        pass  # Skip invalid pyproject.toml
+                    except Exception as e:
+                        logger.debug(f"Failed to parse pyproject.toml: {e}")
                 elif f == "requirements.txt":
                     with open(fp) as file:
                         deps["python"].extend(
@@ -748,8 +795,8 @@ class ToolExecutor:
                         deps["rust"].extend(list(data["dependencies"].keys()))
                     if "dev-dependencies" in data:
                         deps["rust"].extend(list(data["dev-dependencies"].keys()))
-            except Exception:
-                pass  # Skip invalid Cargo.toml
+            except Exception as e:
+                logger.debug(f"Failed to parse Cargo.toml: {e}")
 
         # Node.js 检测
         package_json = os.path.join(project_path, "package.json")
@@ -759,8 +806,8 @@ class ToolExecutor:
                     data = json.load(file)
                     deps["nodejs"].extend(list(data.get("dependencies", {}).keys()))
                     deps["nodejs"].extend(list(data.get("devDependencies", {}).keys()))
-            except Exception:
-                pass  # Skip invalid package.json
+            except Exception as e:
+                logger.debug(f"Failed to parse package.json: {e}")
 
         return deps
 

@@ -51,8 +51,8 @@ def agent_list(badges: bool, stats: bool, show_all: bool):
             from src.package_manager.registry import AgentRegistry
             registry = AgentRegistry("packages")
             usage_list = registry.get_usage_stats(100)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Failed to get usage stats: {e}")
 
     for a in agents:
         line = f"  • {a}"
@@ -78,8 +78,8 @@ def agent_list(badges: bool, stats: bool, show_all: bool):
                     report = asyncio.run(evaluator.evaluate(f"packages/{a}"))
                     if report:
                         quality_score = report.overall_score
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Failed to get quality score for {a}: {e}")
 
                 agent_data = {
                     "downloads": use_count,
@@ -94,8 +94,8 @@ def agent_list(badges: bool, stats: bool, show_all: bool):
                 if agent_badges:
                     badge_str = badge_system.format_badges(agent_badges)
                     line += f" {badge_str}"
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Failed to show badges for {a}: {e}")
 
         # Show stats
         if stats:

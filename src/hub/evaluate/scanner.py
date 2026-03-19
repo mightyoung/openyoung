@@ -75,8 +75,8 @@ class ConstraintScanner:
                 # 禁止模式检查
                 issues.extend(self._scan_forbidden(rel_path, content))
 
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"Failed to scan file {rel_path}: {e}")
 
         return issues
 
@@ -134,8 +134,8 @@ class DeadCodeScanner:
                 content = fpath.read_text(encoding="utf-8", errors="ignore")
                 all_imports[rel] = self._extract_imports(content)
                 all_definitions[rel] = self._extract_definitions(content)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Failed to read file {rel}: {e}")
 
         # 检测未使用的导入
         for fpath_str, imports in all_imports.items():

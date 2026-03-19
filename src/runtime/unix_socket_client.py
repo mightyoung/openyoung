@@ -111,8 +111,8 @@ class SandboxSidecar:
         # Try to configure first (idempotent)
         try:
             self._ensure_configured()
-        except Exception:
-            pass  # Already configured
+        except Exception as e:
+            logger.debug(f"Sandbox already configured or configuration failed: {e}")
 
         return self.client.execute(command, timeout_secs)
 

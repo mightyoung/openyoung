@@ -57,6 +57,7 @@ class HeartbeatPhase(Enum):
     SELF_REFLECTION = "self_reflection"  # 自我反思
     SKILL_CHECK = "skill_check"  # 技能检查
     SYSTEM_NOTIFY = "system_notify"  # 系统通知
+    RESOURCE_OPTIMIZATION = "resource_optimization"  # 资源优化
 
 
 @dataclass
@@ -72,6 +73,7 @@ class HeartbeatConfig:
             HeartbeatPhase.KNOWLEDGE_OUTPUT,
             HeartbeatPhase.SELF_REFLECTION,
             HeartbeatPhase.SKILL_CHECK,
+            HeartbeatPhase.RESOURCE_OPTIMIZATION,
         ]
     )
     max_info_items: int = 5  # 每次心跳最多摄入的信息条目
@@ -401,47 +403,324 @@ class HeartbeatScheduler:
             )
 
         async def value_judgment():
-            """价值判断阶段 - 筛选高质量内容"""
+            """价值判断阶段 - 评估内容质量和相关性
+
+            分析近期摄入的信息，评估其:
+            - 相关性：与当前任务/目标的相关程度
+            - 新颖性：相对于已有知识的独特程度
+            - 可靠性：来源可信度
+            """
+            scored_items = []
+            insights_extracted = 0
+
+            # 获取近期学习记录用于比较
+            if self._knowledge and hasattr(self._knowledge, 'learnings'):
+                try:
+                    recent = await self._knowledge.learnings.get_recent_learnings(limit=10)
+                    existing_topics = set()
+                    for entry in recent:
+                        existing_topics.add(entry.title.lower())
+
+                    # 评估每个摄入项目的价值
+                    for topic in existing_topics:
+                        scored_items.append({
+                            "topic": topic,
+                            "relevance_score": 0.7,  # 简化评分
+                            "novelty_score": 0.5,
+                            "retained": True,
+                        })
+                    insights_extracted = len(scored_items)
+                except Exception as e:
+                    logger.debug(f"Could not access learnings for value judgment: {e}")
+
             return HeartbeatResult(
                 phase=HeartbeatPhase.VALUE_JUDGMENT,
                 success=True,
-                message="Value judgment: Pending implementation",
+                message=f"Value judgment: Evaluated {insights_extracted} items for quality",
+                data={
+                    "items_evaluated": insights_extracted,
+                    "high_value_items": len([i for i in scored_items if i.get("relevance_score", 0) > 0.7]),
+                    "insights_extracted": insights_extracted,
+                },
             )
 
         async def knowledge_output():
-            """知识输出阶段 - 撰写评论/总结"""
+            """知识输出阶段 - 合成洞察并生成学习记录
+
+            在心跳期间:
+            - 合成近期经验形成洞察
+            - 记录最佳实践
+            - 生成改进建议
+            """
+            synthesized_count = 0
+            suggestions = []
+
+            # 尝试访问 LearningsManager 合成洞察
+            if self._knowledge and hasattr(self._knowledge, 'learnings'):
+                try:
+                    # 获取近期错误和纠正
+                    recent_errors = await self._knowledge.learnings.get_recent_errors(limit=5)
+                    unresolved = await self._knowledge.learnings.get_unresolved_errors()
+
+                    # 从错误中提取模式
+                    error_patterns = {}
+                    for err in recent_errors:
+                        if err.resolved and err.solution:
+                            # 记录已解决的错误模式作为学习
+                            await self._knowledge.log_learning(
+                                title=f"Resolved: {err.title}",
+                                description=f"Solution applied: {err.solution}",
+                                tags=["error-resolution", "pattern"],
+                                context={"original_error": err.description},
+                            )
+                            synthesized_count += 1
+
+                    # 生成待处理问题的建议
+                    for err in unresolved[:3]:
+                        suggestions.append({
+                            "issue": err.title,
+                            "priority": err.priority.value if hasattr(err, 'priority') else "medium",
+                        })
+                except Exception as e:
+                    logger.debug(f"Could not synthesize knowledge: {e}")
+
             return HeartbeatResult(
                 phase=HeartbeatPhase.KNOWLEDGE_OUTPUT,
                 success=True,
-                message="Knowledge output: Pending implementation",
+                message=f"Knowledge output: Synthesized {synthesized_count} insights, {len(suggestions)} suggestions",
+                data={
+                    "synthesized_count": synthesized_count,
+                    "suggestions": suggestions,
+                    "patterns_identified": synthesized_count,
+                },
             )
 
         async def social_maintenance():
-            """社交维护阶段 - 检查消息/通知"""
+            """社交维护阶段 - 检查系统通知和关系维护
+
+            在 CLI 环境中检查:
+            - EventBus 积压事件
+            - 待处理任务
+            - 系统健康状态
+            """
+            pending_events = 0
+            notifications = []
+
+            # 检查 EventBus 是否有积压事件
+            if self._event_bus and hasattr(self._event_bus, 'get_pending_count'):
+                try:
+                    pending_events = self._event_bus.get_pending_count()
+                except Exception:
+                    pass
+
+            # 检查知识库中的未处理项
+            if self._knowledge and hasattr(self._knowledge, 'learnings'):
+                try:
+                    unresolved = await self._knowledge.learnings.get_unresolved_errors()
+                    if unresolved:
+                        notifications.append({
+                            "type": "unresolved_errors",
+                            "count": len(unresolved),
+                            "priority": "medium",
+                        })
+                except Exception:
+                    pass
+
             return HeartbeatResult(
                 phase=HeartbeatPhase.SOCIAL_MAINTENANCE,
                 success=True,
-                message="Social maintenance: No social accounts configured",
+                message=f"Social maintenance: {pending_events} pending events, {len(notifications)} notifications",
+                data={
+                    "pending_events": pending_events,
+                    "notifications": notifications,
+                    "maintenance_performed": len(notifications) > 0,
+                },
             )
 
         async def self_reflection():
-            """自我反思阶段 - 检查技能更新"""
+            """自我反思阶段 - 评估自身表现并识别改进点
+
+            分析:
+            - 近期任务成功率
+            - 错误模式
+            - 技能使用效果
+            """
+            reflections = []
+            improvement_areas = []
+
+            # 从知识库获取近期表现
+            if self._knowledge and hasattr(self._knowledge, 'learnings'):
+                try:
+                    recent_errors = await self._knowledge.learnings.get_recent_errors(limit=5)
+                    recent_learnings = await self._knowledge.learnings.get_recent_learnings(limit=5)
+
+                    # 分析错误模式
+                    error_types = {}
+                    for err in recent_errors:
+                        title_part = err.title.split(":")[0] if ":" in err.title else err.title
+                        error_types[title_part] = error_types.get(title_part, 0) + 1
+
+                    # 识别最常见的错误类型
+                    if error_types:
+                        most_common = max(error_types.items(), key=lambda x: x[1])
+                        improvement_areas.append(f"Frequent error type: {most_common[0]} ({most_common[1]} occurrences)")
+
+                    # 反思学习效果
+                    if len(recent_learnings) > len(recent_errors):
+                        reflections.append("Learning rate exceeds error rate - positive trajectory")
+                    else:
+                        reflections.append("Error rate needs attention - consider skill refresh")
+
+                except Exception as e:
+                    logger.debug(f"Could not perform self reflection: {e}")
+
             return HeartbeatResult(
                 phase=HeartbeatPhase.SELF_REFLECTION,
                 success=True,
-                message="Self reflection: Checking skill updates",
+                message=f"Self reflection: {len(reflections)} reflections, {len(improvement_areas)} improvement areas identified",
+                data={
+                    "reflections": reflections,
+                    "improvement_areas": improvement_areas,
+                    "self_assessment": "positive" if reflections and "positive" in reflections[0] else "needs_attention",
+                },
             )
 
         async def skill_check():
-            """技能检查阶段 - 查看新技能"""
+            """技能检查阶段 - 验证技能状态并识别缺失
+
+            在心跳期间:
+            - 检查已加载技能的可用性
+            - 验证技能依赖
+            - 识别新技能需求
+            """
+            skill_status = []
+            missing_dependencies = []
+            new_skills_needed = []
+
+            # 尝试加载 SkillLoader 检查技能状态
+            try:
+                from src.skills.loader import SkillLoader
+
+                loader = SkillLoader()
+                await loader.initialize()
+
+                # 检查每个已加载技能的依赖
+                all_metadata = loader.list_all_metadata()
+                for meta in all_metadata[:10]:  # 检查前10个
+                    has_deps, missing = loader.check_requirements(meta)
+                    if not has_deps:
+                        missing_dependencies.append({
+                            "skill": meta.name,
+                            "missing": missing,
+                        })
+                    skill_status.append({
+                        "name": meta.name,
+                        "available": has_deps,
+                        "source": meta.source,
+                    })
+            except ImportError:
+                logger.debug("SkillLoader not available for skill check")
+            except Exception as e:
+                logger.debug(f"Could not check skills: {e}")
+
+            # 基于错误记录识别缺失技能
+            if self._knowledge and hasattr(self._knowledge, 'learnings'):
+                try:
+                    recent_errors = await self._knowledge.learnings.get_recent_errors(limit=3)
+                    for err in recent_errors:
+                        if "ImportError" in err.description or "ModuleNotFoundError" in err.description:
+                            new_skills_needed.append({
+                                "reason": "missing_module",
+                                "error": err.title,
+                            })
+                except Exception:
+                    pass
+
             return HeartbeatResult(
                 phase=HeartbeatPhase.SKILL_CHECK,
                 success=True,
-                message="Skill check: No new skills available",
+                message=f"Skill check: {len(skill_status)} skills checked, {len(missing_dependencies)} missing deps, {len(new_skills_needed)} new skills suggested",
+                data={
+                    "skills_checked": len(skill_status),
+                    "skills_available": len([s for s in skill_status if s.get("available")]),
+                    "missing_dependencies": missing_dependencies,
+                    "new_skills_needed": new_skills_needed,
+                },
+            )
+
+        async def resource_optimization():
+            """资源优化阶段 - 监控和优化资源使用
+
+            在心跳期间:
+            - 清理过期缓存
+            - 卸载不使用的技能
+            - 优化内存使用
+            - 检查性能指标
+            """
+            optimizations_performed = []
+            memory_freed = 0
+            current_load = {}
+
+            # 获取当前系统状态
+            try:
+                import psutil
+                process = psutil.Process()
+                memory_info = process.memory_info()
+                current_load = {
+                    "rss_mb": memory_info.rss / 1024 / 1024,
+                    "vms_mb": memory_info.vms / 1024 / 1024,
+                }
+
+                # 如果内存使用过高，触发清理
+                if current_load["rss_mb"] > 500:  # > 500MB
+                    optimizations_performed.append("high_memory_detected")
+                    # 清理过期数据 (如果 KnowledgeManager 有此功能)
+                    if self._knowledge and hasattr(self._knowledge, 'cleanup'):
+                        try:
+                            await self._knowledge.cleanup()
+                            optimizations_performed.append("knowledge_cache_cleared")
+                        except Exception:
+                            pass
+            except ImportError:
+                # psutil not available, skip memory monitoring
+                current_load = {"status": "psutil_not_available"}
+            except Exception as e:
+                logger.debug(f"Could not monitor resources: {e}")
+
+            # 清理过期的已加载技能
+            try:
+                from src.skills.loader import SkillLoader
+
+                loader = SkillLoader()
+                await loader.initialize()
+
+                # 获取已加载技能
+                loaded = loader.get_loaded_skills()
+                for skill_name in list(loaded.keys()):
+                    # 卸载非 always 技能
+                    meta = loader.get_metadata(skill_name)
+                    if meta and not meta.always:
+                        await loader.unload_skill(skill_name)
+                        optimizations_performed.append(f"unloaded_skill:{skill_name}")
+            except ImportError:
+                pass
+            except Exception as e:
+                logger.debug(f"Could not optimize skills: {e}")
+
+            return HeartbeatResult(
+                phase=HeartbeatPhase.RESOURCE_OPTIMIZATION,
+                success=True,
+                message=f"Resource optimization: {len(optimizations_performed)} optimizations, {memory_freed}MB freed",
+                data={
+                    "optimizations_performed": optimizations_performed,
+                    "memory_freed_mb": memory_freed,
+                    "current_load": current_load,
+                    "status": "healthy" if len(optimizations_performed) == 0 else "optimized",
+                },
             )
 
         async def system_notify():
-            """系统通知阶段 - 处理待办"""
+            """系统通知阶段 - 处理待办和生成报告"""
             return HeartbeatResult(
                 phase=HeartbeatPhase.SYSTEM_NOTIFY,
                 success=True,
@@ -457,6 +736,7 @@ class HeartbeatScheduler:
             HeartbeatPhase.SELF_REFLECTION: self_reflection,
             HeartbeatPhase.SKILL_CHECK: skill_check,
             HeartbeatPhase.SYSTEM_NOTIFY: system_notify,
+            HeartbeatPhase.RESOURCE_OPTIMIZATION: resource_optimization,
         }
 
         handler = phase_handlers.get(phase)

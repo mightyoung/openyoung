@@ -117,7 +117,7 @@ class SandboxPool:
             try:
                 await self._scale_task
             except asyncio.CancelledError:
-                pass
+                pass  # Task was cancelled as expected
         logger.info("Auto-scaling stopped")
 
     async def _auto_scale_loop(self) -> None:

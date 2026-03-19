@@ -146,8 +146,8 @@ async def _run(initial_task, agent_name, interactive, github_url, sandbox, allow
             from src.package_manager.registry import AgentRegistry
             registry = AgentRegistry("packages")
             registry.track_usage(agent_name)
-        except Exception:
-            pass  # Silently ignore tracking errors
+        except Exception as e:
+            logger.debug(f"Failed to track agent usage: {e}")
 
         # Show stats
         stats = agent.get_all_stats()

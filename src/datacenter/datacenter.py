@@ -186,8 +186,8 @@ class TraceCollector:
             if d.get("metadata"):
                 try:
                     d["metadata"] = json.loads(d["metadata"])
-                except (json.JSONDecodeError, TypeError, ValueError):
-                    pass
+                except (json.JSONDecodeError, TypeError, ValueError) as e:
+                    logger.warning(f"Failed to parse metadata for row: {e}")
             results.append(d)
 
         return results

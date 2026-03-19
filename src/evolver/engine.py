@@ -66,8 +66,8 @@ class EvolutionEngine:
                 if data.get("type") == "Gene":
                     gene = self._parse_gene(data)
                     self._matcher.register_gene(gene)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"Failed to load gene from {gene_file}: {e}")
 
     def _parse_gene(self, data: dict) -> Gene:
         return Gene(

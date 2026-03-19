@@ -112,8 +112,8 @@ class BaseRegistry(Generic[T]):
         for listener in self._listeners:
             try:
                 listener(event, key, item)
-            except Exception:
-                pass  # 不应阻止其他监听器
+            except Exception as e:
+                logger.warning(f"Listener error for event '{event}': {e}")
 
     def add_listener(self, listener: Callable[[str, str, Any], None]) -> None:
         """添加监听器"""

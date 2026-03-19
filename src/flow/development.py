@@ -285,8 +285,8 @@ class DevelopmentFlow(FlowSkill):
                     match = re.search(r"Phase (\d+)", content)
                     if match:
                         self._current_phase = int(match.group(1))
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"Failed to parse phase from task file: {e}")
 
         return has_files
 
@@ -398,8 +398,8 @@ Phase 1: Requirements & Design
             content = content.replace(old_phase, new_phase)
 
             self._task_file.write_text(content)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Failed to update phase progress: {e}")
 
     async def _log_progress(self, agent_output: str, context: dict):
         """记录进度到 progress.md"""
@@ -418,8 +418,8 @@ Phase 1: Requirements & Design
                 content = content.replace("## Session Log", f"## Session Log{log_entry}")
 
             self._progress_file.write_text(content)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Failed to log progress: {e}")
 
 
 # === 便捷函数 ===

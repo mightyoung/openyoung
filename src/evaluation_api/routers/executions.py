@@ -114,7 +114,7 @@ async def create_execution(
     try:
         store = get_store()
         store.save_record(record)
-    except Exception:
-        pass  # 忽略存储错误
+    except Exception as e:
+        logger.warning(f"Failed to save trace record: {e}")
 
     return record.to_dict()

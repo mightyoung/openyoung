@@ -116,8 +116,8 @@ class TaskCompletedHandler:
                 start_time = datetime.fromisoformat(started_at)
                 duration = (datetime.now() - start_time).total_seconds()
                 event.metadata["duration_seconds"] = duration
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Failed to calculate task duration: {e}")
 
         # 2. 记录完成到知识库
         try:

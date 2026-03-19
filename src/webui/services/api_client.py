@@ -3,9 +3,54 @@ API Client - OpenYoung WebUI Backend Communication
 """
 
 import json
+import re
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
 import httpx
+
+# SSE parsing regex - handles various line endings (CRLF, LF, CR)
+SSE_EVENT_RE = re.compile(r"^event:([^\r\n]*)(?:\r\n|\r|\n)")
+SSE_DATA_RE = re.compile(r"^data:([^\r\n]*)(?:\r\n|\r|\n)")
+
+
+def parse_sse_line(line: str) -> tuple[str, str] | None:
+    """
+    Parse a single SSE-formatted line using regex.
+
+    Args:
+        line: A single line from SSE stream
+
+    Returns:
+        Tuple of (field_type, value) where field_type is 'event' or 'data',
+        or None if the line doesn't match either pattern
+    """
+    if match := SSE_EVENT_RE.match(line):
+        return ("event", match.group(1))
+    if match := SSE_DATA_RE.match(line):
+        return ("data", match.group(1))
+    return None
+
+
+def parse_sse_data(data_str: str) -> Any:
+    """
+    Parse SSE data field, handling various formats gracefully.
+
+    Args:
+        data_str: The data content after 'data:' prefix
+
+    Returns:
+        Parsed JSON or the raw string if parsing fails
+
+    Raises:
+        No exceptions - malformed data returns the raw string
+    """
+    data_str = data_str.strip()
+    if not data_str:
+        return None
+    try:
+        return json.loads(data_str)
+    except json.JSONDecodeError:
+        return data_str
 
 
 class APIClient:
@@ -166,12 +211,13 @@ class APIClient:
         ) as response:
             response.raise_for_status()
             async for line in response.aiter_lines():
-                if line.startswith("data:"):
-                    try:
-                        data = line[5:].strip()
-                        yield json.loads(data)
-                    except json.JSONDecodeError:
-                        pass
+                result = parse_sse_line(line)
+                if result is not None:
+                    field_type, value = result
+                    if field_type == "data":
+                        parsed = parse_sse_data(value)
+                        if parsed is not None:
+                            yield parsed
 
     # ========== Stream API ==========
 
@@ -189,33 +235,35 @@ class APIClient:
             json={"message": message},
         ) as response:
             response.raise_for_status()
+            # Track pending event type and data across lines
+            pending_event = None
             async for line in response.aiter_lines():
-                if line.startswith("data:"):
-                    try:
-                        data = line[5:].strip()
-                        # 解析SSE事件格式: event:chunk\ndata:{...}
-                        if data.startswith("event:"):
-                            # 处理event:开头的SSE格式
-                            parts = data.split("\n", 1)
-                            if len(parts) > 1:
-                                event_type = parts[0].replace("event:", "").strip()
-                                event_data = parts[1].replace("data:", "").strip()
-                                yield {"event": event_type, "data": json.loads(event_data)}
-                        else:
-                            yield json.loads(data)
-                    except json.JSONDecodeError:
-                        pass
+                result = parse_sse_line(line)
+                if result is not None:
+                    field_type, value = result
+                    if field_type == "event":
+                        pending_event = value.strip()
+                    elif field_type == "data":
+                        parsed = parse_sse_data(value)
+                        if parsed is not None:
+                            if pending_event:
+                                yield {"event": pending_event, "data": parsed}
+                                pending_event = None
+                            else:
+                                yield parsed
 
     async def stream_execution(self, task_id: str) -> AsyncGenerator[Dict[str, Any], None]:
         """流式获取执行状态"""
         async with self.client.stream("GET", f"/api/v1/stream/{task_id}") as response:
             response.raise_for_status()
             async for line in response.aiter_lines():
-                if line.startswith("data:"):
-                    try:
-                        yield json.loads(line[5:])
-                    except json.JSONDecodeError:
-                        pass
+                result = parse_sse_line(line)
+                if result is not None:
+                    field_type, value = result
+                    if field_type == "data":
+                        parsed = parse_sse_data(value)
+                        if parsed is not None:
+                            yield parsed
 
     # ========== Health Check ==========
 

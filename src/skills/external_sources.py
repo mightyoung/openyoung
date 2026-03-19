@@ -266,15 +266,15 @@ class RSSClient:
                         from time import mktime
 
                         published = datetime.fromtimestamp(mktime(entry.published_parsed))
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug(f"Failed to parse published date: {e}")
                 elif hasattr(entry, "updated_parsed") and entry.updated_parsed:
                     try:
                         from time import mktime
 
                         published = datetime.fromtimestamp(mktime(entry.updated_parsed))
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug(f"Failed to parse updated date: {e}")
 
                 # 获取 URL
                 entry_url = getattr(entry, "link", None)

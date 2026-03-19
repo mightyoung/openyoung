@@ -41,8 +41,8 @@ def load_user_config() -> dict:
     if _USER_CONFIG_FILE.exists():
         try:
             return json.loads(_USER_CONFIG_FILE.read_text())
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Failed to load user config: {e}")
     return {}
 
 

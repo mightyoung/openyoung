@@ -174,8 +174,8 @@ class SubAgent:
                     tool_calls.append(tool_call)
                 except json.JSONDecodeError:
                     pass
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Failed to extract tool calls: {e}")
 
         # 尝试解析自然语言格式 "我将使用 xxx 工具..."
         if not tool_calls:

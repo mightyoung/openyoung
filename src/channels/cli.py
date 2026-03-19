@@ -78,7 +78,7 @@ class CLIChannel(BaseChannel):
                     user_id="local",
                 )
         except asyncio.TimeoutError:
-            pass
+            logger.debug("CLI input timed out")
         except EOFError:
             self._running = False
         return None
