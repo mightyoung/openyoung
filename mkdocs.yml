@@ -27,6 +27,13 @@ plugins:
 
 nav:
   - Home: index.md
+  - PEAS Documentation:
+      - Overview: peas/index.md
+      - Getting Started: peas/getting-started.md
+      - Architecture: peas/architecture.md
+      - API Reference: peas/API.md
+      - Tutorial: peas/tutorial.md
+      - Contribution: peas/contribution.md
   - API Reference:
       - agents: api/generated/agents_young_agent.md
       - datacenter: api/generated/datacenter_datacenter.md

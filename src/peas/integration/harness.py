@@ -19,11 +19,13 @@ from src.peas.understanding.markdown_parser import MarkdownParser
 from src.peas.contract.builder import ContractBuilder
 from src.peas.verification.tracker import FeatureTracker
 from src.peas.verification.drift_detector import DriftDetector
+from src.peas.learning.preference_learner import PreferenceLearner
 from src.peas.types import (
     ParsedDocument,
     ExecutionContract,
     FeatureStatus,
     DriftReport,
+    Priority,
 )
 
 logger = logging.getLogger(__name__)
@@ -44,12 +46,14 @@ class PEASHarnessIntegration:
         self,
         llm_client: Optional[Any] = None,
         harness_config: Optional[HarnessConfig] = None,
+        preference_learner: Optional[PreferenceLearner] = None,
     ):
         """初始化集成
 
         Args:
             llm_client: LLM客户端（用于LLM验证）
             harness_config: Harness配置
+            preference_learner: 用户偏好学习器（可选）
         """
         self.llm = llm_client
         self.harness_config = harness_config or HarnessConfig()
@@ -59,6 +63,7 @@ class PEASHarnessIntegration:
         self._contract_builder = ContractBuilder(llm_client)
         self._tracker: Optional[FeatureTracker] = None
         self._drift_detector = DriftDetector()
+        self._preference_learner = preference_learner or PreferenceLearner()
 
         # 解析结果
         self._parsed_doc: Optional[ParsedDocument] = None
@@ -158,7 +163,13 @@ class PEASHarnessIntegration:
         execution_text = str(result.get("result", ""))
         feature_statuses = await self._tracker.verify(execution_text)
 
-        # 检测偏离
+        # 记录验证结果到偏好学习器（用于后续用户反馈学习）
+        await self._record_verification_for_learning(feature_statuses, execution_text)
+
+        # 获取调整后的阈值
+        adjusted_thresholds = await self._get_adjusted_thresholds()
+
+        # 使用调整后的阈值检测偏离
         drift_report = self._drift_detector.detect(feature_statuses, self._contract)
 
         return {
@@ -166,6 +177,90 @@ class PEASHarnessIntegration:
             "feature_statuses": feature_statuses,
             "drift_report": drift_report,
             "alignment_rate": drift_report.alignment_rate,
+            "adjusted_thresholds": adjusted_thresholds,
+        }
+
+    async def _record_verification_for_learning(
+        self,
+        feature_statuses: list,
+        execution_text: str,
+    ) -> None:
+        """记录验证结果用于学习
+
+        Args:
+            feature_statuses: 功能点状态列表
+            execution_text: 执行结果文本
+        """
+        # 学习输出风格偏好
+        await self._preference_learner.learn_style_preference(execution_text)
+
+        # 记录每个功能点的验证状态
+        for status in feature_statuses:
+            # 获取该功能点的优先级
+            priority = Priority.SHOULD
+            if self._contract:
+                try:
+                    req = self._contract.get_requirement(status.req_id)
+                    priority = req.priority
+                except ValueError:
+                    pass
+
+            # 记录到偏好学习器（假设验证通过的状态为"接受"）
+            await self._preference_learner.record_feedback(
+                feature_id=status.req_id,
+                accepted=status.is_verified(),
+                context={
+                    "priority": priority,
+                    "status": status.status.value,
+                },
+            )
+
+            # 记录结果模式
+            self._preference_learner.record_result_pattern(
+                result=str(status.evidence) if status.evidence else "",
+                accepted=status.is_verified(),
+                verification_status=status.status,
+            )
+
+    async def _get_adjusted_thresholds(self) -> dict[str, float]:
+        """获取调整后的阈值
+
+        Returns:
+            dict: 优先级到调整后阈值的映射
+        """
+        thresholds = {}
+        for priority in Priority:
+            # 为每个优先级获取一个代表性的调整阈值
+            feature_id = f"_priority_{priority.value}"
+            threshold = await self._preference_learner.get_adjusted_threshold(feature_id)
+            thresholds[priority.value] = threshold
+        return thresholds
+
+    async def record_user_feedback(
+        self,
+        feature_id: str,
+        accepted: bool,
+        context: Optional[dict] = None,
+    ) -> None:
+        """记录用户反馈
+
+        Args:
+            feature_id: 功能点ID
+            accepted: 用户是否接受验证结果
+            context: 额外上下文
+        """
+        await self._preference_learner.record_feedback(feature_id, accepted, context)
+
+    def get_preference_stats(self) -> dict:
+        """获取偏好学习统计
+
+        Returns:
+            dict: 偏好统计信息
+        """
+        return {
+            "thresholds": self._preference_learner.get_current_thresholds(),
+            "acceptance": self._preference_learner.get_acceptance_stats(),
+            "patterns": self._preference_learner.get_learned_patterns(),
         }
 
     async def execute_streaming(

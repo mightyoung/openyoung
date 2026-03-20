@@ -4,6 +4,7 @@ Markdown Parser - 解析Markdown设计文档
 M1.1: 核心Parser实现
 """
 import re
+import html as html_escape
 from pathlib import Path
 from typing import Optional
 from dataclasses import dataclass
@@ -12,6 +13,14 @@ from ..types import Priority, FeaturePoint, ParsedDocument
 
 # Security: Input size limits
 MAX_CONTENT_SIZE = 10 * 1024 * 1024  # 10MB
+
+
+def _escape_for_html(text: str) -> str:
+    """Escape text for safe HTML display (XSS prevention)
+
+    This should be used when rendering parsed content in HTML contexts.
+    """
+    return html_escape.escape(text)
 
 
 # ============================================================================

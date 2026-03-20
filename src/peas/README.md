@@ -44,10 +44,12 @@ report = detector.detect(statuses, contract)
 ```
 src/peas/
 ├── types/           # 类型定义
-├── understanding/   # 文档理解 (MarkdownParser, IntentExtractor)
+├── understanding/   # 文档理解 (MarkdownParser, HTMLParser)
 ├── contract/        # 合约构建 (ContractBuilder)
-├── verification/    # 验证追踪 (FeatureTracker, DriftDetector)
+├── verification/    # 验证追踪 (FeatureTracker, DriftDetector, UIComparator)
 ├── integration/     # Harness集成 (PEASHarnessIntegration)
+├── learning/       # 偏好学习 (PreferenceLearner)
+├── monitoring/     # 指标监控 (MetricsCollector)
 └── llm/            # LLM客户端
 ```
 
@@ -57,12 +59,16 @@ src/peas/
 # 运行所有测试
 pytest tests/peas/ -v
 
-# 测试统计
-# - Parser测试: 14个
+# 测试统计 (207个测试)
+# - Parser测试: 33个 (MarkdownParser + HTMLParser)
 # - Contract测试: 11个
-# - Verification测试: 16个
-# - E2E测试: 30个
-# 总计: 71个测试
+# - Verification测试: 30个 (FeatureTracker + DriftDetector + UIComparator)
+# - Integration测试: 11个 (Harness集成)
+# - Performance测试: 11个
+# - Metrics测试: 18个
+# - PreferenceLearner测试: 22个
+# - Security测试: 35个
+# - E2E测试: 36个
 ```
 
 ## 核心类型
@@ -125,11 +131,105 @@ contract = integration.build_contract()
 result = await integration.execute(task_description)
 ```
 
+## HTML原型解析
+
+支持从HTML设计文档中提取功能点：
+
+```python
+from peas import HTMLParser
+
+parser = HTMLParser()
+doc = parser.parse(html_content)
+```
+
+支持的格式：
+- HTML注释: `<!-- Feature: 功能名 -->`
+- data属性: `<div data-feature="xxx" data-priority="must">`
+- HTML元素: button, input, form等
+
+## 视觉对比
+
+UIComparator支持UI结构对比和差异检测：
+
+```python
+from peas import UIComparator
+
+comparator = UIComparator()
+diff = comparator.compare(baseline_html, current_html)
+```
+
+## 偏好学习
+
+PreferenceLearner学习用户验证偏好，自动调整验证阈值：
+
+```python
+from peas import PreferenceLearner
+
+learner = PreferenceLearner(window_size=20, learning_rate=0.1)
+await learner.record_feedback("feature_1", accepted=True)
+threshold = await learner.get_adjusted_threshold("feature_1")
+```
+
+## 指标监控
+
+MetricsCollector收集和暴露Prometheus格式指标：
+
+```python
+from peas.monitoring import get_metrics_collector, record_parse_time
+
+collector = get_metrics_collector()
+record_parse_time(8.5)  # 毫秒
+
+# 获取Prometheus格式指标
+metrics = collector.get_metrics()
+```
+
 ## 安全特性
 
-- 输入大小限制: 10MB
-- 路径遍历保护
-- 预编译正则表达式
+PEAS实现了多层安全防护来保护系统免受恶意输入攻击：
+
+### 输入验证
+
+- **内容大小限制**: 所有解析器强制执行10MB输入大小限制，防止DoS攻击
+- **编码检测**: 使用UTF-8编码实际字节数计算，防止Unicode编码绕过
+
+### 路径遍历保护
+
+- **目录隔离**: `parse_file`方法支持`allowed_dir`参数，限制文件访问范围
+- **路径解析**: 使用`pathlib.Path.resolve()`解析绝对路径，防止符号链接绕过
+- **相对路径验证**: 检查`../`等相对路径遍历尝试
+
+### XSS防护
+
+- **输出转义**: 提供`title_escaped`、`raw_content_escaped`等属性用于安全HTML显示
+- **FeaturePoint转义**: `title_escaped`和`description_escaped`属性自动转义HTML特殊字符
+- **使用方式**:
+  ```python
+  # 不安全 - 可能导致XSS
+  print(doc.title)
+
+  # 安全 - 自动转义
+  print(doc.title_escaped)
+  ```
+
+### DoS防护
+
+- **预编译正则表达式**: 所有正则表达式在模块级别预编译，避免重复编译开销
+- **嵌套深度限制**: 解析器可以处理大量嵌套结构（如10000层嵌套div）
+- **属性数量限制**: 单元素支持大量属性（如1000个data-*属性）
+
+## 安全测试
+
+```bash
+# 运行安全测试
+pytest tests/peas/test_security.py -v
+```
+
+安全测试覆盖：
+- 路径遍历攻击（绝对路径、相对路径、Windows风格）
+- 内容大小限制（刚好限制、超过限制、Unicode编码）
+- DoS攻击（大量标题、深度嵌套、超长行）
+- XSS payloads（script标签、事件处理器、javascript:URI）
 
 ## 许可证
 

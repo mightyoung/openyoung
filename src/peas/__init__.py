@@ -16,10 +16,13 @@ from .types import (
     DriftReport,
     FeedbackAction,
 )
-from .understanding import MarkdownParser, IntentExtractor
+from .understanding import MarkdownParser, IntentExtractor, HTMLParser
 from .contract import ContractBuilder
-from .verification import FeatureTracker, DriftDetector
+from .verification import FeatureTracker, DriftDetector, UIComparator
+from .verification.ui_comparator import UIComparator
 from .integration import PEASHarnessIntegration
+from .monitoring import MetricsCollector, create_metrics_server
+from .learning import PreferenceLearner
 
 __all__ = [
     # Types
@@ -36,9 +39,16 @@ __all__ = [
     "FeedbackAction",
     # Core modules
     "MarkdownParser",
+    "HTMLParser",
     "IntentExtractor",
     "ContractBuilder",
     "FeatureTracker",
     "DriftDetector",
+    "UIComparator",
     "PEASHarnessIntegration",
+    # Monitoring
+    "MetricsCollector",
+    "create_metrics_server",
+    # Learning
+    "PreferenceLearner",
 ]
