@@ -6,6 +6,7 @@
 2. **[分层记忆系统实现](./hierarchical-memory-implementation-plan.md)** - 全部完成 ✅
 3. **[Harness驱动的AI软件工厂](./harness-ai-factory-refactor-plan.md)** - ✅ 全部完成 (R1-R9)
 4. **[WebUI Design System](./2026-03-17-cli-to-webui-migration-plan-v2.md)** - ✅ Phase 1-2 完成
+5. **[PEAS MVP (精简版)](./2026-03-20-peas-mvp-plan.md)** - 🔄 Week 1: M1.1 MarkdownParser
 
 ## 已完成归档
 

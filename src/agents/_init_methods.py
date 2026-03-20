@@ -202,7 +202,8 @@ def init_memory_facade(self) -> None:
 
 def init_builtin_subagents(self) -> None:
     """初始化 SubAgents - 从配置加载，参考 Claude Code Task 协议"""
-    from src.core.types import SubAgentType
+    from src.agents.sub_agent import SubAgent
+    from src.core.types import SubAgentConfig, SubAgentType
 
     # 默认内置 SubAgents
     default_agents = [

@@ -140,10 +140,12 @@ class YoungAgent:
 
         # Checkpoint manager (use injected or create internally)
         self._checkpoint_manager = checkpoint_manager
+        self._checkpoint_manager_injected = checkpoint_manager is not None
         init_checkpoint(self)
 
         # Memory Facade (use injected or create internally)
         self._memory_facade = memory_facade
+        self._memory_facade_injected = memory_facade is not None
         init_memory_facade(self)
 
         # Harness - use injected > container > create
