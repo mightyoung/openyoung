@@ -31,6 +31,9 @@ from .protocols import (
 from .sub_agent import SubAgent
 from .young_agent import PermissionEvaluator, YoungAgent
 
+# Agent adapters for EvalRunner compatibility
+from .adapters import AgentAdapter, EvalAgent, adapt_subagent
+
 __all__ = [
     # Base classes
     "BaseAgent",
@@ -55,4 +58,8 @@ __all__ = [
     "ICheckpointManager",
     "IEvaluationHub",
     "IHarness",
+    # Agent adapters
+    "AgentAdapter",
+    "EvalAgent",
+    "adapt_subagent",
 ]

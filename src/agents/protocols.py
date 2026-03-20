@@ -10,7 +10,26 @@ Based on Python's Protocol class (structural subtyping):
 - ICheckpointManager: Checkpoint management interface
 """
 
-from typing import Any, Protocol
+from typing import Any, Protocol, TypedDict
+
+
+class ChatKwargs(TypedDict, total=False):
+    """Keyword arguments for IClient.chat"""
+
+    model: str
+    temperature: float
+    max_tokens: int
+    system: str
+    tools: list[dict[str, Any]]
+    tool_choice: str
+
+
+class EvaluateKwargs(TypedDict, total=False):
+    """Keyword arguments for IEvaluationHub.evaluate"""
+
+    expected: str
+    threshold: float
+    metadata: dict[str, Any]
 
 
 class IClient(Protocol):
@@ -22,22 +41,23 @@ class IClient(Protocol):
 
     async def chat(
         self,
-        messages: Any,
+        messages: list[dict[str, Any]],
         model: str | None = None,
         temperature: float = 0.7,
         max_tokens: int | None = None,
         **kwargs: Any,
-    ) -> Any:
+    ) -> dict[str, Any]:
         """Send a chat request to the LLM.
 
         Args:
-            messages: List of messages
+            messages: List of message dicts with 'role' and 'content'
             model: Model name (optional)
             temperature: Sampling temperature
             max_tokens: Max tokens to generate
+            **kwargs: Additional parameters (model, temperature, etc.)
 
         Returns:
-            LLM response with content and usage
+            LLM response dict with 'content', 'usage', 'model', etc.
         """
         ...
 
@@ -57,7 +77,7 @@ class IToolExecutor(Protocol):
             arguments: Tool arguments
 
         Returns:
-            Tool execution result
+            Tool execution result (can be any type)
         """
         ...
 
@@ -108,16 +128,18 @@ class IEvaluationHub(Protocol):
     Defines the interface for evaluation.
     """
 
-    async def evaluate(self, metric: str, input_data: str, **kwargs: Any) -> Any:
+    async def evaluate(
+        self, metric: str, input_data: str, **kwargs: Any
+    ) -> dict[str, Any]:
         """Evaluate input data.
 
         Args:
             metric: Metric name
             input_data: Input to evaluate
-            **kwargs: Additional parameters
+            **kwargs: Additional parameters (expected, threshold, metadata, etc.)
 
         Returns:
-            Evaluation result
+            Evaluation result dict with 'score', 'passed', 'details', etc.
         """
         ...
 

@@ -19,13 +19,10 @@ from src.agents.dispatcher import TaskDispatcher
 from src.agents.eval_store import EvalStore
 from src.agents.evaluation_coordinator import EvaluationContext, EvaluationCoordinator
 from src.agents.permission import PermissionEvaluator
-from src.agents.ralph_loop import AgentCategory, RalphLoop, RalphLoopConfig
+from src.agents.ralph_loop import AgentCategory
 from src.agents.sub_agent import SubAgent
 
-# Core 模块 - EventBus, Heartbeat, Knowledge
-from src.core.events import Event, EventPriority, EventType, SystemEvents, get_event_bus
-from src.core.heartbeat import HeartbeatConfig, HeartbeatScheduler, get_heartbeat_scheduler
-from src.core.knowledge import KnowledgeManager, get_knowledge_manager
+# Core 模块 - EventBus, Heartbeat, Knowledge (已迁移到 _init_methods.py)
 from src.core.logger import get_logger
 from src.core.types import (
     Message,
@@ -47,11 +44,15 @@ from src.agents._init_methods import (
     _load_flow_skill_by_name,
     init_builtin_subagents,
     init_checkpoint,
+    init_core_runtime,
     init_default_genes,
+    init_execution_config,
     init_flow_skill,
     init_hooks,
+    init_llm_and_evaluation,
     init_mcp_servers,
     init_memory_facade,
+    init_ralph_loop,
     init_task_executor,
     init_telemetry,
     load_skills,
@@ -189,69 +190,14 @@ class YoungAgent:
             self._tool_executor.set_sandbox_pool(self._sandbox_pool)
             print("[YoungAgent] AI Docker Sandbox enabled")
 
-        # EventBus 和 Heartbeat
-        self._event_bus = get_event_bus()
-        self._knowledge_manager = get_knowledge_manager()
-        self._heartbeat = None
-        self._heartbeat_enabled = getattr(config, "heartbeat_enabled", True)
-        if self._heartbeat_enabled:
-            try:
-                heartbeat_config = getattr(config, "heartbeat_config", None)
-                if heartbeat_config is None:
-                    heartbeat_config = HeartbeatConfig(
-                        interval_seconds=getattr(config, "heartbeat_interval", 14400),
-                        enabled=True,
-                    )
-                self._heartbeat = HeartbeatScheduler(
-                    config=heartbeat_config,
-                    event_bus=self._event_bus,
-                    knowledge_manager=self._knowledge_manager,
-                )
-                print(
-                    f"[YoungAgent] Heartbeat enabled (interval={heartbeat_config.interval_seconds}s)"
-                )
-            except Exception as e:
-                print(f"[YoungAgent] Heartbeat init failed: {e}")
-                self._heartbeat = None
+        # Core Runtime: EventBus, Heartbeat, KnowledgeManager
+        init_core_runtime(self, config)
 
         # Execution config
-        execution_config = getattr(config, "execution", None)
-        self._max_tool_calls = 10
-        self._timeout_seconds = 300
-        self._checkpoint_enabled = True
+        init_execution_config(self, config)
 
-        if execution_config is not None and hasattr(
-            execution_config, "max_tool_calls"
-        ):  # 新类型: ExecutionConfig
-            self._max_tool_calls = execution_config.max_tool_calls
-            self._timeout_seconds = execution_config.timeout_seconds
-            self._checkpoint_enabled = execution_config.checkpoint_enabled
-        elif execution_config:  # 旧格式: dict (非空)
-            self._max_tool_calls = execution_config.get("max_tool_calls", 10)
-            self._timeout_seconds = execution_config.get("timeout_seconds", 300)
-            self._checkpoint_enabled = execution_config.get("checkpoint_enabled", True)
-
-        # 打印执行配置
-        print("[YoungAgent] Execution config:")
-        print(f"  - max_tool_calls: {self._max_tool_calls}")
-        print(f"  - timeout_seconds: {self._timeout_seconds}")
-        print(f"  - checkpoint_enabled: {self._checkpoint_enabled}")
-
-        # 初始化 LLM 客户端 - use injected or create internally
-        if self._llm is None:
-            try:
-                from src.llm.client_adapter import LLMClient
-
-                self._llm = LLMClient()
-            except Exception as e:
-                logger.warning(f"LLM client init failed: {e}")
-
-        # R1-1: 初始化 EvaluationCoordinator (在 LLM 初始化之后)
-        try:
-            self._eval_coordinator = EvaluationCoordinator(llm_client=self._llm)
-        except Exception as e:
-            logger.warning(f"EvaluationCoordinator init failed: {e}")
-            self._eval_coordinator = None
+        # LLM client and EvaluationCoordinator
+        init_llm_and_evaluation(self)
 
         # 初始化 TaskExecutor
         self._task_executor = None
@@ -264,14 +210,7 @@ class YoungAgent:
         init_task_executor(self)
 
         # RalphLoop - 自主循环执行器
-        self._ralph_loop = RalphLoop(
-            config=RalphLoopConfig(
-                max_iterations=10,
-                min_completion_rate=0.8,
-                enable_parallel=True,
-            ),
-            executor=self._task_executor.execute if self._task_executor else None,
-        )
+        init_ralph_loop(self)
 
     def switch_flow_skill(self, flow_name: str, flow_config: dict = None):
         """运行时切换 FlowSkill"""

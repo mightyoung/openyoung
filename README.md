@@ -185,7 +185,7 @@ openyoung/
 │   └── webui/                # Streamlit WebUI
 ├── packages/                 # Agent packages
 ├── skills/                   # Skills
-├── tests/                    # Test suite (119 tests)
+├── tests/                    # Test suite (1084+ tests)
 └── docs/                    # Documentation
 ```
 
@@ -263,46 +263,64 @@ rl:
 
 ---
 
-## AI Docker
+## AI Sandbox
 
-OpenYoung includes a built-in **AI Docker sandbox execution environment** that provides secure and controlled code execution for AI Agents.
+OpenYoung includes a **subprocess-based AI Sandbox** that provides secure and controlled code execution for AI Agents using `asyncio.subprocess` (not Docker containers).
+
+**Architecture Note**: The sandbox uses a multi-backend design:
+- **E2B** (recommended): Full microVM-based isolation with native network control
+- **Docker**: Not yet implemented
+- **Process** (fallback): Subprocess-based execution with basic security controls
 
 ### Core Features
 
 | Feature | Description |
 |---------|-------------|
-| **Sandbox Isolation** | Resource limits (CPU/Memory/Time), network access control |
-| **Security Policy** | Command whitelist, dangerous pattern detection, file path validation |
-| **Instance Pool** | Auto-scaling, instance pre-warming, state persistence |
-| **Audit Logging** | Execution records, statistics, JSONL format |
+| **Process Execution** | Uses `subprocess.run()` with timeout control |
+| **Security Policy Engine** | Risk assessment, dangerous pattern detection |
+| **Network Pattern Detection** | Blocks network commands (curl, wget, nc, etc.) when disabled |
+| **Audit Logging** | Execution records, statistics |
 
-### Enhanced Security (2025 Best Practices)
+### Security Features
+
+The subprocess-based sandbox provides the following security controls:
 
 | Security Feature | Description |
 |-----------------|-------------|
-| **Working Directory Restriction** | Files can only be accessed within configured working directory |
-| **Path Traversal Prevention** | Blocks `..`, `/proc`, `/sys`, `/dev` attacks |
-| **Network Isolation** | Domain whitelist/blacklist, default deny |
-| **MCP Server Security** | Command validation, environment sanitization |
-| **Audit Logging** | All security events logged |
+| **Timeout Protection** | Execution time limit via subprocess timeout |
+| **Network Command Blocking** | Prevents execution of network commands (curl, wget, nc, etc.) when `allow_network=False` |
+| **Risk Assessment** | Code is scanned for dangerous patterns before execution |
+| **Prompt Injection Detection** | Detects and blocks malicious prompt patterns |
+| **Secret Scanning** | Detects exposed API keys, passwords, tokens |
+
+**Known Limitations** (Process Backend):
+- No CPU/Memory limits via `resource` module (subprocess-based)
+- No filesystem isolation (process runs on host)
+- No path traversal enforcement (requires containerization)
+- No true network isolation (requires E2B or container)
+
+For stronger security guarantees, use E2B backend which provides microVM-level isolation.
 
 ### Usage
 
 ```python
-from src.runtime.sandbox import SandboxPolicy, SecurityPolicyEngine
+from src.runtime.sandbox import AISandbox, SandboxConfig, SandboxPolicy
 
-# Configure security policy
-policy = SandboxPolicy(
-    working_directory="/tmp/sandbox",       # Restrict to working dir
+# Create sandbox with security policy
+config = SandboxConfig(
+    working_directory="/tmp/sandbox",
     restrict_to_working_dir=True,
-    allow_network=True,
-    allowed_domains=["api.openai.com"],
+    allow_network=False,
+    enable_prompt_detection=True,
+    enable_secret_detection=True,
 )
-engine = SecurityPolicyEngine(policy)
+sandbox = AISandbox(config)
 
-# Check file access
-safe, reason = engine.check_path_traversal("/tmp/sandbox/file.txt")  # ALLOWED
-safe, reason = engine.check_path_traversal("/etc/passwd")  # BLOCKED
+# Create a sandbox instance
+sandbox_id = await sandbox.create(agent_id="my-agent")
+
+# Execute code securely
+result = await sandbox.execute(sandbox_id, "print('Hello, World!')", language="python")
 ```
 
 ### WebUI
@@ -542,6 +560,8 @@ openyoung/
 | Harness覆盖率 | 30% | 95% | +217% |
 | 测试覆盖率 | ~20% | 80%+ | +300% |
 | 代码重复 | 高 | 最低 | ✅ |
+| 测试数量 | 119 | 1084+ | +810% |
+| 测试数量 | 119 | 1084+ | +810% |
 
 ---
 
@@ -607,46 +627,64 @@ rl:
 
 ---
 
-## AI Docker
+## AI 沙箱
 
-OpenYoung 内置 **AI Docker 沙箱执行环境**，为 AI Agent 提供安全可控的代码执行能力。
+OpenYoung 内置 **基于 Subprocess 的 AI 沙箱**，使用 `asyncio.subprocess`（非 Docker 容器）为 AI Agent 提供安全可控的代码执行能力。
+
+**架构说明**: 沙箱采用多后端设计：
+- **E2B** (推荐): 完整的 microVM 级别隔离，原生网络控制
+- **Docker**: 尚未实现
+- **Process** (后备): 基于 subprocess 的执行，提供基本安全控制
 
 ### 核心功能
 
 | 功能 | 描述 |
 |------|------|
-| **沙箱隔离** | 资源限制 (CPU/Memory/Time)，网络访问控制 |
-| **安全策略** | 命令白名单，危险模式检测，文件路径验证 |
-| **实例池** | 自动扩缩容，预热实例，状态持久化 |
+| **进程执行** | 使用 `subprocess.run()` 配合 timeout 控制 |
+| **安全策略引擎** | 风险评估，危险模式检测 |
+| **网络模式检测** | 当禁用时阻止网络命令 (curl, wget, nc 等) |
 | **审计日志** | 执行记录，统计查询 |
 
-### 安全增强 (2025最佳实践)
+### 安全功能
+
+基于 subprocess 的沙箱提供以下安全控制：
 
 | 安全功能 | 描述 |
 |---------|------|
-| **工作目录限制** | 文件只能访问配置的工作目录 |
-| **路径穿越防护** | 阻止 `..`、`/proc`、`/sys`、`/dev` 攻击 |
-| **网络隔离** | 域名白名单/黑名单，默认拒绝 |
-| **MCP服务器安全** | 命令验证，环境变量清理 |
-| **审计日志** | 所有安全事件记录 |
+| **超时保护** | 通过 subprocess timeout 限制执行时间 |
+| **网络命令拦截** | 当 `allow_network=False` 时阻止网络命令 (curl, wget, nc 等) |
+| **风险评估** | 执行前扫描代码中的危险模式 |
+| **提示注入检测** | 检测并阻止恶意提示模式 |
+| **敏感信息扫描** | 检测暴露的 API 密钥、密码、令牌 |
+
+**已知限制** (Process 后端):
+- 无 CPU/内存限制 via `resource` 模块 (基于 subprocess)
+- 无文件系统隔离 (进程在主机上运行)
+- 无路径穿越防护 (需要容器化)
+- 无真正的网络隔离 (需要 E2B 或容器)
+
+如需更强的安全保证，请使用 E2B 后端，其提供 microVM 级别的隔离。
 
 ### 使用方式
 
 ```python
-from src.runtime.sandbox import SandboxPolicy, SecurityPolicyEngine
+from src.runtime.sandbox import AISandbox, SandboxConfig, SandboxPolicy
 
-# 配置安全策略
-policy = SandboxPolicy(
-    working_directory="/tmp/sandbox",       # 限制工作目录
+# 创建带安全策略的沙箱
+config = SandboxConfig(
+    working_directory="/tmp/sandbox",
     restrict_to_working_dir=True,
-    allow_network=True,
-    allowed_domains=["api.openai.com"],
+    allow_network=False,
+    enable_prompt_detection=True,
+    enable_secret_detection=True,
 )
-engine = SecurityPolicyEngine(policy)
+sandbox = AISandbox(config)
 
-# 检查文件访问
-safe, reason = engine.check_path_traversal("/tmp/sandbox/file.txt")  # 允许
-safe, reason = engine.check_path_traversal("/etc/passwd")  # 阻止
+# 创建沙箱实例
+sandbox_id = await sandbox.create(agent_id="my-agent")
+
+# 安全执行代码
+result = await sandbox.execute(sandbox_id, "print('Hello, World!')", language="python")
 ```
 
 ### WebUI

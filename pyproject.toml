@@ -85,14 +85,11 @@ select = [
 ignore = [
     "E402",  # Module level import not at top of file
     "E501",  # Line too long (handled by formatter)
-    "E722",  # Do not use bare 'except'
     "F841",  # Local variable is assigned to but never used
     "F823",  # Local variable referenced before assignment
-    "F401",  # Unused imports (too noisy for legacy code)
     "F821",  # Undefined names (need manual review)
     "E741",  # Ambiguous variable names
     "W293",  # Blank line contains whitespace
-    "F811",  # Redefinition of unused
     "UP035",  # typing.Dict deprecated (Python 3.9+ native)
     "UP006",  # Use dict/list instead of Dict/List
     "UP045",  # Use X | None instead of Optional[X]

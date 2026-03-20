@@ -863,3 +863,19 @@ def peas_report(data_file: str, output_file: str | None, output_format: str) -> 
     except Exception as e:
         click.echo(f"Error generating report: {e}", err=True)
         raise SystemExit(1)
+
+
+# ============================================================================
+# Module Entry Point - Enables: python3 -m src.cli.peas_cli peas report ...
+# ============================================================================
+
+
+if __name__ == "__main__":
+    # Suppress warnings for cleaner output when running as module
+    import warnings
+
+    warnings.filterwarnings("ignore")
+    # When run as: python3 -m src.cli.peas_cli report ...
+    # sys.argv = ['peas_cli.py', 'report', ...]
+    # Click parses the first arg as the command, so we invoke peas_group directly
+    peas_group()

@@ -10,7 +10,7 @@ import sys
 from typing import Any, Optional
 
 from .protocol import JSONRPCProtocol, JSONRPCRequest, JSONRPCResponse, JSONRPCErrorCode
-from .tools import MCPToolRegistry
+from .tools import MCPToolRegistry, MCPTool
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +66,140 @@ class MCPServer:
         )
         def echo(message: str) -> str:
             return message
+
+    async def register_subagent(
+        self,
+        name: str,
+        description: str,
+        input_schema: dict[str, Any],
+        subagent_runner: Any,
+    ):
+        """注册 SubAgent 作为 MCP 工具
+
+        Args:
+            name: 工具名称
+            description: 工具描述
+            input_schema: 输入 schema (MCP 协议格式)
+            subagent_runner: SubAgent 运行器 (具有 run(task, context) 方法)
+        """
+        from src.core.types import Task
+        from src.core.types.agent import TaskStatus
+
+        async def subagent_handler(**params) -> str:
+            """SubAgent 工具处理器
+
+            将 MCP 工具调用转换为 SubAgent.run() 调用
+            """
+            # 从参数构建 Task
+            task_input = params.get("task", params.get("input", ""))
+            task_id = params.get("id", f"mcp-{name}-{hash(str(params))}")
+
+            # Task 需要 description 字段
+            task_description = params.get("description", f"MCP task for {name}")
+            task = Task(
+                id=task_id,
+                description=task_description,
+                input=task_input,
+            )
+
+            # 构建上下文
+            context = {
+                "parent_summary": params.get("summary", ""),
+                "relevant_files": params.get("files", []),
+            }
+
+            # 调用 SubAgent.run()
+            try:
+                result = await subagent_runner.run(task, context)
+                return result if isinstance(result, str) else str(result)
+            except Exception as e:
+                logger.exception(f"SubAgent {name} execution error")
+                return f"[Error] SubAgent {name} failed: {str(e)}"
+
+        # 创建并注册工具
+        tool = MCPTool(
+            name=name,
+            description=description,
+            input_schema=input_schema,
+            handler=subagent_handler,
+        )
+        self.registry.register_tool(tool)
+        logger.info(f"Registered SubAgent tool: {name}")
+
+    async def register_subagents_from_registry(
+        self,
+        subagent_registry: Any,
+        subagent_runner_factory: Any = None,
+    ):
+        """从 SubAgentRegistry 注册所有 SubAgent
+
+        Args:
+            subagent_registry: SubAgentRegistry 实例
+            subagent_runner_factory: SubAgent 运行器工厂函数 (接收 SubAgentBinding, 返回 SubAgent 实例)
+        """
+        # 动态导入避免循环依赖
+        from src.agents.sub_agent import SubAgent
+        from src.core.types.agent import SubAgentType
+
+        subagents = subagent_registry.list_subagents()
+        for subagent_config in subagents:
+            if subagent_config.get("hidden"):
+                continue
+
+            name = subagent_config["name"]
+            description = subagent_config.get("description", f"{name} SubAgent")
+            subagent_type_str = subagent_config.get("type", "general")
+
+            # 转换 string type 到 SubAgentType enum
+            try:
+                subagent_type = SubAgentType(subagent_type_str)
+            except ValueError:
+                subagent_type = SubAgentType.GENERAL
+
+            # 构建输入 schema
+            input_schema = {
+                "type": "object",
+                "properties": {
+                    "task": {
+                        "type": "string",
+                        "description": "Task input for the subagent",
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Task description",
+                    },
+                    "summary": {
+                        "type": "string",
+                        "description": "Parent task summary context",
+                    },
+                    "files": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Relevant files for context",
+                    },
+                },
+                "required": ["task"],
+            }
+
+            # 创建运行器
+            if subagent_runner_factory:
+                runner = subagent_runner_factory(subagent_config)
+            else:
+                # 默认使用 SubAgent 类
+                from src.core.types.agent import SubAgentConfig
+
+                config = SubAgentConfig(
+                    name=name,
+                    type=subagent_type,
+                    description=description,
+                    instructions=subagent_config.get("instructions", ""),
+                    model=subagent_config.get("model", "deepseek-chat"),
+                    temperature=subagent_config.get("temperature", 0.7),
+                )
+                runner = SubAgent(config)
+
+            await self.register_subagent(name, description, input_schema, runner)
+            logger.info(f"Registered SubAgent from registry: {name}")
 
     async def _handle_initialize(self, **params) -> dict[str, Any]:
         """处理 initialize 请求"""
@@ -146,14 +280,13 @@ class MCPServer:
         await self.initialize()
         self._running = True
 
-        reader = asyncio.get_event_loop().run_in_executor(None, sys.stdin.readline)
-
+        loop = asyncio.get_event_loop()
         logger.info(f"{self.name} running on STDIO")
 
         while self._running:
             try:
-                # 异步读取
-                line = await asyncio.wait_for(reader, timeout=1.0)
+                # 使用 run_in_executor 每次读取新行
+                line = await loop.run_in_executor(None, sys.stdin.readline)
                 if not line:
                     break
 

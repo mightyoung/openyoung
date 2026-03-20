@@ -60,6 +60,9 @@ class GiGPOConfig:
     use_gae: bool = True
     gae_lambda: float = 0.95
     gamma: float = 0.99
+    clip_epsilon: float = 0.2
+    learning_rate: float = 1e-5
+    kl_beta: float = 0.01
 
 
 @dataclass

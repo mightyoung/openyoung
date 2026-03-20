@@ -480,3 +480,115 @@ def create_evolver(self):
     except Exception as e:
         self._logger.warning(f"EvolutionEngine init failed: {e}")
         return None
+
+
+# --- Runtime Component Initializers (extracted from YoungAgent.__init__) ---
+
+
+def init_core_runtime(self, config) -> None:
+    """初始化核心运行时组件：EventBus, Heartbeat, KnowledgeManager
+
+    这些组件提供事件驱动和心跳机制，是Agent运行的基础设施。
+    """
+    from src.core.events import get_event_bus
+    from src.core.heartbeat import HeartbeatConfig, HeartbeatScheduler, get_heartbeat_scheduler
+    from src.core.knowledge import get_knowledge_manager
+
+    # EventBus - 事件总线
+    self._event_bus = get_event_bus()
+
+    # Knowledge Manager - 知识管理
+    self._knowledge_manager = get_knowledge_manager()
+
+    # Heartbeat - 心跳调度器
+    self._heartbeat = None
+    self._heartbeat_enabled = getattr(config, "heartbeat_enabled", True)
+
+    if self._heartbeat_enabled:
+        try:
+            heartbeat_config = getattr(config, "heartbeat_config", None)
+            if heartbeat_config is None:
+                heartbeat_config = HeartbeatConfig(
+                    interval_seconds=getattr(config, "heartbeat_interval", 14400),
+                    enabled=True,
+                )
+            self._heartbeat = HeartbeatScheduler(
+                config=heartbeat_config,
+                event_bus=self._event_bus,
+                knowledge_manager=self._knowledge_manager,
+            )
+            print(
+                f"[YoungAgent] Heartbeat enabled (interval={heartbeat_config.interval_seconds}s)"
+            )
+        except Exception as e:
+            print(f"[YoungAgent] Heartbeat init failed: {e}")
+            self._heartbeat = None
+
+
+def init_llm_and_evaluation(self) -> None:
+    """初始化 LLM 客户端和评估协调器
+
+    LLM 客户端用于 AI 对话，EvaluationCoordinator 用于任务质量评估。
+    """
+    from src.agents.evaluation_coordinator import EvaluationCoordinator
+
+    # LLM 客户端（如果尚未注入）
+    if self._llm is None:
+        try:
+            from src.llm.client_adapter import LLMClient
+
+            self._llm = LLMClient()
+        except Exception as e:
+            self._logger.warning(f"LLM client init failed: {e}")
+
+    # EvaluationCoordinator - 任务质量评估
+    try:
+        self._eval_coordinator = EvaluationCoordinator(llm_client=self._llm)
+    except Exception as e:
+        self._logger.warning(f"EvaluationCoordinator init failed: {e}")
+        self._eval_coordinator = None
+
+
+def init_ralph_loop(self) -> None:
+    """初始化 RalphLoop - 自主循环执行器
+
+    RalphLoop 提供自主任务执行循环，支持并行执行和完成率监控。
+    """
+    from src.agents.ralph_loop import RalphLoop, RalphLoopConfig
+
+    self._ralph_loop = RalphLoop(
+        config=RalphLoopConfig(
+            max_iterations=10,
+            min_completion_rate=0.8,
+            enable_parallel=True,
+        ),
+        executor=self._task_executor.execute if self._task_executor else None,
+    )
+
+
+def init_execution_config(self, config) -> None:
+    """初始化执行配置
+
+    从 config 中提取执行参数：最大工具调用数、超时时间、检查点开关等。
+    """
+    execution_config = getattr(config, "execution", None)
+    self._max_tool_calls = 10
+    self._timeout_seconds = 300
+    self._checkpoint_enabled = True
+
+    if execution_config is not None and hasattr(
+        execution_config, "max_tool_calls"
+    ):  # 新类型: ExecutionConfig
+        self._max_tool_calls = execution_config.max_tool_calls
+        self._timeout_seconds = execution_config.timeout_seconds
+        self._checkpoint_enabled = execution_config.checkpoint_enabled
+    elif execution_config:  # 旧格式: dict (非空)
+        self._max_tool_calls = execution_config.get("max_tool_calls", 10)
+        self._timeout_seconds = execution_config.get("timeout_seconds", 300)
+        self._checkpoint_enabled = execution_config.get("checkpoint_enabled", True)
+
+    # 打印执行配置
+    print("[YoungAgent] Execution config:")
+    print(f"  - max_tool_calls: {self._max_tool_calls}")
+    print(f"  - timeout_seconds: {self._timeout_seconds}")
+    print(f"  - checkpoint_enabled: {self._checkpoint_enabled}")

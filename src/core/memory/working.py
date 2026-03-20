@@ -255,9 +255,12 @@ class WorkingMemory:
                 "variables": ctx.variables,
                 "metadata": ctx.metadata,
             }
-            async with asyncio.Lock():
+
+            def _write_file() -> None:
                 with open(path, "w") as f:
                     json.dump(data, f, indent=2, ensure_ascii=False)
+
+            await asyncio.to_thread(_write_file)
             logger.debug(f"Persisted context for task: {task_id}")
         except Exception as e:
             logger.warning(f"Failed to persist context for {task_id}: {e}")
@@ -292,7 +295,7 @@ class WorkingMemory:
         try:
             path = self._get_backup_path(task_id)
             if path.exists():
-                path.unlink()
+                await asyncio.to_thread(path.unlink)
         except Exception as e:
             logger.warning(f"Failed to delete context for {task_id}: {e}")
 

@@ -9,6 +9,8 @@ import os
 from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator
 
+import httpx
+
 from .types import (
     LLMResponse,
     Message,
@@ -17,6 +19,28 @@ from .types import (
     detect_provider,
     get_model_profile,
 )
+
+# 全局共享的 HTTP 客户端，支持连接池复用
+_http_client: httpx.AsyncClient | None = None
+
+
+def get_http_client() -> httpx.AsyncClient:
+    """获取全局共享的 HTTP 客户端（懒加载单例）"""
+    global _http_client
+    if _http_client is None:
+        _http_client = httpx.AsyncClient(
+            limits=httpx.Limits(max_connections=100, max_keepalive_connections=20),
+            timeout=60.0,
+        )
+    return _http_client
+
+
+async def close_http_client() -> None:
+    """关闭全局 HTTP 客户端，释放连接池资源"""
+    global _http_client
+    if _http_client is not None:
+        await _http_client.aclose()
+        _http_client = None
 
 
 class BaseLLMProvider(ABC):
@@ -52,6 +76,10 @@ class BaseLLMProvider(ABC):
         """流式聊天"""
         pass
 
+    async def close(self) -> None:
+        """关闭 provider，释放资源（子类可重写）"""
+        pass
+
     def get_profile(self, model: str) -> ModelProfile:
         """获取模型能力配置"""
         return get_model_profile(model)
@@ -76,8 +104,6 @@ class OpenAIProvider(BaseLLMProvider):
         max_tokens: int | None = None,
         **kwargs,
     ) -> LLMResponse:
-        import httpx
-
         profile = get_model_profile(model)
 
         # 构建请求
@@ -101,12 +127,12 @@ class OpenAIProvider(BaseLLMProvider):
         headers = {"Authorization": f"Bearer {self.api_key}"}
         base = self.base_url or "https://api.openai.com/v1"
 
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{base}/chat/completions", json=payload, headers=headers, timeout=60.0
-            )
-            response.raise_for_status()
-            data = response.json()
+        client = get_http_client()
+        response = await client.post(
+            f"{base}/chat/completions", json=payload, headers=headers
+        )
+        response.raise_for_status()
+        data = response.json()
 
         # 解析响应
         msg = data["choices"][0]["message"]
@@ -128,8 +154,6 @@ class OpenAIProvider(BaseLLMProvider):
     async def stream_chat(
         self, messages: list[Message], model: str, **kwargs
     ) -> AsyncIterator[str]:
-        import httpx
-
         payload = {
             "model": model,
             "messages": [{"role": m.role, "content": m.content} for m in messages],
@@ -139,18 +163,18 @@ class OpenAIProvider(BaseLLMProvider):
         headers = {"Authorization": f"Bearer {self.api_key}"}
         base = self.base_url or "https://api.openai.com/v1"
 
-        async with httpx.AsyncClient() as client:
-            async with client.stream(
-                "POST", f"{base}/chat/completions", json=payload, headers=headers, timeout=60.0
-            ) as response:
-                async for line in response.aiter_lines():
-                    if line.startswith("data: "):
-                        data = line[6:]
-                        if data == "[DONE]":
-                            break
-                        chunk = json.loads(data)
-                        content = chunk["choices"][0].get("delta", {}).get("content", "")
-                        yield content
+        client = get_http_client()
+        async with client.stream(
+            "POST", f"{base}/chat/completions", json=payload, headers=headers
+        ) as response:
+            async for line in response.aiter_lines():
+                if line.startswith("data: "):
+                    data = line[6:]
+                    if data == "[DONE]":
+                        break
+                    chunk = json.loads(data)
+                    content = chunk["choices"][0].get("delta", {}).get("content", "")
+                    yield content
 
 
 class AnthropicProvider(BaseLLMProvider):
@@ -164,8 +188,6 @@ class AnthropicProvider(BaseLLMProvider):
         max_tokens: int | None = None,
         **kwargs,
     ) -> LLMResponse:
-        import httpx
-
         # 构建消息格式
         claude_messages = []
         for m in messages:
@@ -194,12 +216,12 @@ class AnthropicProvider(BaseLLMProvider):
         }
         base = self.base_url or "https://api.anthropic.com"
 
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{base}/v1/messages", json=payload, headers=headers, timeout=60.0
-            )
-            response.raise_for_status()
-            data = response.json()
+        client = get_http_client()
+        response = await client.post(
+            f"{base}/v1/messages", json=payload, headers=headers
+        )
+        response.raise_for_status()
+        data = response.json()
 
         # 解析响应
         thinking_content = ""
@@ -249,8 +271,6 @@ class DeepSeekProvider(BaseLLMProvider):
         max_tokens: int | None = None,
         **kwargs,
     ) -> LLMResponse:
-        import httpx
-
         profile = get_model_profile(model)
 
         # 构建请求
@@ -275,12 +295,12 @@ class DeepSeekProvider(BaseLLMProvider):
         headers = {"Authorization": f"Bearer {self.api_key}"}
         base = self.base_url or "https://api.deepseek.com/v1"
 
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{base}/chat/completions", json=payload, headers=headers, timeout=60.0
-            )
-            response.raise_for_status()
-            data = response.json()
+        client = get_http_client()
+        response = await client.post(
+            f"{base}/chat/completions", json=payload, headers=headers
+        )
+        response.raise_for_status()
+        data = response.json()
 
         # 解析响应
         msg = data["choices"][0]["message"]
@@ -307,8 +327,6 @@ class DeepSeekProvider(BaseLLMProvider):
         self, messages: list[Message], model: str, **kwargs
     ) -> AsyncIterator[str]:
         # 类似 OpenAI 的流式实现
-        import httpx
-
         payload = {
             "model": model,
             "messages": [{"role": m.role, "content": m.content} for m in messages],
@@ -318,15 +336,15 @@ class DeepSeekProvider(BaseLLMProvider):
         headers = {"Authorization": f"Bearer {self.api_key}"}
         base = self.base_url or "https://api.deepseek.com/v1"
 
-        async with httpx.AsyncClient() as client:
-            async with client.stream(
-                "POST", f"{base}/chat/completions", json=payload, headers=headers, timeout=60.0
-            ) as response:
-                async for line in response.aiter_lines():
-                    if line.startswith("data: "):
-                        data = line[6:]
-                        if data == "[DONE]":
-                            break
+        client = get_http_client()
+        async with client.stream(
+            "POST", f"{base}/chat/completions", json=payload, headers=headers
+        ) as response:
+            async for line in response.aiter_lines():
+                if line.startswith("data: "):
+                    data = line[6:]
+                    if data == "[DONE]":
+                        break
                         chunk = json.loads(data)
                         content = chunk["choices"][0].get("delta", {}).get("content", "")
                         yield content

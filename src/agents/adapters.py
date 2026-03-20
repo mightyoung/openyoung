@@ -53,7 +53,7 @@ class AgentAdapter:
             }
         """
         # 构建 Task 对象
-        task = Task(id=f"eval_{id(self)}", input=prompt)
+        task = Task(id=f"eval_{id(self)}", description=prompt, input=prompt)
 
         # 执行 SubAgent (返回 str)
         result = await self._agent.run(task, context={})

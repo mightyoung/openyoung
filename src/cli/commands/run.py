@@ -22,7 +22,7 @@ from src.cli.loader import AgentLoader
 @click.option(
     "--github", "-g", "github_url", default=None, help="GitHub URL to clone and analyze first"
 )
-@click.option("--sandbox", "-s", is_flag=True, help="Enable AI Docker sandbox execution")
+@click.option("--sandbox", "-s", is_flag=True, help="Enable AI sandbox execution (subprocess-based, not Docker)")
 @click.option("--allow-network", "-n", is_flag=True, help="Allow network access in sandbox")
 @click.option("--max-memory", default=512, help="Max memory in MB for sandbox")
 @click.option("--max-time", default=300, help="Max execution time in seconds")

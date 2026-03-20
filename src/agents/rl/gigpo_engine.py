@@ -81,6 +81,46 @@ class GiGPOEngine:
 
         logger.info(f"GiGPOEngine initialized with {hardware.backend.value}")
 
+    def train_step(self, batch: Dict[str, "torch.Tensor"]) -> Dict[str, float]:
+        """
+        单步训练
+
+        Args:
+            batch: 包含以下键的字典:
+                - rewards: 奖励 [batch_size, seq_len]
+                - log_probs: 旧策略 log 概率 [batch_size, seq_len]
+                - new_log_probs: 新策略 log 概率 [batch_size, seq_len]
+                - mask: 掩码 [batch_size, seq_len]
+
+        Returns:
+            loss_dict: 损失字典
+        """
+        if not TORCH_AVAILABLE:
+            return {"total_loss": 0.0}
+
+        # 移动到设备
+        rewards = self.device_mgr.to_device(batch["rewards"])
+        log_probs = self.device_mgr.to_device(batch["log_probs"])
+        new_log_probs = self.device_mgr.to_device(batch["new_log_probs"])
+        mask = self.device_mgr.to_device(batch["mask"])
+
+        # 计算优势
+        advantages = self.compute_combined_advantage(
+            rewards,
+            rewards.mean(dim=-1, keepdim=True).squeeze(-1),  # step_rewards
+            mask,
+            torch.arange(rewards.shape[0]),  # episode_ids
+            [None] * rewards.shape[0],  # anchor_obs
+        )
+
+        # 归一化优势
+        advantages = advantages / (advantages.std() + 1e-8)
+
+        # 更新策略
+        losses = self.update_policy(log_probs, new_log_probs, advantages, mask)
+
+        return losses
+
     def build_step_group(
         self,
         anchor_obs: List[str],
