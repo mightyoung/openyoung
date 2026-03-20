@@ -14,6 +14,7 @@ from .prometheus import (
     set_feature_count,
 )
 from .structured_logging import JSONFormatter, PEASLogger
+from .tracing import Span, Tracer, get_tracer
 
 __all__ = [
     "MetricsCollector",
@@ -28,4 +29,7 @@ __all__ = [
     "set_feature_count",
     "JSONFormatter",
     "PEASLogger",
+    "Span",
+    "Tracer",
+    "get_tracer",
 ]
