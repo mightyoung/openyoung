@@ -34,6 +34,13 @@ nav:
       - API Reference: peas/API.md
       - Tutorial: peas/tutorial.md
       - Contribution: peas/contribution.md
+      - Guides:
+          - Best Practices: peas/guides/best-practices.md
+      - API:
+          - MarkdownParser: peas/api/markdown-parser.md
+          - IntentExtractor: peas/api/intent-extractor.md
+          - DriftDetector: peas/api/drift-detector.md
+          - ContractBuilder: peas/api/contract-builder.md
   - API Reference:
       - agents: api/generated/agents_young_agent.md
       - datacenter: api/generated/datacenter_datacenter.md
