@@ -11,10 +11,11 @@ Note: 支持两种模式:
 
 import asyncio
 import json
+import os
 from dataclasses import dataclass
 from typing import AsyncGenerator, Optional
 
-from fastapi import APIRouter, FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -27,6 +28,51 @@ except ImportError:
 
 # 创建Router
 router = APIRouter(prefix="/api/sessions", tags=["Sessions"])
+
+# ========== 认证依赖 ==========
+
+
+def get_valid_api_keys() -> set[str]:
+    """获取有效的API密钥列表"""
+    keys_str = os.environ.get("OPENYOUNG_API_KEYS", "")
+    if not keys_str:
+        return set()
+    return set(k.strip() for k in keys_str.split(",") if k.strip())
+
+
+def require_api_key(x_api_key: str = Header(None)) -> str:
+    """
+    验证API密钥的依赖函数
+
+    从请求头 X-API-Key 获取密钥并验证
+    返回密钥如果有效，否则抛出401错误
+    """
+    valid_keys = get_valid_api_keys()
+
+    # 如果没有配置任何有效密钥，在生产环境拒绝访问
+    if not valid_keys:
+        # 检查是否在开发模式（允许无认证访问）
+        debug_mode = os.environ.get("OPENYOUNG_DEBUG", "false").lower() == "true"
+        if not debug_mode:
+            raise HTTPException(
+                status_code=401,
+                detail="API authentication not configured. Set OPENYOUNG_API_KEYS environment variable."
+            )
+        return None  # 开发模式返回None表示跳过认证
+
+    if not x_api_key:
+        raise HTTPException(
+            status_code=401,
+            detail="Missing X-API-Key header"
+        )
+
+    if x_api_key not in valid_keys:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid API key"
+        )
+
+    return x_api_key
 
 
 # ========== 请求模型 ==========
@@ -151,7 +197,7 @@ async def chat_response_generator(
 def create_session_api(app: FastAPI, session_manager, agent_executor=None):
     """创建会话API"""
 
-    @app.post("/api/sessions", response_model=SessionResponse)
+    @app.post("/api/sessions", response_model=SessionResponse, dependencies=[Depends(require_api_key)])
     async def create_session(req: CreateSessionRequest):
         """创建持久会话"""
         session = session_manager.create_persistent_session(
@@ -166,7 +212,7 @@ def create_session_api(app: FastAPI, session_manager, agent_executor=None):
             is_persistent=session.is_persistent,
         )
 
-    @app.get("/api/sessions")
+    @app.get("/api/sessions", dependencies=[Depends(require_api_key)])
     async def list_sessions():
         """列出会话"""
         sessions = session_manager.get_persistent_sessions()
@@ -180,7 +226,7 @@ def create_session_api(app: FastAPI, session_manager, agent_executor=None):
             for s in sessions
         ]
 
-    @app.get("/api/sessions/{session_id}")
+    @app.get("/api/sessions/{session_id}", dependencies=[Depends(require_api_key)])
     async def get_session(session_id: str):
         """获取会话"""
         session = session_manager.get_persistent_session(session_id)
@@ -194,7 +240,7 @@ def create_session_api(app: FastAPI, session_manager, agent_executor=None):
             is_persistent=session.is_persistent,
         )
 
-    @app.post("/api/sessions/{session_id}/messages", response_model=MessageResponse)
+    @app.post("/api/sessions/{session_id}/messages", response_model=MessageResponse, dependencies=[Depends(require_api_key)])
     async def send_message(session_id: str, req: MessageRequest):
         """发送消息到会话（非流式）"""
         session = session_manager.get_persistent_session(session_id)
@@ -219,7 +265,7 @@ def create_session_api(app: FastAPI, session_manager, agent_executor=None):
             status=session.status,
         )
 
-    @app.get("/api/sessions/{session_id}/stream")
+    @app.get("/api/sessions/{session_id}/stream", dependencies=[Depends(require_api_key)])
     async def stream_message(session_id: str, message: str = ""):
         """
         流式发送消息到会话（SSE）
@@ -262,7 +308,7 @@ def create_session_api(app: FastAPI, session_manager, agent_executor=None):
             },
         )
 
-    @app.post("/api/sessions/{session_id}/stream")
+    @app.post("/api/sessions/{session_id}/stream", dependencies=[Depends(require_api_key)])
     async def stream_message_post(session_id: str, req: MessageRequest):
         """
         POST版本的流式消息接口
@@ -294,7 +340,7 @@ def create_session_api(app: FastAPI, session_manager, agent_executor=None):
             },
         )
 
-    @app.get("/api/sessions/{session_id}/history")
+    @app.get("/api/sessions/{session_id}/history", dependencies=[Depends(require_api_key)])
     async def get_history(session_id: str):
         """获取历史消息"""
         messages = session_manager.get_messages(session_id)
@@ -305,19 +351,19 @@ def create_session_api(app: FastAPI, session_manager, agent_executor=None):
             ],
         }
 
-    @app.post("/api/sessions/{session_id}/suspend")
+    @app.post("/api/sessions/{session_id}/suspend", dependencies=[Depends(require_api_key)])
     async def suspend_session(session_id: str):
         """暂停会话"""
         success = session_manager.suspend_session(session_id)
         return {"success": success, "session_id": session_id}
 
-    @app.post("/api/sessions/{session_id}/resume")
+    @app.post("/api/sessions/{session_id}/resume", dependencies=[Depends(require_api_key)])
     async def resume_session(session_id: str):
         """恢复会话"""
         success = session_manager.resume_session(session_id)
         return {"success": success, "session_id": session_id}
 
-    @app.post("/api/sessions/{session_id}/terminate")
+    @app.post("/api/sessions/{session_id}/terminate", dependencies=[Depends(require_api_key)])
     async def terminate_session(session_id: str):
         """终止会话"""
         success = session_manager.terminate_session(session_id)

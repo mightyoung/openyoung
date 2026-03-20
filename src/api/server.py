@@ -245,13 +245,20 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # CORS 中间件
+    # CORS 中间件 - 安全配置
+    # 从环境变量读取允许的源，默认仅允许 localhost:3000
+    cors_origins_env = os.environ.get("CORS_ORIGINS", "")
+    if cors_origins_env:
+        allowed_origins = [origin.strip() for origin in cors_origins_env.split(",") if origin.strip()]
+    else:
+        allowed_origins = ["http://localhost:3000"]
+
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=allowed_origins,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "DELETE"],
+        allow_headers=["Authorization", "Content-Type"],
     )
 
     # 注册 Session API
