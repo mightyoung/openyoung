@@ -31,6 +31,7 @@ from .llm import llm_group
 from .mcp import mcp_group
 from .memory import memory_group
 from .package import install, package_group
+from .peas import peas_group
 from .run import run_agent
 from .skills import skills_group
 from .source import source_group
@@ -50,6 +51,7 @@ __all__ = [
     "mcp_group",
     "memory_group",
     "package_group",
+    "peas_group",
     "run_agent",
     "skills_group",
     "source_group",

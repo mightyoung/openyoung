@@ -52,6 +52,7 @@ def register_commands():
         mcp_group,
         memory_group,
         package_group,
+        peas_group,
         run_agent,
         skills_group,
         source_group,
@@ -77,6 +78,9 @@ def register_commands():
 
     # Register eval command group
     cli.add_command(eval_group, name="eval")
+
+    # Register peas command group
+    cli.add_command(peas_group, name="peas")
 
     # Register test command group
     from src.cli.test import test_group

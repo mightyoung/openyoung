@@ -59,7 +59,7 @@ src/peas/
 # Run all tests
 pytest tests/peas/ -v
 
-# Test statistics (248 tests)
+# Test statistics (262 tests)
 # - Parser tests: 33 (MarkdownParser + HTMLParser)
 # - Contract tests: 11
 # - Verification tests: 30 (FeatureTracker + DriftDetector + UIComparator)
