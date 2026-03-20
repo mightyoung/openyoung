@@ -118,6 +118,7 @@ openyoung agent version-add agent-coder 1.0.0 --changelog "Initial release"
 | `openyoung channel list` | List channels |
 | `openyoung templates list` | List templates |
 | `openyoung import github <repo>` | Import from GitHub |
+| `openyoung peas report <data>` | Generate PEAS verification report |
 | `openyoung --help` | Show help |
 
 ### Agent Package Structure
@@ -176,6 +177,11 @@ openyoung/
 │   │       ├── harness.py    # Evaluation harness
 │   │       ├── runner.py     # Eval runner
 │   │       └── benchmark.py  # Benchmark tools
+│   ├── peas/                  # ✅ Plan-Execution Alignment System (PEAS)
+│   │   ├── README.md         # PEAS documentation
+│   │   ├── understanding/    # Markdown/HTML parsers
+│   │   ├── verification/     # Drift detection, feature tracking
+│   │   └── contract/         # Executable contracts
 │   └── webui/                # Streamlit WebUI
 ├── packages/                 # Agent packages
 ├── skills/                   # Skills
@@ -456,6 +462,7 @@ openyoung agent version-add agent-coder 1.0.0 --changelog "初始版本"
 | `openyoung channel list` | 列出通道 |
 | `openyoung templates list` | 列出模板 |
 | `openyoung import github <仓库>` | 从 GitHub 导入 |
+| `openyoung peas report <data>` | 生成 PEAS 验证报告 |
 | `openyoung --help` | 显示帮助 |
 
 ### Agent 包结构
@@ -514,6 +521,11 @@ openyoung/
 │   │       ├── harness.py     # 评估线束
 │   │       ├── runner.py      # 评估运行器
 │   │       └── benchmark.py   # 基准测试工具
+│   ├── peas/                  # ✅ 规划执行对齐系统 (PEAS)
+│   │   ├── README.md          # PEAS 文档
+│   │   ├── understanding/     # Markdown/HTML 解析器
+│   │   ├── verification/      # 偏离检测、功能追踪
+│   │   └── contract/          # 可执行合约
 │   └── webui/                # Streamlit WebUI
 ├── packages/                  # Agent 包
 ├── skills/                    # 技能

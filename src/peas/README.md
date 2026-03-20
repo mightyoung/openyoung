@@ -190,6 +190,44 @@ await learner.record_feedback("feature_1", accepted=True)
 threshold = await learner.get_adjusted_threshold("feature_1")
 ```
 
+## CLI 报告生成
+
+PEAS 现已集成到 OpenYoung CLI 中，支持生成完整的验证报告：
+
+```bash
+# 生成验证报告
+openyoung peas report validation_data.json -o report.md
+
+# 输出为 JSON 格式
+openyoung peas report validation_data.json --format json
+```
+
+### 报告内容
+
+生成的报告包含 12 个章节：
+1. **执行摘要** - 验证概览和关键指标
+2. **验证统计** - 功能点分布和实现状态
+3. **需求追溯矩阵 (RTM)** - 用户故事到功能点的映射
+4. **模块级验证** - 各模块的覆盖情况
+5. **用户故事级验证** - 用户故事实现状态
+6. **功能点级验证** - 详细功能点检查
+7. **验收标准级验证** - Given-When-Then 验证
+8. **依赖关系管理** - 模块依赖矩阵
+9. **风险评估** - 7级风险矩阵和清单
+10. **测试用例** - 测试覆盖统计
+11. **偏离检测** - Drift 分析和偏离项
+12. **附录** - 术语表和工具配置
+
+### 偏离等级判定
+
+| 等级 | 条件 | 说明 |
+|------|------|------|
+| NONE | MUST 100% + SHOULD ≥ 50% | 完全符合规划 |
+| MINOR | MUST 100% + SHOULD < 50% | 轻微偏离 |
+| MODERATE | MUST < 100% | 中度偏离 |
+| SEVERE | MUST < 80% | 严重偏离 |
+| CRITICAL | MUST < 60% | 关键偏离 |
+
 ## 指标监控
 
 MetricsCollector收集和暴露Prometheus格式指标：

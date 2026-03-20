@@ -190,6 +190,44 @@ await learner.record_feedback("feature_1", accepted=True)
 threshold = await learner.get_adjusted_threshold("feature_1")
 ```
 
+## CLI Report Generation
+
+PEAS is now integrated into the OpenYoung CLI, supporting comprehensive verification report generation:
+
+```bash
+# Generate verification report
+openyoung peas report validation_data.json -o report.md
+
+# Output as JSON format
+openyoung peas report validation_data.json --format json
+```
+
+### Report Contents
+
+Generated reports include 12 sections:
+1. **Executive Summary** - Verification overview and key metrics
+2. **Verification Statistics** - Feature point distribution and implementation status
+3. **Requirements Traceability Matrix (RTM)** - User story to feature point mapping
+4. **Module-level Verification** - Coverage by module
+5. **User Story-level Verification** - User story implementation status
+6. **Feature Point-level Verification** - Detailed feature point checks
+7. **Acceptance Criteria-level Verification** - Given-When-Then validation
+8. **Dependency Management** - Module dependency matrix
+9. **Risk Assessment** - 7-level risk matrix and inventory
+10. **Test Cases** - Test coverage statistics
+11. **Drift Detection** - Drift analysis and items
+12. **Appendix** - Glossary and tool configuration
+
+### Drift Level Classification
+
+| Level | Condition | Description |
+|-------|-----------|-------------|
+| NONE | MUST 100% + SHOULD ≥ 50% | Fully aligned with plan |
+| MINOR | MUST 100% + SHOULD < 50% | Minor drift |
+| MODERATE | MUST < 100% | Moderate drift |
+| SEVERE | MUST < 80% | Severe drift |
+| CRITICAL | MUST < 60% | Critical drift |
+
 ## Metrics Monitoring
 
 MetricsCollector collects and exposes Prometheus-format metrics:

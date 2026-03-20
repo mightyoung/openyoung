@@ -1,0 +1,135 @@
+{
+  "modules": [
+    {
+      "id": "M-01",
+      "name": "项目管理",
+      "description": "项目管理模块",
+      "user_stories": ["US-P001", "US-P002", "US-P003", "US-P004"],
+      "dependencies": [],
+      "dependents": ["M-02", "M-03"]
+    },
+    {
+      "id": "M-02",
+      "name": "预算管理",
+      "description": "预算管理模块",
+      "user_stories": ["US-B001", "US-B002", "US-B003", "US-B004"],
+      "dependencies": ["M-01"],
+      "dependents": ["M-05"]
+    },
+    {
+      "id": "M-03",
+      "name": "进度管理",
+      "description": "进度管理模块",
+      "user_stories": ["US-T001", "US-T002", "US-T003", "US-T004"],
+      "dependencies": ["M-01"],
+      "dependents": ["M-05"]
+    },
+    {
+      "id": "M-04",
+      "name": "里程碑管理",
+      "description": "里程碑管理模块",
+      "user_stories": ["US-M001", "US-M002", "US-M003"],
+      "dependencies": ["M-01"],
+      "dependents": []
+    },
+    {
+      "id": "M-05",
+      "name": "问题上报与审批",
+      "description": "问题上报与审批模块",
+      "user_stories": ["US-R001", "US-R002", "US-R003", "US-R004", "US-R005"],
+      "dependencies": ["M-02", "M-03"],
+      "dependents": []
+    },
+    {
+      "id": "M-06",
+      "name": "报表与仪表盘",
+      "description": "报表与仪表盘模块",
+      "user_stories": ["US-D001", "US-D002", "US-D003"],
+      "dependencies": ["M-01"],
+      "dependents": []
+    }
+  ],
+  "user_stories": [
+    {"id": "US-P001", "title": "查看所有项目列表", "description": "作为项目管理人员，我希望查看所有项目列表", "priority": "MUST", "module_id": "M-01", "feature_points": ["FP-001", "FP-002", "FP-003"], "implementation_status": "verified"},
+    {"id": "US-P002", "title": "快速创建新项目(3步)", "description": "作为项目管理人员，我希望快速创建新项目（3步内）", "priority": "MUST", "module_id": "M-01", "feature_points": ["FP-004", "FP-005", "FP-006", "FP-007"], "implementation_status": "verified"},
+    {"id": "US-P003", "title": "查看项目详情", "description": "作为项目负责人，我希望查看项目的详细信息", "priority": "MUST", "module_id": "M-01", "feature_points": ["FP-008", "FP-009"], "implementation_status": "verified"},
+    {"id": "US-P004", "title": "管理用户和角色", "description": "作为系统管理员，我希望管理用户和角色", "priority": "SHOULD", "module_id": "M-01", "feature_points": ["FP-010"], "implementation_status": "pending"},
+    {"id": "US-B001", "title": "快速编制项目预算(3步)", "description": "作为项目负责人，我希望快速编制项目预算（3步内）", "priority": "MUST", "module_id": "M-02", "feature_points": ["FP-011", "FP-012"], "implementation_status": "verified"},
+    {"id": "US-B002", "title": "实时查看预算执行情况", "description": "作为项目负责人，我希望实时查看预算执行情况", "priority": "MUST", "module_id": "M-02", "feature_points": ["FP-013", "FP-014"], "implementation_status": "verified"},
+    {"id": "US-B003", "title": "预算超支自动预警", "description": "作为系统，我希望在预算超支时自动预警", "priority": "SHOULD", "module_id": "M-02", "feature_points": ["FP-015"], "implementation_status": "partial"},
+    {"id": "US-B004", "title": "部门预算汇总", "description": "作为财务人员，我希望按部门汇总预算执行情况", "priority": "COULD", "module_id": "M-02", "feature_points": ["FP-016"], "implementation_status": "pending"},
+    {"id": "US-T001", "title": "树形结构查看任务", "description": "作为项目成员，我希望以树形结构查看项目任务", "priority": "MUST", "module_id": "M-03", "feature_points": ["FP-017", "FP-018"], "implementation_status": "verified"},
+    {"id": "US-T002", "title": "快速更新任务进度(3步)", "description": "作为项目成员，我希望快速更新任务进度（3步内）", "priority": "MUST", "module_id": "M-03", "feature_points": ["FP-019", "FP-020"], "implementation_status": "verified"},
+    {"id": "US-T003", "title": "甘特图查看进度", "description": "作为项目负责人，我希望以甘特图查看项目进度", "priority": "SHOULD", "module_id": "M-03", "feature_points": ["FP-021"], "implementation_status": "pending"},
+    {"id": "US-T004", "title": "任务超期预警", "description": "作为系统，我希望在任务超期时自动预警", "priority": "SHOULD", "module_id": "M-03", "feature_points": ["FP-022"], "implementation_status": "pending"},
+    {"id": "US-M001", "title": "查看里程碑节点", "description": "作为项目负责人，我希望查看项目的所有里程碑节点", "priority": "MUST", "module_id": "M-04", "feature_points": ["FP-023", "FP-024"], "implementation_status": "verified"},
+    {"id": "US-M002", "title": "完成里程碑交付(3步)", "description": "作为项目成员，我希望完成里程碑节点的交付（3步内）", "priority": "MUST", "module_id": "M-04", "feature_points": ["FP-025", "FP-026"], "implementation_status": "verified"},
+    {"id": "US-M003", "title": "节点到期提醒", "description": "作为系统，我希望在节点到期时自动提醒", "priority": "SHOULD", "module_id": "M-04", "feature_points": ["FP-027"], "implementation_status": "pending"},
+    {"id": "US-R001", "title": "上报项目问题(3步)", "description": "作为项目成员，我希望上报项目问题，只需3步", "priority": "MUST", "module_id": "M-05", "feature_points": ["FP-028", "FP-029"], "implementation_status": "verified"},
+    {"id": "US-R002", "title": "上报合理化建议", "description": "作为项目成员，我希望上报合理化建议", "priority": "MUST", "module_id": "M-05", "feature_points": ["FP-030"], "implementation_status": "verified"},
+    {"id": "US-R003", "title": "处理审批请求", "description": "作为审批人，我希望处理审批请求", "priority": "MUST", "module_id": "M-05", "feature_points": ["FP-031", "FP-032"], "implementation_status": "verified"},
+    {"id": "US-R004", "title": "可视化审批配置", "description": "作为系统管理员，我希望可视化配置审批流程", "priority": "SHOULD", "module_id": "M-05", "feature_points": ["FP-033"], "implementation_status": "pending"},
+    {"id": "US-R005", "title": "查看上报记录", "description": "作为上报人，我希望查看我的上报记录和审批进度", "priority": "SHOULD", "module_id": "M-05", "feature_points": ["FP-034"], "implementation_status": "verified"},
+    {"id": "US-D001", "title": "驾驶舱视图", "description": "作为项目管理人员，我希望在一个页面看到项目的关键指标", "priority": "SHOULD", "module_id": "M-06", "feature_points": ["FP-035", "FP-036"], "implementation_status": "verified"},
+    {"id": "US-D002", "title": "项目汇总报表导出", "description": "作为管理层，我希望查看项目汇总报表，支持导出Excel", "priority": "SHOULD", "module_id": "M-06", "feature_points": ["FP-037"], "implementation_status": "pending"},
+    {"id": "US-D003", "title": "预算汇总报表", "description": "作为财务人员，我希望查看预算汇总报表", "priority": "SHOULD", "module_id": "M-06", "feature_points": ["FP-038"], "implementation_status": "pending"}
+  ],
+  "feature_points": [
+    {"id": "FP-001", "title": "项目列表展示", "description": "展示所有项目列表", "priority": "MUST", "module_id": "M-01", "user_story_id": "US-P001", "acceptance_criteria": ["Given 用户已登录 When 点击项目 Then 显示列表"], "implementation_status": "verified", "implementation_location": "src/app/(dashboard)/projects/page.tsx:24"},
+    {"id": "FP-002", "title": "项目筛选功能", "description": "支持按状态筛选", "priority": "MUST", "module_id": "M-01", "user_story_id": "US-P001", "acceptance_criteria": ["Given 有项目 When 筛选 Then 正确过滤"], "implementation_status": "verified"},
+    {"id": "FP-003", "title": "项目搜索功能", "description": "支持关键词搜索", "priority": "SHOULD", "module_id": "M-01", "user_story_id": "US-P001", "acceptance_criteria": [], "implementation_status": "verified"},
+    {"id": "FP-004", "title": "项目创建表单", "description": "3步创建表单第一步", "priority": "MUST", "module_id": "M-01", "user_story_id": "US-P002", "acceptance_criteria": ["Given 选择类型 When 填写信息 Then 创建成功"], "implementation_status": "verified"},
+    {"id": "FP-005", "title": "项目类型选择", "description": "项目类型选择器", "priority": "MUST", "module_id": "M-01", "user_story_id": "US-P002", "acceptance_criteria": [], "implementation_status": "verified"},
+    {"id": "FP-006", "title": "项目信息填写", "description": "项目信息表单", "priority": "MUST", "module_id": "M-01", "user_story_id": "US-P002", "acceptance_criteria": [], "implementation_status": "verified"},
+    {"id": "FP-007", "title": "项目确认提交", "description": "项目创建确认", "priority": "MUST", "module_id": "M-01", "user_story_id": "US-P002", "acceptance_criteria": [], "implementation_status": "verified"},
+    {"id": "FP-008", "title": "项目详情展示", "description": "展示项目详细信息", "priority": "MUST", "module_id": "M-01", "user_story_id": "US-P003", "acceptance_criteria": [], "implementation_status": "verified"},
+    {"id": "FP-009", "title": "项目成员管理", "description": "项目成员列表", "priority": "MUST", "module_id": "M-01", "user_story_id": "US-P003", "acceptance_criteria": [], "implementation_status": "verified"},
+    {"id": "FP-010", "title": "用户角色管理", "description": "用户和角色管理", "priority": "SHOULD", "module_id": "M-01", "user_story_id": "US-P004", "acceptance_criteria": [], "implementation_status": "pending"},
+    {"id": "FP-011", "title": "预算编制表单", "description": "预算编制3步表单", "priority": "MUST", "module_id": "M-02", "user_story_id": "US-B001", "acceptance_criteria": [], "implementation_status": "verified"},
+    {"id": "FP-012", "title": "预算金额调整", "description": "预算金额调整", "priority": "MUST", "module_id": "M-02", "user_story_id": "US-B001", "acceptance_criteria": [], "implementation_status": "verified"},
+    {"id": "FP-013", "title": "预算执行查看", "description": "查看预算执行情况", "priority": "MUST", "module_id": "M-02", "user_story_id": "US-B002", "acceptance_criteria": [], "implementation_status": "verified"},
+    {"id": "FP-014", "title": "预算偏差提醒", "description": "预算偏差提醒", "priority": "MUST", "module_id": "M-02", "user_story_id": "US-B002", "acceptance_criteria": [], "implementation_status": "verified"},
+    {"id": "FP-015", "title": "预算超支预警", "description": "自动预警功能", "priority": "SHOULD", "module_id": "M-02", "user_story_id": "US-B003", "acceptance_criteria": [], "implementation_status": "partial"},
+    {"id": "FP-016", "title": "部门预算汇总", "description": "按部门汇总", "priority": "COULD", "module_id": "M-02", "user_story_id": "US-B004", "acceptance_criteria": [], "implementation_status": "pending"},
+    {"id": "FP-017", "title": "任务树形结构", "description": "WBS树形视图", "priority": "MUST", "module_id": "M-03", "user_story_id": "US-T001", "acceptance_criteria": [], "implementation_status": "verified"},
+    {"id": "FP-018", "title": "任务列表展示", "description": "任务列表", "priority": "MUST", "module_id": "M-03", "user_story_id": "US-T001", "acceptance_criteria": [], "implementation_status": "verified"},
+    {"id": "FP-019", "title": "进度更新表单", "description": "3步进度更新", "priority": "MUST", "module_id": "M-03", "user_story_id": "US-T002", "acceptance_criteria": [], "implementation_status": "verified"},
+    {"id": "FP-020", "title": "进度勾选完成", "description": "勾选完成状态", "priority": "MUST", "module_id": "M-03", "user_story_id": "US-T002", "acceptance_criteria": [], "implementation_status": "verified"},
+    {"id": "FP-021", "title": "甘特图视图", "description": "甘特图展示", "priority": "SHOULD", "module_id": "M-03", "user_story_id": "US-T003", "acceptance_criteria": [], "implementation_status": "pending"},
+    {"id": "FP-022", "title": "任务超期预警", "description": "自动预警", "priority": "SHOULD", "module_id": "M-03", "user_story_id": "US-T004", "acceptance_criteria": [], "implementation_status": "pending"},
+    {"id": "FP-023", "title": "里程碑列表", "description": "里程碑节点列表", "priority": "MUST", "module_id": "M-04", "user_story_id": "US-M001", "acceptance_criteria": [], "implementation_status": "verified"},
+    {"id": "FP-024", "title": "里程碑详情", "description": "里程碑详情", "priority": "MUST", "module_id": "M-04", "user_story_id": "US-M001", "acceptance_criteria": [], "implementation_status": "verified"},
+    {"id": "FP-025", "title": "节点交付流程", "description": "3步节点交付", "priority": "MUST", "module_id": "M-04", "user_story_id": "US-M002", "acceptance_criteria": [], "implementation_status": "verified"},
+    {"id": "FP-026", "title": "交付物上传", "description": "上传交付物", "priority": "MUST", "module_id": "M-04", "user_story_id": "US-M002", "acceptance_criteria": [], "implementation_status": "verified"},
+    {"id": "FP-027", "title": "到期提醒", "description": "自动提醒", "priority": "SHOULD", "module_id": "M-04", "user_story_id": "US-M003", "acceptance_criteria": [], "implementation_status": "pending"},
+    {"id": "FP-028", "title": "问题上报表单", "description": "3步问题上报", "priority": "MUST", "module_id": "M-05", "user_story_id": "US-R001", "acceptance_criteria": [], "implementation_status": "verified"},
+    {"id": "FP-029", "title": "问题类型选择", "description": "类型选择", "priority": "MUST", "module_id": "M-05", "user_story_id": "US-R001", "acceptance_criteria": [], "implementation_status": "verified"},
+    {"id": "FP-030", "title": "建议上报", "description": "合理化建议上报", "priority": "MUST", "module_id": "M-05", "user_story_id": "US-R002", "acceptance_criteria": [], "implementation_status": "verified"},
+    {"id": "FP-031", "title": "审批处理", "description": "通过/驳回/转交", "priority": "MUST", "module_id": "M-05", "user_story_id": "US-R003", "acceptance_criteria": [], "implementation_status": "verified"},
+    {"id": "FP-032", "title": "审批记录", "description": "审批历史", "priority": "MUST", "module_id": "M-05", "user_story_id": "US-R003", "acceptance_criteria": [], "implementation_status": "verified"},
+    {"id": "FP-033", "title": "可视化审批配置", "description": "流程配置界面", "priority": "SHOULD", "module_id": "M-05", "user_story_id": "US-R004", "acceptance_criteria": [], "implementation_status": "pending"},
+    {"id": "FP-034", "title": "上报记录查看", "description": "我的上报记录", "priority": "SHOULD", "module_id": "M-05", "user_story_id": "US-R005", "acceptance_criteria": [], "implementation_status": "verified"},
+    {"id": "FP-035", "title": "驾驶舱指标卡", "description": "关键指标展示", "priority": "SHOULD", "module_id": "M-06", "user_story_id": "US-D001", "acceptance_criteria": [], "implementation_status": "verified"},
+    {"id": "FP-036", "title": "仪表盘图表", "description": "图表展示", "priority": "SHOULD", "module_id": "M-06", "user_story_id": "US-D001", "acceptance_criteria": [], "implementation_status": "verified"},
+    {"id": "FP-037", "title": "项目汇总导出", "description": "Excel导出", "priority": "SHOULD", "module_id": "M-06", "user_story_id": "US-D002", "acceptance_criteria": [], "implementation_status": "pending"},
+    {"id": "FP-038", "title": "预算汇总报表", "description": "预算汇总", "priority": "SHOULD", "module_id": "M-06", "user_story_id": "US-D003", "acceptance_criteria": [], "implementation_status": "pending"}
+  ],
+  "test_cases": [
+    {"id": "TC-001", "name": "项目列表加载", "type": "e2e", "preconditions": ["用户已登录"], "steps": ["访问 /projects"], "expected_results": ["显示项目列表"], "test_data": {"url": "/projects"}, "priority": "MUST", "linked_requirements": ["FP-001", "FP-002"], "execution_records": [{"time": "2026-03-20 10:00", "result": "passed"}]},
+    {"id": "TC-002", "name": "项目创建流程", "type": "e2e", "preconditions": ["用户已登录"], "steps": ["点击新建", "选择类型", "填写信息", "确认"], "expected_results": ["创建成功"], "test_data": {}, "priority": "MUST", "linked_requirements": ["FP-004", "FP-005", "FP-006", "FP-007"], "execution_records": [{"time": "2026-03-20 10:05", "result": "passed"}]},
+    {"id": "TC-003", "name": "项目筛选", "type": "integration", "preconditions": ["有项目数据"], "steps": ["选择状态"], "expected_results": ["正确过滤"], "test_data": {}, "priority": "SHOULD", "linked_requirements": ["FP-002"], "execution_records": [{"time": "2026-03-20 10:10", "result": "passed"}]},
+    {"id": "TC-004", "name": "预算编制", "type": "e2e", "preconditions": ["有项目"], "steps": ["选择项目", "调整金额", "确认"], "expected_results": ["预算创建成功"], "test_data": {}, "priority": "MUST", "linked_requirements": ["FP-011", "FP-012"], "execution_records": [{"time": "2026-03-20 10:15", "result": "passed"}]},
+    {"id": "TC-005", "name": "任务看板", "type": "e2e", "preconditions": ["有任务"], "steps": ["访问任务页", "拖拽任务"], "expected_results": ["状态更新"], "test_data": {}, "priority": "MUST", "linked_requirements": ["FP-017", "FP-018", "FP-019"], "execution_records": [{"time": "2026-03-20 10:20", "result": "passed"}]}
+  ],
+  "risks": [
+    {"id": "R-001", "description": "项目列表性能问题", "likelihood": 3, "impact": 3, "category": "technical", "mitigation": [{"措施": "添加分页", "负责": "前端组", "截止": "2026-03-25", "状态": "进行中"}]},
+    {"id": "R-002", "description": "审批配置缺失", "likelihood": 4, "impact": 5, "category": "functional", "mitigation": [{"措施": "使用预置审批流", "负责": "后端组", "截止": "2026-03-25", "状态": "进行中"}]},
+    {"id": "R-003", "description": "甘特图未实现", "likelihood": 5, "impact": 4, "category": "functional", "mitigation": [{"措施": "迭代2实现", "负责": "前端组", "截止": "2026-04-01", "状态": "待开始"}]}
+  ],
+  "drift_items": [
+    {"id": "D-001", "feature_point_id": "FP-021", "drift_type": "unimplemented", "description": "甘特图视图功能未实现", "impact": "low", "recommendation": "建议在迭代2中优先实现"},
+    {"id": "D-002", "feature_point_id": "FP-015", "drift_type": "partial", "description": "预算超支预警触发逻辑缺失", "impact": "medium", "recommendation": "补充预警触发逻辑"},
+    {"id": "D-003", "feature_point_id": "FP-022", "drift_type": "unimplemented", "description": "任务超期预警未实现", "impact": "medium", "recommendation": "建议在迭代3实现"},
+    {"id": "D-004", "feature_point_id": "FP-027", "drift_type": "unimplemented", "description": "节点到期提醒未实现", "impact": "low", "recommendation": "建议在迭代3实现"}
+  ]
+}
