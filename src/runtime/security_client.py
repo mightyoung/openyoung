@@ -214,6 +214,31 @@ class SecurityServiceClient:
             "redacted_content": result.redacted_content or "",
         }
 
+    def scan_pii(self, content: str) -> Dict[str, Any]:
+        """扫描个人身份信息 (PII)
+
+        检测身份证、手机号、银行卡、邮箱等
+        """
+        from src.core.security.pii_scanner import PIIScanner
+
+        scanner = PIIScanner()
+        matches = scanner.scan(content)
+
+        return {
+            "has_pii": len(matches) > 0,
+            "pii_found": [
+                {
+                    "type": m.pii_type.value if hasattr(m.pii_type, "value") else str(m.pii_type),
+                    "value": m.value,
+                    "start": m.start,
+                    "end": m.end,
+                    "masked_value": m.masked_value,
+                }
+                for m in matches
+            ],
+            "summary": scanner.get_pii_summary(content),
+        }
+
     def detect_dangerous_code(
         self, code: str, language: str = "python", threshold: str = "high"
     ) -> Dict[str, Any]:
@@ -303,12 +328,14 @@ class SecurityServiceClient:
         prompts: list = None,
         secrets: list = None,
         codes: list = None,
+        pii: list = None,
     ):
         """批量检查"""
         results = {
             "prompts": [],
             "secrets": [],
             "codes": [],
+            "pii": [],
         }
 
         if prompts:
@@ -322,6 +349,10 @@ class SecurityServiceClient:
         if codes:
             for c in codes:
                 results["codes"].append(self.detect_dangerous_code(**c))
+
+        if pii:
+            for p in pii:
+                results["pii"].append(self.scan_pii(**p))
 
         return results
 

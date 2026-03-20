@@ -1,12 +1,12 @@
 """
-Sandbox - AI Agent 沙箱
+Sandbox - AI Agent 安全执行沙箱
 
-提供安全的代码执行环境，参考 E2B 设计
+提供安全的代码执行环境，基于 asyncio subprocess 实现。
 支持：
-- 资源限制 (CPU/Memory/Time)
-- 网络访问控制
-- 文件系统隔离
-- 命令白名单
+- 资源限制 (CPU/Memory/Time) via resource模块
+- 网络访问控制 via 环境变量限制
+- 文件系统隔离 via 临时目录和路径验证
+- 命令白名单 via PATH限制
 - 提示注入检测
 - 敏感信息扫描
 """
@@ -333,6 +333,16 @@ class SandboxInstance:
     ) -> ExecutionResult:
         """运行命令"""
         try:
+            # 检查网络访问权限
+            if not self._check_network_access(" ".join(cmd)):
+                return ExecutionResult(
+                    output="",
+                    error="Network access blocked: command attempts to access network",
+                    exit_code=1,
+                    duration_ms=0,
+                    metadata={"security": "network_blocked"},
+                )
+
             # 设置资源限制
             self._apply_resource_limits()
 
@@ -1031,7 +1041,15 @@ class SandboxInstance:
 
 
 class AISandbox:
-    """AI Docker 核心沙箱"""
+    """AI Subprocess 核心沙箱
+
+    使用 asyncio subprocess 实现安全的代码执行环境。
+    不同于容器沙箱，通过以下机制实现隔离：
+    - 资源限制 (CPU/Memory/Time) via resource模块
+    - 网络访问控制 via 环境变量限制
+    - 文件系统隔离 via 临时目录和路径验证
+    - 命令白名单 via PATH限制
+    """
 
     def __init__(self, config: Optional[SandboxConfig] = None):
         self.config = config or SandboxConfig()
