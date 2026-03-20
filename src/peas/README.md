@@ -59,7 +59,7 @@ src/peas/
 # 运行所有测试
 pytest tests/peas/ -v
 
-# 测试统计 (224个测试)
+# 测试统计 (247个测试)
 # - Parser测试: 33个 (MarkdownParser + HTMLParser)
 # - Contract测试: 11个
 # - Verification测试: 30个 (FeatureTracker + DriftDetector + UIComparator)
