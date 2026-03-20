@@ -59,7 +59,7 @@ src/peas/
 # Run all tests
 pytest tests/peas/ -v
 
-# Test statistics (207 tests)
+# Test statistics (224 tests)
 # - Parser tests: 33 (MarkdownParser + HTMLParser)
 # - Contract tests: 11
 # - Verification tests: 30 (FeatureTracker + DriftDetector + UIComparator)
@@ -69,6 +69,7 @@ pytest tests/peas/ -v
 # - PreferenceLearner tests: 22
 # - Security tests: 35
 # - E2E tests: 36
+# - StyleProfiler tests: 17
 ```
 
 ## Core Types
@@ -157,6 +158,25 @@ from peas import UIComparator
 comparator = UIComparator()
 diff = comparator.compare(baseline_html, current_html)
 ```
+
+## Style Profiling
+
+StyleProfiler analyzes document writing style for consistent output generation:
+
+```python
+from peas import StyleProfiler
+
+profiler = StyleProfiler()
+profile = profiler.analyze(markdown_content)
+# profile.tone, profile.doc_type, profile.language, etc.
+```
+
+Supported analysis:
+- Document type detection (SPEC, API, GUIDE, CHANGELOG, README)
+- Tone analysis (formal, casual, technical, business, academic)
+- Language detection (zh, en, mixed)
+- Technical term density
+- Section depth and style consistency
 
 ## Preference Learning
 

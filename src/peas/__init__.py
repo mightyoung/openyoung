@@ -21,7 +21,7 @@ from .types import (
     Priority,
     VerificationStatus,
 )
-from .understanding import HTMLParser, IntentExtractor, MarkdownParser
+from .understanding import HTMLParser, IntentExtractor, MarkdownParser, StyleProfile, StyleProfiler
 from .verification import DriftDetector, FeatureTracker, UIComparator
 from .verification.ui_comparator import UIComparator
 
@@ -42,6 +42,8 @@ __all__ = [
     "MarkdownParser",
     "HTMLParser",
     "IntentExtractor",
+    "StyleProfiler",
+    "StyleProfile",
     "ContractBuilder",
     "FeatureTracker",
     "DriftDetector",

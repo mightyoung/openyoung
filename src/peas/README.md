@@ -59,7 +59,7 @@ src/peas/
 # 运行所有测试
 pytest tests/peas/ -v
 
-# 测试统计 (207个测试)
+# 测试统计 (224个测试)
 # - Parser测试: 33个 (MarkdownParser + HTMLParser)
 # - Contract测试: 11个
 # - Verification测试: 30个 (FeatureTracker + DriftDetector + UIComparator)
@@ -69,6 +69,7 @@ pytest tests/peas/ -v
 # - PreferenceLearner测试: 22个
 # - Security测试: 35个
 # - E2E测试: 36个
+# - StyleProfiler测试: 17个
 ```
 
 ## 核心类型
@@ -157,6 +158,25 @@ from peas import UIComparator
 comparator = UIComparator()
 diff = comparator.compare(baseline_html, current_html)
 ```
+
+## 风格分析
+
+StyleProfiler分析文档写作风格，用于生成一致的输出：
+
+```python
+from peas import StyleProfiler
+
+profiler = StyleProfiler()
+profile = profiler.analyze(markdown_content)
+# profile.tone, profile.doc_type, profile.language 等
+```
+
+支持的风格分析：
+- 文档类型检测（SPEC, API, GUIDE, CHANGELOG, README）
+- 语调分析（正式、随意、技术性、商业、学术）
+- 语言检测（中文、英文、混合）
+- 技术术语密度
+- 章节深度和风格一致性
 
 ## 偏好学习
 
