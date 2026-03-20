@@ -183,14 +183,10 @@ class EvaluationHarness:
             except Exception as e:
                 logger.error(f"Task {task.id} failed: {e}")
                 # 记录失败的任务
-                task_metrics_list.append(
-                    aggregate_task_metrics([], task.eval_type)
-                )
+                task_metrics_list.append(aggregate_task_metrics([], task.eval_type))
 
         # Aggregate
-        eval_metrics = aggregate_eval_metrics(
-            task_metrics_list, suite.id, suite.eval_type
-        )
+        eval_metrics = aggregate_eval_metrics(task_metrics_list, suite.id, suite.eval_type)
         eval_metrics.eval_started_at = datetime.now()
         eval_metrics.eval_finished_at = datetime.now()
 
@@ -239,9 +235,7 @@ class EvaluationHarness:
 
     # ========== Checkpoint / 持久化 ==========
 
-    async def _save_checkpoint(
-        self, task_id: str, trials: list[EvalTrial]
-    ) -> None:
+    async def _save_checkpoint(self, task_id: str, trials: list[EvalTrial]) -> None:
         """保存评估结果到 checkpoint"""
         self._checkpoint_cache[task_id] = trials
 
@@ -291,14 +285,14 @@ class EvaluationHarness:
         """生成评估报告"""
         lines = [
             f"# Evaluation Report: {suite.name}",
-            f"",
-            f"## Summary",
+            "",
+            "## Summary",
             f"- **Suite**: {suite.id}",
             f"- **Type**: {eval_metrics.eval_type.value}",
             f"- **Tasks**: {eval_metrics.total_tasks}",
             f"- **Total Trials**: {eval_metrics.total_trials}",
-            f"",
-            f"## Metrics",
+            "",
+            "## Metrics",
             f"- **pass@1**: {eval_metrics.pass_at_1:.1%}",
             f"- **pass@3**: {eval_metrics.pass_at_3:.1%}",
             f"- **pass@{suite.default_n_trials}**: {eval_metrics.pass_at_k:.1%}",
@@ -306,8 +300,8 @@ class EvaluationHarness:
             f"- **Avg latency**: {eval_metrics.avg_latency_ms:.0f}ms",
             f"- **Avg cost**: ${eval_metrics.avg_cost_usd:.4f}",
             f"- **Total cost**: ${eval_metrics.total_cost_usd:.4f}",
-            f"",
-            f"## Per-Task Results",
+            "",
+            "## Per-Task Results",
         ]
 
         for tm in eval_metrics.task_metrics:

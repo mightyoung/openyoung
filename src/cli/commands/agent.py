@@ -49,6 +49,7 @@ def agent_list(badges: bool, stats: bool, show_all: bool):
     if stats:
         try:
             from src.package_manager.registry import AgentRegistry
+
             registry = AgentRegistry("packages")
             usage_list = registry.get_usage_stats(100)
         except Exception as e:
@@ -61,6 +62,7 @@ def agent_list(badges: bool, stats: bool, show_all: bool):
         if badges:
             try:
                 from src.package_manager.registry import AgentRegistry
+
                 registry = AgentRegistry("packages")
                 usage_list = registry.get_usage_stats(100)
                 use_count = 0
@@ -74,6 +76,7 @@ def agent_list(badges: bool, stats: bool, show_all: bool):
                 quality_score = 0
                 try:
                     from src.package_manager.agent_evaluator import AgentEvaluator
+
                     evaluator = AgentEvaluator()
                     report = asyncio.run(evaluator.evaluate(f"packages/{a}"))
                     if report:
@@ -128,6 +131,7 @@ def agent_info(agent_name: str):
 def agent_use(agent_name: str):
     """Set default agent"""
     from src.config import set_user_config as _set_config
+
     if _set_config("default_agent", agent_name):
         click.echo(f"Set default agent to: {agent_name}")
     else:
@@ -147,6 +151,7 @@ async def _search(query: str, limit: int, intent: bool):
     # Intent analysis first
     if intent:
         from src.package_manager.intent_analyzer import IntentAnalyzer
+
         analyzer = IntentAnalyzer()
         intent_result = await analyzer.analyze(query)
 
@@ -159,6 +164,7 @@ async def _search(query: str, limit: int, intent: bool):
 
     # Then search
     from src.package_manager.import_manager import ImportManager
+
     manager = ImportManager()
     results = await manager.search(query, limit=limit)
 
@@ -187,6 +193,7 @@ def agent_intent(user_input: str):
 
 async def _analyze_intent(user_input: str):
     from src.package_manager.intent_analyzer import IntentAnalyzer
+
     analyzer = IntentAnalyzer()
     intent = await analyzer.analyze(user_input)
 
@@ -213,6 +220,7 @@ def agent_evaluate(agent_name: str):
 
 async def _evaluate_agent(agent_name: str):
     from src.package_manager.import_manager import ImportManager
+
     manager = ImportManager()
     report = await manager.evaluate_agent(agent_name)
 
@@ -243,6 +251,7 @@ async def _evaluate_agent(agent_name: str):
 def agent_stats(limit: int):
     """Show agent usage statistics"""
     from src.package_manager.registry import AgentRegistry
+
     registry = AgentRegistry()
     stats = registry.get_usage_stats(limit)
 
@@ -267,6 +276,7 @@ def agent_compare(agent_a: str, agent_b: str):
 
 async def _compare_agents(agent_a: str, agent_b: str):
     from src.package_manager.agent_compare import AgentComparer
+
     comparer = AgentComparer()
     result = await comparer.compare(agent_a, agent_b)
 
@@ -305,6 +315,7 @@ async def _compare_agents(agent_a: str, agent_b: str):
 def agent_versions(agent_name: str, limit: int):
     """Show agent version history"""
     from src.package_manager.version_manager import VersionManager
+
     manager = VersionManager()
     versions = manager.list_versions(agent_name, limit)
 
@@ -340,6 +351,7 @@ def agent_versions(agent_name: str, limit: int):
 def agent_version_add(agent_name: str, version: str, changelog: str, compatible: str):
     """Add a new version for an agent"""
     from src.package_manager.version_manager import VersionError, VersionManager
+
     manager = VersionManager()
 
     try:
@@ -357,6 +369,7 @@ def agent_version_add(agent_name: str, version: str, changelog: str, compatible:
 def agent_version_check(agent_name: str, current: str):
     """Check if there's a newer version available"""
     from src.package_manager.version_manager import VersionManager
+
     manager = VersionManager()
     latest = manager.check_update_available(agent_name, current)
 

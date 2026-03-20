@@ -18,6 +18,7 @@ from .benchmark import (
     GradingMode,
     TaskSuite,
 )
+from .graders import BaseGrader, CodeGrader, HumanGrader, ModelGrader
 from .metrics import (
     EvalTrial,
     GraderResult,
@@ -28,7 +29,6 @@ from .metrics import (
     compute_pass_rate,
     compute_weighted_score,
 )
-from .graders import BaseGrader, CodeGrader, HumanGrader, ModelGrader
 
 
 @dataclass

@@ -34,6 +34,7 @@ def cli():
 # 注册命令组
 # ========================
 
+
 def register_commands():
     """Register all command groups with the CLI"""
     # Import all command groups
@@ -42,6 +43,7 @@ def register_commands():
         channel_group,
         config_group,
         data_group,
+        deprecated_subagent_group,
         eval_group,
         import_group,
         init_cmd,
@@ -54,7 +56,6 @@ def register_commands():
         skills_group,
         source_group,
         subagent_group,
-        deprecated_subagent_group,
         templates_group,
     )
 
@@ -79,6 +80,7 @@ def register_commands():
 
     # Register test command group
     from src.cli.test import test_group
+
     cli.add_command(test_group, name="test")
 
     # Register standalone commands

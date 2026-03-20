@@ -46,7 +46,7 @@ def list_metrics(format):
 
     Shows what's available in the new harness system.
     """
-    from src.hub.evaluate import GraderType, EvalType, GradingMode
+    from src.hub.evaluate import EvalType, GraderType, GradingMode
 
     metrics = {
         "grader_types": [g.value for g in GraderType],
@@ -80,9 +80,9 @@ def register_metric(metric_name, description):
     The new harness uses BenchmarkTask + GraderConfig pattern.
     Metrics are defined in task suites, not registered globally.
     """
-    click.echo(f"⚠️  'eval register' is deprecated.")
+    click.echo("⚠️  'eval register' is deprecated.")
     click.echo("   Define graders in BenchmarkTask.grader_configs instead.")
-    click.echo(f"   See: src/hub/evaluate/benchmark.py")
+    click.echo("   See: src/hub/evaluate/benchmark.py")
 
 
 @eval_group.command("history")
@@ -127,9 +127,9 @@ def compare_evals(eval_a, eval_b):
     """
     from src.hub.evaluate.metrics import aggregate_task_metrics, compute_pass_at_k
 
-    click.echo(f"⚠️  'eval compare' is deprecated.")
+    click.echo("⚠️  'eval compare' is deprecated.")
     click.echo("   Use WebUI Dashboard for evaluation comparison.")
-    click.echo(f"   Or use aggregate_eval_metrics() from src.hub.evaluate.metrics")
+    click.echo("   Or use aggregate_eval_metrics() from src.hub.evaluate.metrics")
 
 
 @eval_group.command("server")

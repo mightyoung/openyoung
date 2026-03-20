@@ -7,10 +7,10 @@ Note: EvaluationHub 已移除 — 评估功能迁移到 src/hub/evaluate/ (Harne
 """
 
 from src.agents.permission import PermissionEvaluator
+from src.core.memory.impl.checkpoint import CheckpointManager
 from src.datacenter.datacenter import DataCenter
 from src.evolver.engine import EvolutionEngine
 from src.harness import Harness
-from src.core.memory.impl.checkpoint import CheckpointManager
 from src.package_manager.manager import PackageManager
 from src.tools.executor import ToolExecutor
 

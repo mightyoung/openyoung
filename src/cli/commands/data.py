@@ -76,7 +76,9 @@ def data_list(agent: str, status: str, limit: int):
     click.echo(f"Found {len(runs)} runs:")
     for run in runs:
         status_emoji = "Y" if run["status"] == "success" else "N"
-        click.echo(f"  [{status_emoji}] {run['run_id'][:16]}... | {run['status']:8} | {run.get('task', 'N/A')[:40]}")
+        click.echo(
+            f"  [{status_emoji}] {run['run_id'][:16]}... | {run['status']:8} | {run.get('task', 'N/A')[:40]}"
+        )
 
 
 @data_group.command(name="export")
@@ -114,8 +116,12 @@ def data_steps(run: str, limit: int):
 
     click.echo(f"Found {len(steps)} steps:")
     for step in steps:
-        status_emoji = "Y" if step["status"] == "success" else "N" if step["status"] == "failed" else "R"
-        click.echo(f"  {status_emoji} {step['step_name']:20} | {step['status']:8} | {step.get('latency_ms', 0)}ms")
+        status_emoji = (
+            "Y" if step["status"] == "success" else "N" if step["status"] == "failed" else "R"
+        )
+        click.echo(
+            f"  {status_emoji} {step['step_name']:20} | {step['status']:8} | {step.get('latency_ms', 0)}ms"
+        )
 
 
 @data_group.command(name="license")
@@ -143,7 +149,9 @@ def data_license(list_licenses: bool, create: bool, owner: str, license_type: st
             return
         click.echo(f"Found {len(licenses)} licenses:")
         for lic in licenses:
-            click.echo(f"  {lic['license_id'][:16]}... | {lic['license_type']:8} | {lic['owner_id']}")
+            click.echo(
+                f"  {lic['license_id'][:16]}... | {lic['license_type']:8} | {lic['owner_id']}"
+            )
 
     elif create:
         if not owner:

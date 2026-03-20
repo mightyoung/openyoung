@@ -17,8 +17,8 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from src.api.session_api import create_session_api
 from src.api.routes import get_all_routers
+from src.api.session_api import create_session_api
 
 # 直接导入 (方案B - 分散注册，保留兼容)
 # from src.evaluation_api.routers import evaluations, executions, exports, stream
@@ -69,6 +69,7 @@ class SimpleSessionManager:
         if redis_url:
             try:
                 from redis import Redis
+
                 self._redis = Redis.from_url(redis_url)
                 self._redis.ping()
                 logger.info("SimpleSessionManager initialized with Redis")
@@ -93,7 +94,9 @@ class SimpleSessionManager:
         """保存会话数据到 Redis 或内存"""
         if self._redis:
             try:
-                self._redis.hset(f"session:{session_id}", mapping={k: str(v) for k, v in data.items()})
+                self._redis.hset(
+                    f"session:{session_id}", mapping={k: str(v) for k, v in data.items()}
+                )
                 self._redis.expire(f"session:{session_id}", 86400)  # 24h TTL
                 return
             except Exception as e:

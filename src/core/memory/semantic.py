@@ -69,9 +69,12 @@ class SemanticMemory:
         """初始化数据库连接"""
         if not self.database_url:
             import os
+
             self.database_url = os.getenv("DATABASE_URL")
             if not self.database_url:
-                logger.warning("DATABASE_URL not configured, SemanticMemory will use in-memory mode")
+                logger.warning(
+                    "DATABASE_URL not configured, SemanticMemory will use in-memory mode"
+                )
                 self._in_memory_mode = True
                 self._memory_store: dict[str, KnowledgeEntry] = {}
                 return
@@ -211,10 +214,7 @@ class SemanticMemory:
     ) -> list[KnowledgeEntry]:
         """按分类列出知识"""
         if self._in_memory_mode:
-            return [
-                e for e in self._memory_store.values()
-                if e.category == category
-            ][:limit]
+            return [e for e in self._memory_store.values() if e.category == category][:limit]
 
         async with self._pool.acquire() as conn:
             rows = await conn.fetch(
@@ -237,10 +237,9 @@ class SemanticMemory:
     ) -> list[KnowledgeEntry]:
         """按标签列出知识"""
         if self._in_memory_mode:
-            return [
-                e for e in self._memory_store.values()
-                if any(t in e.tags for t in tags)
-            ][:limit]
+            return [e for e in self._memory_store.values() if any(t in e.tags for t in tags)][
+                :limit
+            ]
 
         async with self._pool.acquire() as conn:
             rows = await conn.fetch(
@@ -326,15 +325,16 @@ class SemanticMemory:
         results = []
         query_lower = query.lower()
         for entry in entries[:limit]:
-            score = sum(
-                1 for word in entry.content.lower().split()
-                if word in query_lower
-            ) / max(len(query.split()), 1)
-            results.append(RetrievalResult(
-                entry=entry,
-                relevance_score=score,
-                reasoning="Keyword matching",
-            ))
+            score = sum(1 for word in entry.content.lower().split() if word in query_lower) / max(
+                len(query.split()), 1
+            )
+            results.append(
+                RetrievalResult(
+                    entry=entry,
+                    relevance_score=score,
+                    reasoning="Keyword matching",
+                )
+            )
 
         return sorted(results, key=lambda r: r.relevance_score, reverse=True)
 
@@ -375,10 +375,9 @@ class SemanticMemory:
         context: Optional[dict],
     ) -> str:
         """构建相关度判断 Prompt"""
-        entries_text = "\n".join([
-            f"- [{i+1}] {c.entry.content[:200]}..."
-            for i, c in enumerate(candidates)
-        ])
+        entries_text = "\n".join(
+            [f"- [{i + 1}] {c.entry.content[:200]}..." for i, c in enumerate(candidates)]
+        )
 
         return f"""Given the query: "{query}"
 
@@ -405,7 +404,7 @@ Return in format:
                 continue
             # 尝试提取索引
             for i, c in enumerate(candidates):
-                if f"[{i+1}]" in line or f"{i+1}." in line:
+                if f"[{i + 1}]" in line or f"{i + 1}." in line:
                     c.relevance_score = 0.9
                     c.reasoning = line
                     results.append(c)

@@ -6,21 +6,21 @@ LangGraph 工作流引擎
 """
 
 import logging
-from typing import Any, Optional, Callable, Awaitable
+from typing import Any, Awaitable, Callable, Optional
 
-from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.base import BaseCheckpointSaver
+from langgraph.graph import END, StateGraph
 
+from src.core.events import Event, EventType, get_event_bus
 from src.core.langgraph_state import (
     AgentState,
     TaskPhase,
-    create_initial_state,
-    update_phase,
     add_message,
-    set_result,
+    create_initial_state,
     set_error,
+    set_result,
+    update_phase,
 )
-from src.core.events import Event, EventType, get_event_bus
 
 logger = logging.getLogger(__name__)
 
@@ -65,15 +65,17 @@ class LangGraphWorkflow:
         logger.info(f"[{self.name}] Planning: {state.get('task_description', '')}")
 
         # 发布事件
-        await self.event_bus.publish_async(Event(
-            type=EventType.TASK_STARTED,
-            data={
-                "task_id": state.get("task_id"),
-                "task_type": "planning",
-                "agent_id": self.name,
-            },
-            metadata=state.get("metadata", {}),
-        ))
+        await self.event_bus.publish_async(
+            Event(
+                type=EventType.TASK_STARTED,
+                data={
+                    "task_id": state.get("task_id"),
+                    "task_type": "planning",
+                    "agent_id": self.name,
+                },
+                metadata=state.get("metadata", {}),
+            )
+        )
 
         # 更新状态
         state = update_phase(state, TaskPhase.PLANNING)
@@ -128,15 +130,17 @@ class LangGraphWorkflow:
         state = update_phase(state, TaskPhase.RESULT)
 
         # 发布完成事件
-        await self.event_bus.publish_async(Event(
-            type=EventType.TASK_COMPLETED,
-            data={
-                "task_id": state.get("task_id"),
-                "result": state.get("result", {}),
-                "agent_id": self.name,
-            },
-            metadata=state.get("metadata", {}),
-        ))
+        await self.event_bus.publish_async(
+            Event(
+                type=EventType.TASK_COMPLETED,
+                data={
+                    "task_id": state.get("task_id"),
+                    "result": state.get("result", {}),
+                    "agent_id": self.name,
+                },
+                metadata=state.get("metadata", {}),
+            )
+        )
 
         return state
 
@@ -164,7 +168,7 @@ class LangGraphWorkflow:
             {
                 "continue": "execute",
                 "finish": "result",
-            }
+            },
         )
 
         workflow.add_edge("result", END)

@@ -69,4 +69,4 @@ def run_case(case_id, agent_name):
     """
     click.echo("⚠️  'test case' is deprecated.")
     click.echo("   Use 'openyoung harness run' for individual task evaluation.")
-    click.echo(f"   See: src/hub/evaluate/ for BenchmarkTask format.")
+    click.echo("   See: src/hub/evaluate/ for BenchmarkTask format.")

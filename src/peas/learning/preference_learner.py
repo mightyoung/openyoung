@@ -3,11 +3,12 @@ PreferenceLearner - 用户偏好学习系统
 
 M3.3: 学习用户验证偏好，自动调整验证阈值
 """
+
+import logging
+from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from collections import deque
 from typing import Optional
-import logging
 
 from ..types.document import Priority
 from ..types.verification import VerificationStatus
@@ -18,6 +19,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class FeedbackRecord:
     """反馈记录"""
+
     feature_id: str
     accepted: bool
     timestamp: datetime
@@ -27,6 +29,7 @@ class FeedbackRecord:
 @dataclass
 class ThresholdConfig:
     """阈值配置"""
+
     priority: Priority
     default_threshold: float
     min_threshold: float = 0.0
@@ -384,10 +387,7 @@ class PreferenceLearner:
         Returns:
             dict: 优先级到阈值的映射
         """
-        return {
-            priority.value: threshold
-            for priority, threshold in self._thresholds.items()
-        }
+        return {priority.value: threshold for priority, threshold in self._thresholds.items()}
 
     def reset_thresholds(self) -> None:
         """重置阈值到默认值"""
@@ -405,8 +405,10 @@ class PreferenceLearner:
             "rejected_count": len(self._rejected_patterns),
             "style_preferences": self._style_preferences,
             "preferred_format": self._get_preferred_format(
-                {k: v / max(sum(self._style_preferences.values()), 1)
-                 for k, v in self._style_preferences.items()}
+                {
+                    k: v / max(sum(self._style_preferences.values()), 1)
+                    for k, v in self._style_preferences.items()
+                }
             ),
         }
 

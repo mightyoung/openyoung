@@ -9,7 +9,6 @@ from pathlib import Path
 
 import click
 
-
 # Configuration path
 _CONFIG_FILE = Path.home() / ".openyoung" / "config.json"
 
@@ -28,7 +27,8 @@ def init_cmd(force: bool):
         openyoung init
         openyoung init --force
     """
-    from src.config import load_user_config as _load_config, save_user_config as _save_config
+    from src.config import load_user_config as _load_config
+    from src.config import save_user_config as _save_config
 
     click.echo("=== OpenYoung Initialization Wizard ===\n")
 
@@ -103,7 +103,9 @@ def init_cmd(force: bool):
     elif channel == "dingtalk":
         click.echo("\nStep 4: DingTalk Configuration")
         webhook_url = click.prompt("Webhook URL", type=str)
-        secret = click.prompt("Secret (optional, press Enter to skip)", default="", type=str, hide_input=True)
+        secret = click.prompt(
+            "Secret (optional, press Enter to skip)", default="", type=str, hide_input=True
+        )
         channel_config["webhook_url"] = webhook_url
         if secret:
             channel_config["secret"] = secret

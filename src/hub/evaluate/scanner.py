@@ -35,15 +35,22 @@ class ConstraintScanner:
             "subprocess.run(shell=True)",
             r'password\s*=\s*"',
             r'api_key\s*=\s*"',
-            r'api_key\s*=\s*\'',
+            r"api_key\s*=\s*\'",
             r'secret\s*=\s*"',
             r'token\s*=\s*"',
             "SECRET",
         ]
         self.exclude_dirs = exclude_dirs or {
-            ".git", ".venv", "node_modules", "__pycache__",
-            ".pytest_cache", ".mypy_cache", ".ruff_cache",
-            "dist", "build", ".eggs",
+            ".git",
+            ".venv",
+            "node_modules",
+            "__pycache__",
+            ".pytest_cache",
+            ".mypy_cache",
+            ".ruff_cache",
+            "dist",
+            "build",
+            ".eggs",
         }
 
     def scan(self) -> list[EntropyIssue]:
@@ -63,14 +70,16 @@ class ConstraintScanner:
 
                 # 文件大小检查
                 if len(lines) > self.max_file_lines:
-                    issues.append(EntropyIssue(
-                        entropy_type=EntropyType.CONSTRAINT_VIOLATION,
-                        severity=Severity.HIGH,
-                        file_path=rel_path,
-                        description=f"文件超过 {self.max_file_lines} 行限制",
-                        evidence=f"当前 {len(lines)} 行",
-                        recommendation=f"拆分文件，或将限制提升至 {self.max_file_lines}",
-                    ))
+                    issues.append(
+                        EntropyIssue(
+                            entropy_type=EntropyType.CONSTRAINT_VIOLATION,
+                            severity=Severity.HIGH,
+                            file_path=rel_path,
+                            description=f"文件超过 {self.max_file_lines} 行限制",
+                            evidence=f"当前 {len(lines)} 行",
+                            recommendation=f"拆分文件，或将限制提升至 {self.max_file_lines}",
+                        )
+                    )
 
                 # 禁止模式检查
                 issues.extend(self._scan_forbidden(rel_path, content))
@@ -84,22 +93,24 @@ class ConstraintScanner:
         """检查禁止模式"""
         issues: list[EntropyIssue] = []
         # 预处理: 移除 docstrings, comments, string literals
-        stripped = re.sub(r'""".*?"""', '', content, flags=re.DOTALL)
-        stripped = re.sub(r"'''.*?'''", '', stripped, flags=re.DOTALL)
-        stripped = re.sub(r'#.*$', '', stripped, flags=re.MULTILINE)
-        stripped = re.sub(r'"[^"]*"', '', stripped)
-        stripped = re.sub(r"'[^']*'", '', stripped)
+        stripped = re.sub(r'""".*?"""', "", content, flags=re.DOTALL)
+        stripped = re.sub(r"'''.*?'''", "", stripped, flags=re.DOTALL)
+        stripped = re.sub(r"#.*$", "", stripped, flags=re.MULTILINE)
+        stripped = re.sub(r'"[^"]*"', "", stripped)
+        stripped = re.sub(r"'[^']*'", "", stripped)
 
         for pattern in self.forbidden_patterns:
             if re.search(pattern, stripped):
-                issues.append(EntropyIssue(
-                    entropy_type=EntropyType.CONSTRAINT_VIOLATION,
-                    severity=Severity.CRITICAL,
-                    file_path=rel_path,
-                    description=f"禁止模式: {pattern}",
-                    evidence=f"在 {rel_path} 中发现",
-                    recommendation="移除或替换为安全替代方案",
-                ))
+                issues.append(
+                    EntropyIssue(
+                        entropy_type=EntropyType.CONSTRAINT_VIOLATION,
+                        severity=Severity.CRITICAL,
+                        file_path=rel_path,
+                        description=f"禁止模式: {pattern}",
+                        evidence=f"在 {rel_path} 中发现",
+                        recommendation="移除或替换为安全替代方案",
+                    )
+                )
         return issues
 
 
@@ -109,9 +120,16 @@ class DeadCodeScanner:
     def __init__(self, repo_root: Path, exclude_dirs: set[str] | None = None):
         self.repo_root = repo_root
         self.exclude_dirs = exclude_dirs or {
-            ".git", ".venv", "node_modules", "__pycache__",
-            ".pytest_cache", ".mypy_cache", ".ruff_cache",
-            "dist", "build", ".eggs",
+            ".git",
+            ".venv",
+            "node_modules",
+            "__pycache__",
+            ".pytest_cache",
+            ".mypy_cache",
+            ".ruff_cache",
+            "dist",
+            "build",
+            ".eggs",
         }
 
     def scan(self) -> list[EntropyIssue]:
@@ -144,22 +162,24 @@ class DeadCodeScanner:
                     if name.startswith("_"):
                         continue
                     if not self._check_name_used(name, all_imports, all_definitions):
-                        issues.append(EntropyIssue(
-                            entropy_type=EntropyType.DEAD_CODE,
-                            severity=Severity.LOW,
-                            file_path=fpath_str,
-                            symbol_name=name,
-                            description=f"可能未使用的导入: {module}.{name}",
-                            recommendation="移除未使用的导入",
-                        ))
+                        issues.append(
+                            EntropyIssue(
+                                entropy_type=EntropyType.DEAD_CODE,
+                                severity=Severity.LOW,
+                                file_path=fpath_str,
+                                symbol_name=name,
+                                description=f"可能未使用的导入: {module}.{name}",
+                                recommendation="移除未使用的导入",
+                            )
+                        )
 
         return issues
 
     def _extract_imports(self, content: str) -> dict[str, set[str]]:
         imports: dict[str, set[str]] = {}
-        stripped = re.sub(r'""".*?"""', '', content, flags=re.DOTALL)
-        stripped = re.sub(r"'''.*?'''", '', stripped, flags=re.DOTALL)
-        stripped = re.sub(r'#.*$', '', stripped, flags=re.MULTILINE)
+        stripped = re.sub(r'""".*?"""', "", content, flags=re.DOTALL)
+        stripped = re.sub(r"'''.*?'''", "", stripped, flags=re.DOTALL)
+        stripped = re.sub(r"#.*$", "", stripped, flags=re.MULTILINE)
 
         from_pat = re.compile(r"^from\s+([\w.]+)\s+import\s+(.+)$", re.MULTILINE)
         for m in from_pat.finditer(stripped):
@@ -178,9 +198,9 @@ class DeadCodeScanner:
 
     def _extract_definitions(self, content: str) -> set[str]:
         definitions: set[str] = set()
-        stripped = re.sub(r'""".*?"""', '', content, flags=re.DOTALL)
-        stripped = re.sub(r"'''.*?'''", '', stripped, flags=re.DOTALL)
-        stripped = re.sub(r'#.*$', '', stripped, flags=re.MULTILINE)
+        stripped = re.sub(r'""".*?"""', "", content, flags=re.DOTALL)
+        stripped = re.sub(r"'''.*?'''", "", stripped, flags=re.DOTALL)
+        stripped = re.sub(r"#.*$", "", stripped, flags=re.MULTILINE)
 
         func_pat = re.compile(r"^def\s+(\w+)\s*\(", re.MULTILINE)
         for m in func_pat.finditer(stripped):

@@ -16,44 +16,54 @@ from src.agents.components import (
 )
 from src.agents.components.file_validation import validate_file_creation
 from src.agents.dispatcher import TaskDispatcher
-from src.agents.evaluation_coordinator import EvaluationContext, EvaluationCoordinator
 from src.agents.eval_store import EvalStore
+from src.agents.evaluation_coordinator import EvaluationContext, EvaluationCoordinator
 from src.agents.permission import PermissionEvaluator
 from src.agents.ralph_loop import AgentCategory, RalphLoop, RalphLoopConfig
 from src.agents.sub_agent import SubAgent
+
+# Core 模块 - EventBus, Heartbeat, Knowledge
+from src.core.events import Event, EventPriority, EventType, SystemEvents, get_event_bus
+from src.core.heartbeat import HeartbeatConfig, HeartbeatScheduler, get_heartbeat_scheduler
+from src.core.knowledge import KnowledgeManager, get_knowledge_manager
+from src.core.logger import get_logger
 from src.core.types import (
     Message,
     MessageRole,
     SubAgentConfig,
     Task,
 )
-# Core 模块 - EventBus, Heartbeat, Knowledge
-from src.core.events import Event, EventType, get_event_bus, SystemEvents, EventPriority
-from src.core.heartbeat import HeartbeatScheduler, HeartbeatConfig, get_heartbeat_scheduler
-from src.core.knowledge import KnowledgeManager, get_knowledge_manager
-from src.core.logger import get_logger
 
 # 模块级 logger
 logger = get_logger(__name__)
-from src.package_manager.manager import PackageManager
-
-# AI Docker - Runtime
-from src.runtime import AISandbox, PoolConfig, SandboxConfig, SandboxPool
-from src.tools.executor import ToolExecutor
+# Extracted methods from _checkpoint_methods.py
+from src.agents._checkpoint_methods import (
+    save_checkpoint,
+    trigger_hooks,
+)
 
 # Extracted methods from _init_methods.py
 from src.agents._init_methods import (
+    _load_flow_skill_by_name,
+    init_builtin_subagents,
+    init_checkpoint,
     init_default_genes,
     init_flow_skill,
-    _load_flow_skill_by_name,
-    init_task_executor,
-    init_telemetry,
     init_hooks,
     init_mcp_servers,
-    init_checkpoint,
     init_memory_facade,
-    init_builtin_subagents,
+    init_task_executor,
+    init_telemetry,
     load_skills,
+)
+
+# Extracted methods from _run_methods.py
+from src.agents._run_methods import (
+    _apply_result_analysis,
+    _parse_input,
+    _save_all,
+    run,
+    run_streaming,
 )
 
 # Extracted methods from _sandbox_methods.py
@@ -61,21 +71,11 @@ from src.agents._sandbox_methods import (
     enable_sandbox,
     enable_sandbox_pool,
 )
+from src.package_manager.manager import PackageManager
 
-# Extracted methods from _checkpoint_methods.py
-from src.agents._checkpoint_methods import (
-    save_checkpoint,
-    trigger_hooks,
-)
-
-# Extracted methods from _run_methods.py
-from src.agents._run_methods import (
-    run,
-    run_streaming,
-    _apply_result_analysis,
-    _save_all,
-    _parse_input,
-)
+# AI Docker - Runtime
+from src.runtime import AISandbox, PoolConfig, SandboxConfig, SandboxPool
+from src.tools.executor import ToolExecutor
 
 
 class YoungAgent:
@@ -152,6 +152,7 @@ class YoungAgent:
         if self._harness is None:
             try:
                 from src.harness import Harness
+
                 self._harness = Harness()
             except Exception as e:
                 logger.warning(f"Harness init failed: {e}")
@@ -160,6 +161,7 @@ class YoungAgent:
         if self._datacenter is None:
             try:
                 from src.datacenter.datacenter import DataCenter
+
                 self._datacenter = DataCenter()
             except Exception as e:
                 logger.warning(f"DataCenter init failed: {e}")
@@ -168,6 +170,7 @@ class YoungAgent:
         if self._evolver is None:
             try:
                 from src.evolver.engine import EvolutionEngine
+
                 self._evolver = EvolutionEngine()
                 init_default_genes(self)
             except Exception as e:
@@ -204,7 +207,9 @@ class YoungAgent:
                     event_bus=self._event_bus,
                     knowledge_manager=self._knowledge_manager,
                 )
-                print(f"[YoungAgent] Heartbeat enabled (interval={heartbeat_config.interval_seconds}s)")
+                print(
+                    f"[YoungAgent] Heartbeat enabled (interval={heartbeat_config.interval_seconds}s)"
+                )
             except Exception as e:
                 print(f"[YoungAgent] Heartbeat init failed: {e}")
                 self._heartbeat = None
@@ -215,7 +220,9 @@ class YoungAgent:
         self._timeout_seconds = 300
         self._checkpoint_enabled = True
 
-        if execution_config is not None and hasattr(execution_config, "max_tool_calls"):  # 新类型: ExecutionConfig
+        if execution_config is not None and hasattr(
+            execution_config, "max_tool_calls"
+        ):  # 新类型: ExecutionConfig
             self._max_tool_calls = execution_config.max_tool_calls
             self._timeout_seconds = execution_config.timeout_seconds
             self._checkpoint_enabled = execution_config.checkpoint_enabled

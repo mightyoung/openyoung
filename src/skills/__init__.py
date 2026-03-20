@@ -19,6 +19,7 @@ from .external_sources import (
     SourceType,
     get_external_sources_fetcher,
 )
+
 # Heartbeat - 优先从 core 导入（保持向后兼容）
 try:
     from src.core.heartbeat import (

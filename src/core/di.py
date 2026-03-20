@@ -158,6 +158,7 @@ def _register_dependencies() -> None:
 
     try:
         from src.core.dependencies import register_young_agent_dependencies
+
         register_young_agent_dependencies(_container)
         _initialized = True
     except ImportError as e:

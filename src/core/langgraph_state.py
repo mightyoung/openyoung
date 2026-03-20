@@ -5,10 +5,10 @@ LangGraph 状态定义
 参考: https://langchain-ai.github.io/langgraph/concepts/low_level/#state
 """
 
-from typing import Annotated, Any, Optional
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
+from typing import Annotated, Any, Optional
 
 from typing_extensions import TypedDict
 
@@ -109,11 +109,13 @@ def add_message(state: AgentState, role: str, content: str) -> AgentState:
     """添加消息"""
 
     messages = state.get("messages", [])
-    messages.append({
-        "role": role,
-        "content": content,
-        "timestamp": datetime.now().isoformat(),
-    })
+    messages.append(
+        {
+            "role": role,
+            "content": content,
+            "timestamp": datetime.now().isoformat(),
+        }
+    )
 
     new_state = state.copy()
     new_state["messages"] = messages

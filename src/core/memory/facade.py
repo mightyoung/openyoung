@@ -12,20 +12,21 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Optional
 
-from .working import WorkingMemory, TaskContext, get_working_memory
-from .semantic import SemanticMemory, KnowledgeEntry, RetrievalResult, get_semantic_memory
 from .checkpoint_integration import (
     AgentCheckpoint,
-    save_agent_state,
     load_agent_state,
     restore_from_latest,
+    save_agent_state,
 )
+from .semantic import KnowledgeEntry, RetrievalResult, SemanticMemory, get_semantic_memory
+from .working import TaskContext, WorkingMemory, get_working_memory
 
 logger = logging.getLogger(__name__)
 
 
 class MemoryLayer(Enum):
     """记忆层类型"""
+
     WORKING = "working"  # L0: 当前任务状态
     SEMANTIC = "semantic"  # L2: 知识检索
     CHECKPOINT = "checkpoint"  # Agent 状态快照
@@ -34,6 +35,7 @@ class MemoryLayer(Enum):
 @dataclass
 class MemoryQuery:
     """记忆查询"""
+
     query: str
     layer: Optional[MemoryLayer] = None  # 指定层，None 表示自动
     context: Optional[dict[str, Any]] = None
@@ -43,6 +45,7 @@ class MemoryQuery:
 @dataclass
 class MemoryStore:
     """记忆存储"""
+
     content: str
     layer: MemoryLayer
     category: Optional[str] = None
@@ -149,13 +152,15 @@ class MemoryFacade:
         # 获取当前任务上下文
         current = self.working_memory.get_current_context()
         if current:
-            return [{
-                "layer": MemoryLayer.WORKING.value,
-                "task_id": current.task_id,
-                "task_description": current.task_description,
-                "messages": current.messages,
-                "variables": current.variables,
-            }]
+            return [
+                {
+                    "layer": MemoryLayer.WORKING.value,
+                    "task_id": current.task_id,
+                    "task_description": current.task_description,
+                    "messages": current.messages,
+                    "variables": current.variables,
+                }
+            ]
 
         return []
 

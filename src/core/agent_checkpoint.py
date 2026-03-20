@@ -383,6 +383,7 @@ class PostgresCheckpointStorage(CheckpointStorage):
             is_final=row["is_final"],
         )
 
+
 class AgentCheckpointManager:
     """Agent 状态检查点管理器
 
@@ -412,7 +413,9 @@ class AgentCheckpointManager:
                 logger.info("AgentCheckpointManager initialized with In-Memory storage")
         else:
             self._storage = InMemoryCheckpointStorage()
-            logger.info("AgentCheckpointManager initialized with In-Memory storage (no DATABASE_URL)")
+            logger.info(
+                "AgentCheckpointManager initialized with In-Memory storage (no DATABASE_URL)"
+            )
 
     async def close(self) -> None:
         """关闭存储连接"""
@@ -447,11 +450,15 @@ class AgentCheckpointManager:
         """获取检查点"""
         return await self._storage.get(checkpoint_id)
 
-    async def get_latest(self, agent_id: str, task_id: Optional[str] = None) -> Optional[AgentCheckpoint]:
+    async def get_latest(
+        self, agent_id: str, task_id: Optional[str] = None
+    ) -> Optional[AgentCheckpoint]:
         """获取最新的检查点"""
         return await self._storage.get_latest(agent_id, task_id)
 
-    async def list(self, agent_id: str, task_id: Optional[str] = None, limit: int = 10) -> list[AgentCheckpoint]:
+    async def list(
+        self, agent_id: str, task_id: Optional[str] = None, limit: int = 10
+    ) -> list[AgentCheckpoint]:
         """列出检查点"""
         return await self._storage.list(agent_id, task_id, limit)
 

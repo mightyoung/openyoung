@@ -3,13 +3,14 @@ Markdown Parser - 解析Markdown设计文档
 
 M1.1: 核心Parser实现
 """
-import re
+
 import html as html_escape
+import re
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
-from dataclasses import dataclass
 
-from ..types import Priority, FeaturePoint, ParsedDocument
+from ..types import FeaturePoint, ParsedDocument, Priority
 
 # Security: Input size limits
 MAX_CONTENT_SIZE = 10 * 1024 * 1024  # 10MB
@@ -28,38 +29,35 @@ def _escape_for_html(text: str) -> str:
 # ============================================================================
 
 # Markdown标题正则
-_HEADING_PATTERN = re.compile(r'^(#{1,6})\s+(.+)$')
+_HEADING_PATTERN = re.compile(r"^(#{1,6})\s+(.+)$")
 
 # 功能点标记模式 - 预编译
 _FEATURE_MARKER_PATTERNS = [
-    re.compile(r'^[-*]\s+\[?\s*(?:feature|功能|feat|FR)[:\s]+(.+)$', re.IGNORECASE),
-    re.compile(r'^[-*]\s+\[?\s*(?:requirement|需求|REQ)[:\s]+(.+)$', re.IGNORECASE),
+    re.compile(r"^[-*]\s+\[?\s*(?:feature|功能|feat|FR)[:\s]+(.+)$", re.IGNORECASE),
+    re.compile(r"^[-*]\s+\[?\s*(?:requirement|需求|REQ)[:\s]+(.+)$", re.IGNORECASE),
 ]
 
 # 优先级检测模式 - 预编译
 _PRIORITY_PATTERNS = {
     Priority.MUST: [
-        re.compile(r'(?:must|必须|强制|required|必选)', re.IGNORECASE),
-        re.compile(r'\(M\)'),
-        re.compile(r'\[M\]'),
+        re.compile(r"(?:must|必须|强制|required|必选)", re.IGNORECASE),
+        re.compile(r"\(M\)"),
+        re.compile(r"\[M\]"),
     ],
     Priority.SHOULD: [
-        re.compile(r'(?:should|应该|建议|recommended)', re.IGNORECASE),
-        re.compile(r'\(S\)'),
-        re.compile(r'\[S\]'),
+        re.compile(r"(?:should|应该|建议|recommended)", re.IGNORECASE),
+        re.compile(r"\(S\)"),
+        re.compile(r"\[S\]"),
     ],
     Priority.COULD: [
-        re.compile(r'(?:could|可以|可选|optional)', re.IGNORECASE),
-        re.compile(r'\(C\)'),
-        re.compile(r'\[C\]'),
+        re.compile(r"(?:could|可以|可选|optional)", re.IGNORECASE),
+        re.compile(r"\(C\)"),
+        re.compile(r"\[C\]"),
     ],
 }
 
 # Given-When-Then验收标准模式
-_GWT_PATTERN = re.compile(
-    r'(?:given|when|then|假设|当|则|前提|条件)[:\s]+([^\n]+)',
-    re.IGNORECASE
-)
+_GWT_PATTERN = re.compile(r"(?:given|when|then|假设|当|则|前提|条件)[:\s]+([^\n]+)", re.IGNORECASE)
 
 
 class MarkdownParser:
@@ -101,10 +99,12 @@ class MarkdownParser:
             ValueError: If content exceeds MAX_CONTENT_SIZE
         """
         # Security: Validate input size before processing
-        if len(content.encode('utf-8')) > MAX_CONTENT_SIZE:
-            raise ValueError(f"Content size exceeds maximum allowed size of {MAX_CONTENT_SIZE} bytes")
+        if len(content.encode("utf-8")) > MAX_CONTENT_SIZE:
+            raise ValueError(
+                f"Content size exceeds maximum allowed size of {MAX_CONTENT_SIZE} bytes"
+            )
 
-        lines = content.split('\n')
+        lines = content.split("\n")
         self._feature_counter = 0
         self._section_stack = []
 
@@ -122,17 +122,14 @@ class MarkdownParser:
             sections=sections,
             feature_points=feature_points,
             raw_content=content,
-            metadata={
-                "parser_version": "1.0",
-                "line_count": len(lines)
-            }
+            metadata={"parser_version": "1.0", "line_count": len(lines)},
         )
 
     def _extract_title(self, lines: list[str]) -> str:
         """提取文档标题"""
         for line in lines:
             match = self.HEADING_PATTERN.match(line.strip())
-            if match and match.group(1) == '#':
+            if match and match.group(1) == "#":
                 return match.group(2).strip()
 
         # 如果没有找到标题，返回第一行非空行
@@ -227,7 +224,7 @@ class MarkdownParser:
                         title=title,
                         description=title,
                         priority=priority,
-                        related_section=current_section
+                        related_section=current_section,
                     )
                     current_fp_lines = []
                     matched = True
@@ -289,9 +286,11 @@ class MarkdownParser:
             try:
                 resolved_path.relative_to(allowed_path)
             except ValueError:
-                raise ValueError(f"File path '{file_path}' escapes allowed directory '{allowed_dir}'")
+                raise ValueError(
+                    f"File path '{file_path}' escapes allowed directory '{allowed_dir}'"
+                )
 
-        with open(resolved_path, 'r', encoding='utf-8') as f:
+        with open(resolved_path, encoding="utf-8") as f:
             content = f.read()
         return self.parse(content)
 

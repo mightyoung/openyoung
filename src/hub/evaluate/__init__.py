@@ -14,6 +14,7 @@ from .benchmark import (
     create_model_grader,
     create_security_task,
 )
+from .entropy import EntropyIssue, EntropyManager, EntropyReport, EntropyType, Severity
 from .evaluator import (
     AgentEvaluator,
     AgentQualityReport,
@@ -27,6 +28,8 @@ from .graders import (
     HumanGrader,
     ModelGrader,
 )
+from .harness import EvaluationHarness, HarnessConfig
+from .memory_integration import HarnessMemoryConnector, MemoryIntegrationMiddleware
 from .metrics import (
     EvalMetrics,
     EvalTrial,
@@ -38,19 +41,16 @@ from .metrics import (
     compute_pass_at_k,
     compute_pass_rate,
 )
-from .harness import EvaluationHarness, HarnessConfig
 from .middleware import (
+    ArchitecturalConstraintMiddleware,
     BaseMiddleware,
-    MiddlewareResult,
     ContextEngineeringMiddleware,
     LoopDetectionMiddleware,
+    MiddlewareResult,
     PreCompletionCheckMiddleware,
-    ArchitecturalConstraintMiddleware,
     get_default_middleware,
 )
 from .runner import EvalRunner, RunnerConfig, run_quick_eval
-from .entropy import EntropyManager, EntropyReport, EntropyIssue, EntropyType, Severity
-from .memory_integration import MemoryIntegrationMiddleware, HarnessMemoryConnector
 
 __all__ = [
     # Legacy (keep for backwards compat)

@@ -1,9 +1,10 @@
 """
 Verification package - Feature tracking and drift detection
 """
-from .tracker import FeatureTracker
+
 from .drift_detector import DriftDetector
-from .ui_comparator import UIComparator, ComparisonResult, VisualDiff, UIElement
+from .tracker import FeatureTracker
+from .ui_comparator import ComparisonResult, UIComparator, UIElement, VisualDiff
 
 __all__ = [
     "FeatureTracker",

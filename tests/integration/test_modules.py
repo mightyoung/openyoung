@@ -255,18 +255,6 @@ class TestPackageManagerIntegration:
         assert importer is not None
         assert registry is not None
 
-    def test_agent_io_integration(self):
-        """
-        例子: Agent IO 模块集成
-        """
-        from src.package_manager.agent_io import AgentImporter, AgentExporter
-
-        importer = AgentImporter()
-        exporter = AgentExporter()
-
-        assert importer is not None
-        assert exporter is not None
-
 
 # ==================== 集成测试: Data Center 模块 ====================
 

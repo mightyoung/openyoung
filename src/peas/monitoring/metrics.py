@@ -3,17 +3,19 @@ MetricsCollector - PEAS性能指标收集器
 
 提供Prometheus格式的指标暴露。
 """
-import time
+
 import threading
-from typing import Optional
+import time
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Optional
 
 from ..types.verification import DriftLevel
 
 
 class MetricType(Enum):
     """指标类型"""
+
     COUNTER = "counter"
     GAUGE = "gauge"
     HISTOGRAM = "histogram"
@@ -22,6 +24,7 @@ class MetricType(Enum):
 @dataclass
 class HistogramBucket:
     """直方图桶"""
+
     le: float
     count: int = 0
 
@@ -152,7 +155,9 @@ class MetricsCollector:
         with self._lock:
             return {
                 "parse_duration_seconds": self._get_histogram_stats(self._parse_durations),
-                "contract_build_duration_seconds": self._get_histogram_stats(self._contract_durations),
+                "contract_build_duration_seconds": self._get_histogram_stats(
+                    self._contract_durations
+                ),
                 "verify_total": dict(self._verify_counts),
                 "drift_score": {
                     "value": self._drift_score,
@@ -226,8 +231,8 @@ class MetricsCollector:
             lines.append(f'PEAS_parse_duration_seconds_bucket{{le="+Inf"}} {total_count}')
 
             # sum, count, mean
-            lines.append(f'PEAS_parse_duration_seconds_sum {parse_stats["sum"]:.6f}')
-            lines.append(f'PEAS_parse_duration_seconds_count {parse_stats["count"]}')
+            lines.append(f"PEAS_parse_duration_seconds_sum {parse_stats['sum']:.6f}")
+            lines.append(f"PEAS_parse_duration_seconds_count {parse_stats['count']}")
 
             # 分位数
             if parse_stats.get("quantiles"):
@@ -239,7 +244,9 @@ class MetricsCollector:
         lines.append("")
 
         # 合约构建耗时
-        lines.append("# HELP PEAS_contract_build_duration_seconds Contract build duration in seconds")
+        lines.append(
+            "# HELP PEAS_contract_build_duration_seconds Contract build duration in seconds"
+        )
         lines.append("# TYPE PEAS_contract_build_duration_seconds histogram")
 
         with self._lock:
@@ -249,13 +256,15 @@ class MetricsCollector:
             sorted_buckets = sorted(self._contract_buckets.keys())
             for le in sorted_buckets:
                 cumulative += self._contract_buckets[le]
-                lines.append(f'PEAS_contract_build_duration_seconds_bucket{{le="{le}"}} {cumulative}')
+                lines.append(
+                    f'PEAS_contract_build_duration_seconds_bucket{{le="{le}"}} {cumulative}'
+                )
 
             total_count = len(self._contract_durations)
             lines.append(f'PEAS_contract_build_duration_seconds_bucket{{le="+Inf"}} {total_count}')
 
-            lines.append(f'PEAS_contract_build_duration_seconds_sum {contract_stats["sum"]:.6f}')
-            lines.append(f'PEAS_contract_build_duration_seconds_count {contract_stats["count"]}')
+            lines.append(f"PEAS_contract_build_duration_seconds_sum {contract_stats['sum']:.6f}")
+            lines.append(f"PEAS_contract_build_duration_seconds_count {contract_stats['count']}")
 
         lines.append("")
 
@@ -275,7 +284,7 @@ class MetricsCollector:
 
         with self._lock:
             if self._drift_score is not None:
-                lines.append(f'PEAS_drift_score {self._drift_score:.2f}')
+                lines.append(f"PEAS_drift_score {self._drift_score:.2f}")
                 if self._drift_level:
                     lines.append(f'PEAS_drift_score_level{{level="{self._drift_level}"}} 1')
 
@@ -403,6 +412,7 @@ class MetricsHTTPServer:
                 self._server.shutdown()
         else:
             import threading
+
             thread = threading.Thread(target=self._server.serve_forever, daemon=True)
             thread.start()
 

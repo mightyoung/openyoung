@@ -229,7 +229,9 @@ def render_run_evaluation():
         datasets = asyncio.run(load_datasets())
 
     # Agent选择
-    agent_options = {a.get("id", a.get("name", "Unknown")): a.get("name", "Unknown") for a in agents}
+    agent_options = {
+        a.get("id", a.get("name", "Unknown")): a.get("name", "Unknown") for a in agents
+    }
     selected_agent_id = st.selectbox(
         "Select Agent",
         options=list(agent_options.keys()),
@@ -237,7 +239,9 @@ def render_run_evaluation():
     )
 
     # 数据集选择
-    dataset_options = {d.get("id", d.get("name", "Unknown")): d.get("name", "Unknown") for d in datasets}
+    dataset_options = {
+        d.get("id", d.get("name", "Unknown")): d.get("name", "Unknown") for d in datasets
+    }
     selected_dataset_id = st.selectbox(
         "Select Dataset",
         options=list(dataset_options.keys()),
@@ -284,7 +288,9 @@ def render_run_evaluation():
                                 final_result = await client.get_evaluation(eval_id)
 
                         if final_result:
-                            st.success(f"Evaluation complete! Score: {final_result.get('overall_score', 0):.2f}")
+                            st.success(
+                                f"Evaluation complete! Score: {final_result.get('overall_score', 0):.2f}"
+                            )
 
                 except Exception as e:
                     st.error(f"Error: {str(e)}")
@@ -301,7 +307,9 @@ def render_run_evaluation():
     evaluations = asyncio.run(load_evaluations())
     if evaluations:
         for eval_item in evaluations[:10]:
-            with st.expander(f"Eval {eval_item.get('id', 'N/A')[:8]}... - {eval_item.get('overall_score', 0):.2f}"):
+            with st.expander(
+                f"Eval {eval_item.get('id', 'N/A')[:8]}... - {eval_item.get('overall_score', 0):.2f}"
+            ):
                 st.write(f"**Status**: {eval_item.get('status', 'unknown')}")
                 st.write(f"**Score**: {eval_item.get('overall_score', 0):.2f}")
                 st.write(f"**Date**: {eval_item.get('created_at', 'N/A')}")

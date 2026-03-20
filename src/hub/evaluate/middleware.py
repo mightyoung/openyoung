@@ -52,9 +52,7 @@ class BaseMiddleware(ABC):
         """Task 执行前"""
         return MiddlewareResult.pass_through()
 
-    async def after_task(
-        self, task: BenchmarkTask, metrics: TaskMetrics
-    ) -> MiddlewareResult:
+    async def after_task(self, task: BenchmarkTask, metrics: TaskMetrics) -> MiddlewareResult:
         """Task 执行后"""
         return MiddlewareResult.pass_through()
 
@@ -62,9 +60,7 @@ class BaseMiddleware(ABC):
         """Suite 执行前"""
         pass
 
-    async def after_suite(
-        self, suite: TaskSuite, metrics: EvalMetrics
-    ) -> None:
+    async def after_suite(self, suite: TaskSuite, metrics: EvalMetrics) -> None:
         """Suite 执行后"""
         pass
 
@@ -132,7 +128,7 @@ class ContextEngineeringMiddleware(BaseMiddleware):
                 structure_lines.append(f"  📄 {p.name}")
 
         if structure_lines:
-            parts.append(f"## Repository Structure\n" + "\n".join(structure_lines[:30]))
+            parts.append("## Repository Structure\n" + "\n".join(structure_lines[:30]))
 
         return "\n\n".join(parts)
 
@@ -165,9 +161,7 @@ class LoopDetectionMiddleware(BaseMiddleware):
         self._tool_call_counts = {}
         return MiddlewareResult.pass_through()
 
-    async def after_task(
-        self, task: BenchmarkTask, metrics: TaskMetrics
-    ) -> MiddlewareResult:
+    async def after_task(self, task: BenchmarkTask, metrics: TaskMetrics) -> MiddlewareResult:
         """检测 loop 模式并记录"""
         warnings = []
 
@@ -232,9 +226,7 @@ class PreCompletionCheckMiddleware(BaseMiddleware):
             },
         )
 
-    async def after_task(
-        self, task: BenchmarkTask, metrics: TaskMetrics
-    ) -> MiddlewareResult:
+    async def after_task(self, task: BenchmarkTask, metrics: TaskMetrics) -> MiddlewareResult:
         """验证是否满足所有 pre-completion 条件"""
         warnings = []
 
@@ -242,9 +234,7 @@ class PreCompletionCheckMiddleware(BaseMiddleware):
         for trial in metrics.trials:
             for req_file in self.required_files:
                 created = any(
-                    req_file in str(entry)
-                    for entry in trial.transcript
-                    if isinstance(entry, dict)
+                    req_file in str(entry) for entry in trial.transcript if isinstance(entry, dict)
                 )
                 if not created:
                     warnings.append(f"Required file not created: {req_file}")
@@ -278,14 +268,14 @@ class ArchitecturalConstraintMiddleware(BaseMiddleware):
         forbidden_patterns: list[str] | None = None,
     ):
         self.max_file_lines = max_file_lines
-        self.forbidden_patterns = (
-            forbidden_patterns
-            or ["eval(", "exec(", "os.system(", "subprocess.run(shell=True)"]
-        )
+        self.forbidden_patterns = forbidden_patterns or [
+            "eval(",
+            "exec(",
+            "os.system(",
+            "subprocess.run(shell=True)",
+        ]
 
-    async def after_task(
-        self, task: BenchmarkTask, metrics: TaskMetrics
-    ) -> MiddlewareResult:
+    async def after_task(self, task: BenchmarkTask, metrics: TaskMetrics) -> MiddlewareResult:
         """检查架构约束违规"""
         warnings = []
 

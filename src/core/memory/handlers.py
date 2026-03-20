@@ -10,9 +10,9 @@ Memory Event Handlers - 记忆系统事件处理器
 import logging
 from typing import Any, Optional
 
-from ..events import Event, EventType, EventBus, get_event_bus
+from ..events import Event, EventBus, EventType, get_event_bus
 from .events import MemoryEventType
-from .facade import get_memory_facade, MemoryFacade
+from .facade import MemoryFacade, get_memory_facade
 
 logger = logging.getLogger(__name__)
 

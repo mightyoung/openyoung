@@ -3,6 +3,7 @@ Intent Extractor - 意图提取器
 
 M1.2: 从ParsedDocument提取核心意图
 """
+
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -49,7 +50,7 @@ class IntentExtractor:
         return IntentSpec(
             primary_goals=goals,
             constraints=constraints[:10],  # 限制数量
-            quality_bar="功能完整且通过验收标准"
+            quality_bar="功能完整且通过验收标准",
         )
 
     async def extract_with_llm(self, doc: ParsedDocument) -> IntentSpec:

@@ -200,12 +200,16 @@ class EventRegistry:
                 result = None
 
             duration_ms = (time.time() - start) * 1000
-            return HandlerResult(hook_id=hook.id, success=True, result=result, duration_ms=duration_ms)
+            return HandlerResult(
+                hook_id=hook.id, success=True, result=result, duration_ms=duration_ms
+            )
 
         except Exception as e:
             duration_ms = (time.time() - start) * 1000
             logger.error(f"Hook execution error in {hook.name}: {e}")
-            return HandlerResult(hook_id=hook.id, success=False, error=str(e), duration_ms=duration_ms)
+            return HandlerResult(
+                hook_id=hook.id, success=False, error=str(e), duration_ms=duration_ms
+            )
 
     def list_hooks(self) -> dict[EventType, list[HookConfig]]:
         """列出所有 Hook"""
@@ -322,7 +326,9 @@ class EventBus:
         self._subscribers[event_type].append((priority, handler))
         # 按优先级排序
         self._subscribers[event_type].sort(key=lambda x: x[0].value, reverse=True)
-        logger.debug(f"Subscribed {handler.__name__} to {event_type.value} (priority: {priority.name})")
+        logger.debug(
+            f"Subscribed {handler.__name__} to {event_type.value} (priority: {priority.name})"
+        )
 
     def subscribe_async(
         self,
@@ -342,7 +348,9 @@ class EventBus:
         self._async_subscribers[event_type].append((priority, handler))
         # 按优先级排序
         self._async_subscribers[event_type].sort(key=lambda x: x[0].value, reverse=True)
-        logger.debug(f"Subscribed async {handler.__name__} to {event_type.value} (priority: {priority.name})")
+        logger.debug(
+            f"Subscribed async {handler.__name__} to {event_type.value} (priority: {priority.name})"
+        )
 
     def unsubscribe(self, event_type: EventType, handler: Callable):
         """取消订阅"""

@@ -5,7 +5,7 @@ Event Bus Client - EventBus 事件总线封装
 提供简化的 EventBus 客户端接口。
 """
 
-from src.core.events import Event, EventType, EventPriority, SystemEvents, get_event_bus
+from src.core.events import Event, EventPriority, EventType, SystemEvents, get_event_bus
 
 
 class EventBusClient:

@@ -3,12 +3,13 @@ FeatureTracker - 功能点追踪器
 
 M2.1: 追踪功能点执行状态
 """
-from typing import Optional
-import re
 
-from ..types.contract import ExecutionContract, ContractRequirement
-from ..types.verification import VerificationStatus, FeatureStatus
+import re
+from typing import Optional
+
+from ..types.contract import ContractRequirement, ExecutionContract
 from ..types.document import Priority
+from ..types.verification import FeatureStatus, VerificationStatus
 
 
 class FeatureTracker:
@@ -68,11 +69,7 @@ class FeatureTracker:
 
         return results
 
-    async def _llm_verify(
-        self,
-        req: ContractRequirement,
-        execution: str
-    ) -> FeatureStatus:
+    async def _llm_verify(self, req: ContractRequirement, execution: str) -> FeatureStatus:
         """LLM验证
 
         Args:
@@ -90,7 +87,7 @@ class FeatureTracker:
 
 需求: {req.description}
 优先级: {req.priority.value}
-验收标准: {req.verification_prompt or '无'}
+验收标准: {req.verification_prompt or "无"}
 
 执行结果:
 {execution}
@@ -107,14 +104,10 @@ class FeatureTracker:
             req_id=req.req_id,
             status=VerificationStatus.VERIFIED if passed else VerificationStatus.FAILED,
             evidence=[response],
-            notes=req.description
+            notes=req.description,
         )
 
-    def _regex_verify(
-        self,
-        req: ContractRequirement,
-        execution: str
-    ) -> FeatureStatus:
+    def _regex_verify(self, req: ContractRequirement, execution: str) -> FeatureStatus:
         """正则验证
 
         Args:
@@ -137,7 +130,7 @@ class FeatureTracker:
                 req_id=req.req_id,
                 status=VerificationStatus.SKIPPED,
                 evidence=["No keywords to verify"],
-                notes=req.description
+                notes=req.description,
             )
 
         # 检查关键词是否出现在执行结果中
@@ -149,14 +142,16 @@ class FeatureTracker:
                 req_id=req.req_id,
                 status=VerificationStatus.VERIFIED,
                 evidence=[f"Matched keywords: {matched_keywords}"],
-                notes=req.description
+                notes=req.description,
             )
         else:
             return FeatureStatus(
                 req_id=req.req_id,
                 status=VerificationStatus.FAILED,
-                evidence=[f"Match rate: {match_rate:.0%}, missing: {[k for k in keywords if k not in matched_keywords]}"],
-                notes=req.description
+                evidence=[
+                    f"Match rate: {match_rate:.0%}, missing: {[k for k in keywords if k not in matched_keywords]}"
+                ],
+                notes=req.description,
             )
 
     def _parse_verdict(self, response: str) -> bool:
@@ -212,5 +207,5 @@ class FeatureTracker:
             "verified": verified,
             "failed": failed,
             "skipped": skipped,
-            "pass_rate": verified / total if total > 0 else 0
+            "pass_rate": verified / total if total > 0 else 0,
         }

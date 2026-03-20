@@ -8,7 +8,6 @@ import logging
 import sys
 from typing import Optional
 
-
 # 默认日志格式
 DEFAULT_FORMAT = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"

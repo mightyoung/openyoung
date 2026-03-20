@@ -15,12 +15,13 @@ from pydantic import ValidationError
 
 # 使用统一的配置入口
 from src.config import (
+    UserConfigManager,
+    get_user_config,
     load_user_config,
     save_user_config,
-    get_user_config,
     set_user_config,
-    UserConfigManager,
 )
+
 
 # 兼容函数
 def load_config() -> dict:
@@ -41,6 +42,7 @@ def get_config(key: str, default: Any = None) -> Any:
 def set_config(key: str, value: str) -> bool:
     """设置配置值 (兼容旧接口)"""
     return set_user_config(key, value)
+
 
 # 导入配置模型
 from src.cli.config_models import (

@@ -10,10 +10,9 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
-from src.datacenter.checkpoint import Checkpoint
-
 # CheckpointManager 导入（从 impl）
 from src.core.memory.impl.checkpoint import CheckpointManager
+from src.datacenter.checkpoint import Checkpoint
 
 
 class TraceStatus(str, Enum):

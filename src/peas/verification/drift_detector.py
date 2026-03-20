@@ -3,9 +3,10 @@ DriftDetector - 偏离检测器
 
 M2.2: 检测执行与规划的偏离
 """
-from ..types.verification import VerificationStatus, DriftLevel, DriftReport, FeatureStatus
-from ..types.document import Priority
+
 from ..types.contract import ExecutionContract
+from ..types.document import Priority
+from ..types.verification import DriftLevel, DriftReport, FeatureStatus, VerificationStatus
 
 
 class DriftDetector:
@@ -21,15 +22,13 @@ class DriftDetector:
             threshold_map: 优先级阈值映射
         """
         self.threshold_map = threshold_map or {
-            Priority.MUST: 0,    # must项不允许失败
+            Priority.MUST: 0,  # must项不允许失败
             Priority.SHOULD: 30,  # should项容忍30%失败
-            Priority.COULD: 50    # could项容忍50%失败
+            Priority.COULD: 50,  # could项容忍50%失败
         }
 
     def detect(
-        self,
-        statuses: list[FeatureStatus],
-        contract: ExecutionContract = None
+        self, statuses: list[FeatureStatus], contract: ExecutionContract = None
     ) -> DriftReport:
         """检测偏离
 
@@ -47,7 +46,7 @@ class DriftDetector:
                 verified_count=0,
                 failed_count=0,
                 total_count=0,
-                recommendations=["No features to verify"]
+                recommendations=["No features to verify"],
             )
 
         total = len(statuses)
@@ -70,14 +69,11 @@ class DriftDetector:
             verified_count=verified,
             failed_count=failed,
             total_count=total,
-            recommendations=recommendations
+            recommendations=recommendations,
         )
 
     def _determine_level(
-        self,
-        score: float,
-        statuses: list[FeatureStatus],
-        contract: ExecutionContract = None
+        self, score: float, statuses: list[FeatureStatus], contract: ExecutionContract = None
     ) -> DriftLevel:
         """确定偏离级别
 
@@ -107,10 +103,7 @@ class DriftDetector:
         return DriftLevel.NONE
 
     def _has_priority_failure(
-        self,
-        statuses: list[FeatureStatus],
-        contract: ExecutionContract,
-        priority: Priority
+        self, statuses: list[FeatureStatus], contract: ExecutionContract, priority: Priority
     ) -> bool:
         """检查是否有指定优先级的失败
 
@@ -139,9 +132,7 @@ class DriftDetector:
         return False
 
     def _generate_recommendations(
-        self,
-        statuses: list[FeatureStatus],
-        contract: ExecutionContract = None
+        self, statuses: list[FeatureStatus], contract: ExecutionContract = None
     ) -> list[str]:
         """生成修正建议
 
@@ -214,10 +205,7 @@ class DriftDetector:
         return self.detect(statuses, tracker.contract)
 
 
-def detect_drift(
-    statuses: list[FeatureStatus],
-    contract: ExecutionContract = None
-) -> DriftReport:
+def detect_drift(statuses: list[FeatureStatus], contract: ExecutionContract = None) -> DriftReport:
     """检测偏离的便捷函数
 
     Args:

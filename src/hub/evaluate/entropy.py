@@ -38,19 +38,39 @@ class EntropyManager:
             repo_root=self.repo_root,
             max_file_lines=max_file_lines,
             forbidden_patterns=forbidden_patterns,
-            exclude_dirs=set(exclude_dirs or [
-                ".git", ".venv", "node_modules", "__pycache__",
-                ".pytest_cache", ".mypy_cache", ".ruff_cache",
-                "dist", "build", ".eggs",
-            ]),
+            exclude_dirs=set(
+                exclude_dirs
+                or [
+                    ".git",
+                    ".venv",
+                    "node_modules",
+                    "__pycache__",
+                    ".pytest_cache",
+                    ".mypy_cache",
+                    ".ruff_cache",
+                    "dist",
+                    "build",
+                    ".eggs",
+                ]
+            ),
         )
         self._dead_code_scanner = DeadCodeScanner(
             repo_root=self.repo_root,
-            exclude_dirs=set(exclude_dirs or [
-                ".git", ".venv", "node_modules", "__pycache__",
-                ".pytest_cache", ".mypy_cache", ".ruff_cache",
-                "dist", "build", ".eggs",
-            ]),
+            exclude_dirs=set(
+                exclude_dirs
+                or [
+                    ".git",
+                    ".venv",
+                    "node_modules",
+                    "__pycache__",
+                    ".pytest_cache",
+                    ".mypy_cache",
+                    ".ruff_cache",
+                    "dist",
+                    "build",
+                    ".eggs",
+                ]
+            ),
         )
 
     def scan_all(self) -> EntropyReport:
@@ -80,6 +100,7 @@ class EntropyManager:
     def _scan_doc_drift(self) -> list[EntropyIssue]:
         """检测文档与代码的不一致"""
         import re
+
         issues: list[EntropyIssue] = []
 
         claude_md = self.repo_root / "CLAUDE.md"
@@ -93,14 +114,16 @@ class EntropyManager:
                     ref = ref.strip().lstrip("`")
                     ref_path = self.repo_root / ref
                     if not ref_path.exists() and "." in ref:
-                        issues.append(EntropyIssue(
-                            entropy_type=EntropyType.DOC_DRIFT,
-                            severity=Severity.MEDIUM,
-                            file_path="CLAUDE.md",
-                            description=f"文档引用了不存在的文件: {ref}",
-                            evidence=f"CLAUDE.md 引用了 {ref} 但该文件不存在",
-                            recommendation="更新文档或创建缺失的文件",
-                        ))
+                        issues.append(
+                            EntropyIssue(
+                                entropy_type=EntropyType.DOC_DRIFT,
+                                severity=Severity.MEDIUM,
+                                file_path="CLAUDE.md",
+                                description=f"文档引用了不存在的文件: {ref}",
+                                evidence=f"CLAUDE.md 引用了 {ref} 但该文件不存在",
+                                recommendation="更新文档或创建缺失的文件",
+                            )
+                        )
 
             agents_md = self.repo_root / "AGENTS.md"
             if agents_md.exists():
@@ -109,14 +132,16 @@ class EntropyManager:
                 for ref in agent_refs:
                     ref_path = self.repo_root / ref
                     if not ref_path.exists():
-                        issues.append(EntropyIssue(
-                            entropy_type=EntropyType.DOC_DRIFT,
-                            severity=Severity.LOW,
-                            file_path="AGENTS.md",
-                            description=f"AGENTS.md 引用了不存在的文件: {ref}",
-                            evidence=f"AGENTS.md 引用了 {ref} 但该文件不存在",
-                            recommendation="更新 AGENTS.md 以反映当前代码结构",
-                        ))
+                        issues.append(
+                            EntropyIssue(
+                                entropy_type=EntropyType.DOC_DRIFT,
+                                severity=Severity.LOW,
+                                file_path="AGENTS.md",
+                                description=f"AGENTS.md 引用了不存在的文件: {ref}",
+                                evidence=f"AGENTS.md 引用了 {ref} 但该文件不存在",
+                                recommendation="更新 AGENTS.md 以反映当前代码结构",
+                            )
+                        )
 
         return issues
 
@@ -136,7 +161,7 @@ class EntropyManager:
             f"Scanned: {report.scanned_at.isoformat()}",
             f"Files: {report.total_files_scanned}",
             "",
-            f"## Summary",
+            "## Summary",
             f"- 🔴 Critical: {report.critical_count}",
             f"- 🟠 High: {report.high_count}",
             f"- 🟡 Medium: {report.medium_count}",

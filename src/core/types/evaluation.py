@@ -12,6 +12,7 @@ from enum import Enum
 
 class MetricType(Enum):
     """评估指标类型"""
+
     ACCURACY = "accuracy"
     CORRECTNESS = "correctness"
     COMPLETION = "completion"
@@ -22,6 +23,7 @@ class MetricType(Enum):
 
 class EvaluationDimension(str, Enum):
     """评估维度"""
+
     CORRECTNESS = "correctness"
     SAFETY = "safety"
     EFFICIENCY = "efficiency"
@@ -30,6 +32,7 @@ class EvaluationDimension(str, Enum):
 
 class MetricDefinition:
     """指标定义"""
+
     def __init__(self, name: str, metric_type: MetricType, weight: float = 1.0):
         self.name = name
         self.metric_type = metric_type

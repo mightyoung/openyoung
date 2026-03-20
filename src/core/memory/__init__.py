@@ -9,30 +9,18 @@ YoungAgent Memory Package
 - Memory Handlers: EventBus 集成
 """
 
-from .working import (
-    WorkingMemory,
-    TaskContext,
-    get_working_memory,
-    set_working_memory,
-)
-
-from .semantic import (
-    SemanticMemory,
-    KnowledgeEntry,
-    RetrievalResult,
-    get_semantic_memory,
-    set_semantic_memory,
-)
-
 from .checkpoint_integration import (
+    CheckpointWorkflowMixin,
     agent_state_to_checkpoint_state,
     checkpoint_state_to_agent_state,
-    save_agent_state,
     load_agent_state,
     restore_from_latest,
-    CheckpointWorkflowMixin,
+    save_agent_state,
 )
-
+from .events import (
+    EVENT_TO_LAYER,
+    MemoryEventType,
+)
 from .facade import (
     MemoryFacade,
     MemoryLayer,
@@ -41,21 +29,28 @@ from .facade import (
     get_memory_facade,
     set_memory_facade,
 )
-
-from .events import (
-    MemoryEventType,
-    EVENT_TO_LAYER,
-)
-
 from .handlers import (
     MemoryEventHandler,
     get_memory_handler,
     initialize_memory_events,
 )
+from .impl.checkpoint import CheckpointManager
 
 # Legacy imports from impl (直接导入，不再通过bridge)
 from .impl.vector_store import VectorStore
-from .impl.checkpoint import CheckpointManager
+from .semantic import (
+    KnowledgeEntry,
+    RetrievalResult,
+    SemanticMemory,
+    get_semantic_memory,
+    set_semantic_memory,
+)
+from .working import (
+    TaskContext,
+    WorkingMemory,
+    get_working_memory,
+    set_working_memory,
+)
 
 __all__ = [
     # Working Memory

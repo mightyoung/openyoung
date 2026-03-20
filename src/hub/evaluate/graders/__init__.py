@@ -9,10 +9,10 @@ Graders - 评估裁判模块
 参考 Anthropic grader 设计
 """
 
+from .base import BaseGrader, GraderOutput
 from .code import CodeGrader
 from .human import HumanGrader
 from .model import ModelGrader
-from .base import BaseGrader, GraderOutput
 
 __all__ = [
     "BaseGrader",

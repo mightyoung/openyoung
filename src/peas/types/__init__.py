@@ -1,14 +1,15 @@
 """
 PEAS Types Package
 """
-from .document import Priority, FeaturePoint, ParsedDocument
-from .contract import ContractRequirement, IntentSpec, ExecutionContract
+
+from .contract import ContractRequirement, ExecutionContract, IntentSpec
+from .document import FeaturePoint, ParsedDocument, Priority
 from .verification import (
-    VerificationStatus,
     DriftLevel,
-    FeatureStatus,
     DriftReport,
+    FeatureStatus,
     FeedbackAction,
+    VerificationStatus,
 )
 
 __all__ = [

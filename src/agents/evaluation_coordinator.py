@@ -23,7 +23,6 @@ from src.core.exception_handler import (
     handle_exceptions,
 )
 
-
 # ========== Stubs — 替换 src.evaluation 依赖 ==========
 
 
@@ -35,6 +34,7 @@ class EvalPlanner:
             task_type = "general"
             success_criteria = []
             validation_methods = []
+
         return _StubPlan()
 
 

@@ -263,9 +263,7 @@ class ExceptionHandler:
             )
         return ExceptionContext()
 
-    def _convert_exception(
-        self, exception: Exception, context: ExceptionContext
-    ) -> OpenYoungError:
+    def _convert_exception(self, exception: Exception, context: ExceptionContext) -> OpenYoungError:
         """转换异常为统一异常
 
         Args:

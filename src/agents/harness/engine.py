@@ -375,7 +375,9 @@ class HarnessEngine:
                 yield StreamingExecutionResult(
                     phase=result.phase,
                     iteration=iteration,
-                    status=ExecutionStatus.COMPLETED if result.evaluation == EvaluationResult.PASS else ExecutionStatus.FAILED,
+                    status=ExecutionStatus.COMPLETED
+                    if result.evaluation == EvaluationResult.PASS
+                    else ExecutionStatus.FAILED,
                     evaluation=result.evaluation,
                     feedback_action=result.feedback_action,
                     result=result.result,

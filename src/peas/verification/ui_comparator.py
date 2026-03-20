@@ -7,14 +7,16 @@ M2.1: UIComparator组件
 - 截图对比 (需要PIL)
 - 差异报告生成
 """
+
 import re
 from dataclasses import dataclass, field
-from typing import Optional
 from pathlib import Path
+from typing import Optional
 
 # Try to import PIL for image comparison
 try:
     from PIL import Image, ImageChops, ImageStat
+
     HAS_PIL = True
 except ImportError:
     HAS_PIL = False
@@ -25,6 +27,7 @@ from ..types import DriftLevel, DriftReport
 @dataclass
 class UIElement:
     """UI元素"""
+
     tag: str
     id: Optional[str] = None
     class_name: Optional[str] = None
@@ -36,6 +39,7 @@ class UIElement:
 @dataclass
 class VisualDiff:
     """视觉差异"""
+
     element_path: str
     diff_type: str  # "missing", "added", "changed", "style_changed"
     expected: Optional[str] = None
@@ -46,6 +50,7 @@ class VisualDiff:
 @dataclass
 class ComparisonResult:
     """对比结果"""
+
     is_match: bool
     drift_score: float  # 0-100
     drift_level: DriftLevel
@@ -221,17 +226,11 @@ class UIComparator:
         # 生成建议
         recommendations = []
         if critical_diffs:
-            recommendations.append(
-                f"发现 {len(critical_diffs)} 个关键差异，需要立即修复"
-            )
+            recommendations.append(f"发现 {len(critical_diffs)} 个关键差异，需要立即修复")
         if severe_diffs:
-            recommendations.append(
-                f"发现 {len(severe_diffs)} 个严重差异，建议下一版本修复"
-            )
+            recommendations.append(f"发现 {len(severe_diffs)} 个严重差异，建议下一版本修复")
         if moderate_diffs:
-            recommendations.append(
-                f"发现 {len(moderate_diffs)} 个中等差异，可视情况修复"
-            )
+            recommendations.append(f"发现 {len(moderate_diffs)} 个中等差异，可视情况修复")
         if not all_diffs:
             recommendations.append("UI完全匹配，无需修改")
 
@@ -388,20 +387,13 @@ class UIComparator:
         ELEMENT_WEIGHT = 0.7
 
         # 结构漂移
-        structural_score = (
-            len(structural_diffs) * 10 if structural_diffs else 0
-        )
+        structural_score = len(structural_diffs) * 10 if structural_diffs else 0
 
         # 元素漂移
-        element_score = (
-            len(element_diffs) * 15 if element_diffs else 0
-        )
+        element_score = len(element_diffs) * 15 if element_diffs else 0
 
         # 归一化到0-100
-        total_score = (
-            structural_score * STRUCTURAL_WEIGHT +
-            element_score * ELEMENT_WEIGHT
-        )
+        total_score = structural_score * STRUCTURAL_WEIGHT + element_score * ELEMENT_WEIGHT
 
         return min(100.0, total_score)
 

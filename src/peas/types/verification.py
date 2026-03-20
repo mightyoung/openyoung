@@ -1,6 +1,7 @@
 """
 Verification types for PEAS
 """
+
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
@@ -8,6 +9,7 @@ from typing import Optional
 
 class VerificationStatus(Enum):
     """验证状态"""
+
     PENDING = "pending"
     VERIFIED = "verified"
     FAILED = "failed"
@@ -16,6 +18,7 @@ class VerificationStatus(Enum):
 
 class DriftLevel(Enum):
     """偏离级别"""
+
     NONE = 0
     MINOR = 1
     MODERATE = 2
@@ -28,6 +31,7 @@ class DriftLevel(Enum):
 
 class FeedbackAction(Enum):
     """反馈动作"""
+
     COMPLETE = "complete"
     RETRY = "retry"
     REPLAN = "replan"
@@ -37,6 +41,7 @@ class FeedbackAction(Enum):
 @dataclass
 class FeatureStatus:
     """功能点状态"""
+
     req_id: str
     status: VerificationStatus
     evidence: list[str] = field(default_factory=list)
@@ -55,6 +60,7 @@ class FeatureStatus:
 @dataclass
 class DriftReport:
     """偏离报告"""
+
     drift_score: float  # 0-100
     level: DriftLevel
     verified_count: int

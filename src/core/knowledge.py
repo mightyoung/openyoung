@@ -27,6 +27,7 @@ def _get_learnings_manager():
     if _LearningsManager is None:
         try:
             from src.skills.learnings import LearningsManager
+
             _LearningsManager = LearningsManager
         except ImportError:
             logger.warning("LearningsManager not available")
@@ -39,6 +40,7 @@ def _get_vector_store():
     if _VectorStore is None:
         try:
             from src.core.memory.impl.vector_store import VectorStore
+
             _VectorStore = VectorStore  # Return class, not instance
         except ImportError:
             logger.warning("VectorStore not available")
@@ -226,7 +228,7 @@ class KnowledgeManager:
         """记录完整心跳周期"""
         success_count = sum(1 for r in results if r.get("success"))
         await self.log_learning(
-            title=f"Heartbeat Cycle Complete",
+            title="Heartbeat Cycle Complete",
             description=f"Completed {success_count}/{len(phases)} phases in {duration_ms}ms",
             tags=["heartbeat", "cycle"],
             context={

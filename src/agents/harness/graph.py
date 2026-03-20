@@ -51,7 +51,7 @@ class HarnessGraph:
         Yields:
             PartialResult at each phase/step
         """
-        from src.agents.harness.engine import HarnessEngine, HarnessConfig
+        from src.agents.harness.engine import HarnessConfig, HarnessEngine
 
         # Initialize engine with config
         engine_config = HarnessConfig(
@@ -96,7 +96,7 @@ class HarnessGraph:
                     "metadata": exec_result.metadata,
                 },
                 partial_output=exec_result.partial_output,
-                timestamp=exec_result.timestamp if hasattr(exec_result, 'timestamp') else None,
+                timestamp=exec_result.timestamp if hasattr(exec_result, "timestamp") else None,
             )
 
             yield partial

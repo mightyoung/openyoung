@@ -9,14 +9,14 @@ Working Memory (L0) - 当前任务状态存储
 参考: OpenViking L0 Context Loading
 """
 
+import asyncio
 import json
 import logging
-import asyncio
+import threading
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
-import threading
 
 logger = logging.getLogger(__name__)
 
@@ -93,19 +93,10 @@ class WorkingMemory:
     # 核心操作
     # ====================
 
-    def create_context(
-        self,
-        task_id: str,
-        task_description: str = "",
-        **kwargs
-    ) -> TaskContext:
+    def create_context(self, task_id: str, task_description: str = "", **kwargs) -> TaskContext:
         """创建新的任务上下文"""
         with self._lock:
-            ctx = TaskContext(
-                task_id=task_id,
-                task_description=task_description,
-                **kwargs
-            )
+            ctx = TaskContext(task_id=task_id, task_description=task_description, **kwargs)
             self._memory[task_id] = ctx
             self._current_task_id = task_id
 
@@ -121,11 +112,7 @@ class WorkingMemory:
             task_id = task_id or self._current_task_id
             return self._memory.get(task_id)
 
-    def update_context(
-        self,
-        task_id: Optional[str] = None,
-        **kwargs
-    ) -> Optional[TaskContext]:
+    def update_context(self, task_id: Optional[str] = None, **kwargs) -> Optional[TaskContext]:
         """更新任务上下文 (返回新副本)"""
         with self._lock:
             task_id = task_id or self._current_task_id
@@ -153,10 +140,7 @@ class WorkingMemory:
             # 保存当前上下文
             if self._current_task_id and self._current_task_id in self._memory:
                 _try_create_task(
-                    self._persist_async(
-                        self._current_task_id,
-                        self._memory[self._current_task_id]
-                    )
+                    self._persist_async(self._current_task_id, self._memory[self._current_task_id])
                 )
 
             # 切换
@@ -207,11 +191,14 @@ class WorkingMemory:
         """添加消息"""
         return self.update_context(
             task_id=task_id,
-            messages=self.get_context(task_id).messages + [{
-                "role": role,
-                "content": content,
-                "timestamp": datetime.now().isoformat(),
-            }]
+            messages=self.get_context(task_id).messages
+            + [
+                {
+                    "role": role,
+                    "content": content,
+                    "timestamp": datetime.now().isoformat(),
+                }
+            ],
         )
 
     def add_tool_used(
@@ -221,8 +208,7 @@ class WorkingMemory:
     ) -> Optional[TaskContext]:
         """记录使用的工具"""
         return self.update_context(
-            task_id=task_id,
-            tools_used=self.get_context(task_id).tools_used + [tool_name]
+            task_id=task_id, tools_used=self.get_context(task_id).tools_used + [tool_name]
         )
 
     def set_variable(
@@ -234,10 +220,7 @@ class WorkingMemory:
         """设置变量"""
         variables = self.get_context(task_id).variables.copy()
         variables[key] = value
-        return self.update_context(
-            task_id=task_id,
-            variables=variables
-        )
+        return self.update_context(task_id=task_id, variables=variables)
 
     def get_variable(
         self,

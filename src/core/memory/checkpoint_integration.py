@@ -9,7 +9,11 @@ Checkpoint 与 LangGraph State 集成
 import logging
 from typing import Any, Optional
 
-from src.core.agent_checkpoint import AgentCheckpoint, AgentCheckpointManager, get_checkpoint_manager
+from src.core.agent_checkpoint import (
+    AgentCheckpoint,
+    AgentCheckpointManager,
+    get_checkpoint_manager,
+)
 from src.core.langgraph_state import AgentState, TaskPhase, create_initial_state
 
 logger = logging.getLogger(__name__)
@@ -27,7 +31,9 @@ def agent_state_to_checkpoint_state(state: AgentState) -> dict[str, Any]:
     return {
         "messages": state.get("messages", []),
         "context": state.get("context", {}),
-        "phase": state.get("phase", TaskPhase.IDLE).value if isinstance(state.get("phase"), TaskPhase) else state.get("phase", "idle"),
+        "phase": state.get("phase", TaskPhase.IDLE).value
+        if isinstance(state.get("phase"), TaskPhase)
+        else state.get("phase", "idle"),
         "checkpoint_ref": state.get("checkpoint_ref"),
         "metadata": state.get("metadata", {}),
         "task_id": state.get("task_id"),

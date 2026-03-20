@@ -152,4 +152,6 @@ def llm_info(provider_name: str | None):
         click.echo(f"Default provider: {default.name}")
         click.echo(f"Type: {default.provider_type}")
         click.echo(f"Base URL: {default.base_url}")
-        click.echo(f"Models: {', '.join(default.models[:3])}{'...' if len(default.models) > 3 else ''}")
+        click.echo(
+            f"Models: {', '.join(default.models[:3])}{'...' if len(default.models) > 3 else ''}"
+        )

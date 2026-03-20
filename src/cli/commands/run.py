@@ -43,12 +43,23 @@ def run_agent(
         openyoung run default -i
         openyoung run default --github https://github.com/user/repo "analyze this"
     """
-    asyncio.run(_run(initial_task=task, agent_name=agent_name, interactive=interactive,
-                      github_url=github_url, sandbox=sandbox, allow_network=allow_network,
-                      max_memory=max_memory, max_time=max_time))
+    asyncio.run(
+        _run(
+            initial_task=task,
+            agent_name=agent_name,
+            interactive=interactive,
+            github_url=github_url,
+            sandbox=sandbox,
+            allow_network=allow_network,
+            max_memory=max_memory,
+            max_time=max_time,
+        )
+    )
 
 
-async def _run(initial_task, agent_name, interactive, github_url, sandbox, allow_network, max_memory, max_time):
+async def _run(
+    initial_task, agent_name, interactive, github_url, sandbox, allow_network, max_memory, max_time
+):
     """Internal async runner implementation"""
     user_task = initial_task or ""
 
@@ -88,6 +99,7 @@ async def _run(initial_task, agent_name, interactive, github_url, sandbox, allow
                 if clone_path and clone_path.exists():
                     click.echo("[Import] Installing dependencies...")
                     from src.tools.executor import ToolExecutor
+
                     executor = ToolExecutor()
                     deps_result = await executor.install_dependencies(clone_path)
                     click.echo(f"[Import] {deps_result}")
@@ -113,7 +125,9 @@ async def _run(initial_task, agent_name, interactive, github_url, sandbox, allow
                 max_execution_time_seconds=max_time,
                 allow_network=allow_network,
             )
-            click.echo(f"[Sandbox] Enabled: max_memory={max_memory}MB, max_time={max_time}s, allow_network={allow_network}")
+            click.echo(
+                f"[Sandbox] Enabled: max_memory={max_memory}MB, max_time={max_time}s, allow_network={allow_network}"
+            )
         except Exception as e:
             click.echo(f"[Warning] Sandbox init failed: {e}", err=True)
 
@@ -144,6 +158,7 @@ async def _run(initial_task, agent_name, interactive, github_url, sandbox, allow
         # Track agent usage
         try:
             from src.package_manager.registry import AgentRegistry
+
             registry = AgentRegistry("packages")
             registry.track_usage(agent_name)
         except Exception as e:

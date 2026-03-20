@@ -39,18 +39,15 @@ EVENT_TO_LAYER = {
     MemoryEventType.CONTEXT_UPDATED: "working",
     MemoryEventType.CONTEXT_SWITCHED: "working",
     MemoryEventType.CONTEXT_DELETED: "working",
-
     # Semantic Memory
     MemoryEventType.KNOWLEDGE_STORED: "semantic",
     MemoryEventType.KNOWLEDGE_RETRIEVED: "semantic",
     MemoryEventType.KNOWLEDGE_ACCESSED: "semantic",
-
     # Checkpoint
     MemoryEventType.CHECKPOINT_SAVED: "checkpoint",
     MemoryEventType.CHECKPOINT_LOADED: "checkpoint",
     MemoryEventType.CHECKPOINT_RESTORED: "checkpoint",
     MemoryEventType.CHECKPOINT_DELETED: "checkpoint",
-
     # System
     MemoryEventType.MEMORY_INITIALIZED: "system",
     MemoryEventType.MEMORY_ERROR: "system",

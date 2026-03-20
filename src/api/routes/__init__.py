@@ -26,8 +26,8 @@ def get_all_routers():
     # 添加 evaluation_api routers
     try:
         from src.evaluation_api.routers import (
-            executions,
             evaluations,
+            executions,
             exports,
             stream,
         )

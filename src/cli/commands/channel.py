@@ -109,7 +109,9 @@ def channel_config_cmd(
 
         valid_platforms = ["cli", "telegram", "discord", "qq", "dingtalk", "feishu"]
         if platform not in valid_platforms:
-            click.echo(f"Error: Invalid platform. Choose from: {', '.join(valid_platforms)}", err=True)
+            click.echo(
+                f"Error: Invalid platform. Choose from: {', '.join(valid_platforms)}", err=True
+            )
             return
 
         # Check if already exists
@@ -239,26 +241,32 @@ async def _start_channel(platform: str = None, port: int = 8080):
 
         if ch["platform"] == "cli":
             from src.channels import CLIChannel
+
             manager.register("cli", CLIChannel(ch.get("config", {})))
 
         elif ch["platform"] == "telegram":
             from src.channels import TelegramChannel
+
             manager.register("telegram", TelegramChannel(ch.get("config", {})))
 
         elif ch["platform"] == "discord":
             from src.channels import DiscordChannel
+
             manager.register("discord", DiscordChannel(ch.get("config", {})))
 
         elif ch["platform"] == "qq":
             from src.channels import QQChannel
+
             manager.register("qq", QQChannel(ch.get("config", {})))
 
         elif ch["platform"] == "dingtalk":
             from src.channels import DingTalkChannel
+
             manager.register("dingtalk", DingTalkChannel(ch.get("config", {})))
 
         elif ch["platform"] == "feishu":
             from src.channels import FeishuChannel
+
             manager.register("feishu", FeishuChannel(ch.get("config", {})))
 
     click.echo("Channels started. Press Ctrl+C to stop.")

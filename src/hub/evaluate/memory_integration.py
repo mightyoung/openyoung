@@ -16,7 +16,7 @@ import logging
 from typing import Any, Optional
 
 from .benchmark import BenchmarkTask
-from .metrics import TaskMetrics, EvalTrial
+from .metrics import EvalTrial, TaskMetrics
 from .middleware import BaseMiddleware, MiddlewareResult
 
 logger = logging.getLogger(__name__)
@@ -68,7 +68,9 @@ class MemoryIntegrationMiddleware(BaseMiddleware):
             query_context = {
                 "task_id": task.id,
                 "task_desc": task.desc,
-                "eval_type": task.eval_type.value if hasattr(task.eval_type, 'value') else str(task.eval_type),
+                "eval_type": task.eval_type.value
+                if hasattr(task.eval_type, "value")
+                else str(task.eval_type),
             }
 
             # 查询相关经验
@@ -83,7 +85,7 @@ class MemoryIntegrationMiddleware(BaseMiddleware):
                 # 格式化经验内容
                 experiences = []
                 for result in results:
-                    entry = result.entry if hasattr(result, 'entry') else result
+                    entry = result.entry if hasattr(result, "entry") else result
                     exp_content = f"[相关度:{result.relevance_score:.2f}] {entry.content}"
                     experiences.append(exp_content)
 
@@ -124,14 +126,16 @@ class MemoryIntegrationMiddleware(BaseMiddleware):
             # 提取标签
             tags = [
                 "evaluation",
-                task.eval_type.value if hasattr(task.eval_type, 'value') else "unknown",
+                task.eval_type.value if hasattr(task.eval_type, "value") else "unknown",
                 "task_result",
             ]
 
             # 元数据
             metadata = {
                 "task_id": task.id,
-                "eval_type": task.eval_type.value if hasattr(task.eval_type, 'value') else str(task.eval_type),
+                "eval_type": task.eval_type.value
+                if hasattr(task.eval_type, "value")
+                else str(task.eval_type),
                 "pass_rate": metrics.pass_at_1,
                 "avg_score": metrics.avg_score,
                 "total_trials": metrics.total_trials,
@@ -208,8 +212,12 @@ class MemoryIntegrationMiddleware(BaseMiddleware):
             lines.append("Trial Results:")
             for i, trial in enumerate(metrics.trials[:3]):  # 最多 3 个
                 status = "PASS" if trial.passed else "FAIL"
-                score = trial.overall_score if hasattr(trial, 'overall_score') and trial.overall_score else 0.0
-                lines.append(f"  Trial {i+1}: {status} (score: {score:.2f})")
+                score = (
+                    trial.overall_score
+                    if hasattr(trial, "overall_score") and trial.overall_score
+                    else 0.0
+                )
+                lines.append(f"  Trial {i + 1}: {status} (score: {score:.2f})")
 
         return "\n".join(lines)
 
@@ -279,7 +287,7 @@ class HarnessMemoryConnector:
 
         experiences = []
         for result in results:
-            entry = result.entry if hasattr(result, 'entry') else result
+            entry = result.entry if hasattr(result, "entry") else result
             experiences.append(entry.content)
 
         return experiences

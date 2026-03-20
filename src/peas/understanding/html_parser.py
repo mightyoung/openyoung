@@ -4,14 +4,15 @@ HTML Parser - 解析HTML设计文档
 M1.2: HTML原型解析器
 支持从Figma/HTML导出提取feature points
 """
-import re
+
 import html as html_escape
+import re
+from dataclasses import dataclass
 from html.parser import HTMLParser as BaseHTMLParser
 from pathlib import Path
 from typing import Optional
-from dataclasses import dataclass
 
-from ..types import Priority, FeaturePoint, ParsedDocument
+from ..types import FeaturePoint, ParsedDocument, Priority
 
 # Security: Input size limits
 MAX_CONTENT_SIZE = 10 * 1024 * 1024  # 10MB
@@ -31,47 +32,47 @@ def _escape_for_html(text: str) -> str:
 
 # 按钮元素模式
 _BUTTON_PATTERNS = [
-    re.compile(r'button|btn', re.IGNORECASE),
-    re.compile(r'submit|submit[\s_-]?button', re.IGNORECASE),
+    re.compile(r"button|btn", re.IGNORECASE),
+    re.compile(r"submit|submit[\s_-]?button", re.IGNORECASE),
 ]
 
 # 表单元素模式
 _FORM_PATTERNS = [
-    re.compile(r'form|input|textarea|select', re.IGNORECASE),
-    re.compile(r'checkbox|radio', re.IGNORECASE),
-    re.compile(r'field', re.IGNORECASE),
+    re.compile(r"form|input|textarea|select", re.IGNORECASE),
+    re.compile(r"checkbox|radio", re.IGNORECASE),
+    re.compile(r"field", re.IGNORECASE),
 ]
 
 # 导航元素模式
 _NAVIGATION_PATTERNS = [
-    re.compile(r'nav|menu|navbar|header|footer', re.IGNORECASE),
-    re.compile(r'navigation|sidebar', re.IGNORECASE),
+    re.compile(r"nav|menu|navbar|header|footer", re.IGNORECASE),
+    re.compile(r"navigation|sidebar", re.IGNORECASE),
 ]
 
 # 交互元素模式
 _INTERACTIVE_PATTERNS = [
-    re.compile(r'link|a[\s_-]?tag', re.IGNORECASE),
-    re.compile(r'clickable|click', re.IGNORECASE),
-    re.compile(r'toggle|tab|accordion', re.IGNORECASE),
+    re.compile(r"link|a[\s_-]?tag", re.IGNORECASE),
+    re.compile(r"clickable|click", re.IGNORECASE),
+    re.compile(r"toggle|tab|accordion", re.IGNORECASE),
 ]
 
 # 数据显示模式
 _DATA_PATTERNS = [
-    re.compile(r'table|grid|list|card', re.IGNORECASE),
-    re.compile(r'display|show|view|browse', re.IGNORECASE),
+    re.compile(r"table|grid|list|card", re.IGNORECASE),
+    re.compile(r"display|show|view|browse", re.IGNORECASE),
 ]
 
 # 优先级标记模式
 _PRIORITY_MARKERS = {
     Priority.MUST: [
-        re.compile(r'(?:must|required|必填|必需|必须)', re.IGNORECASE),
-        re.compile(r'\*[\s*]*必[\s*]*\*', re.IGNORECASE),
+        re.compile(r"(?:must|required|必填|必需|必须)", re.IGNORECASE),
+        re.compile(r"\*[\s*]*必[\s*]*\*", re.IGNORECASE),
     ],
     Priority.SHOULD: [
-        re.compile(r'(?:should|建议|推荐|应该)', re.IGNORECASE),
+        re.compile(r"(?:should|建议|推荐|应该)", re.IGNORECASE),
     ],
     Priority.COULD: [
-        re.compile(r'(?:could|optional|可选|可以)', re.IGNORECASE),
+        re.compile(r"(?:could|optional|可选|可以)", re.IGNORECASE),
     ],
 }
 
@@ -175,9 +176,7 @@ class _HTMLFeatureExtractor(BaseHTMLParser):
 
         # 只匹配明确以 Feature: 开头的注释（行首匹配）
         feature_match = re.match(
-            r'^(?:feature|功能|requirement|需求|req)[:\s]+([^\n\-]+)',
-            data_stripped,
-            re.IGNORECASE
+            r"^(?:feature|功能|requirement|需求|req)[:\s]+([^\n\-]+)", data_stripped, re.IGNORECASE
         )
         if feature_match:
             title = feature_match.group(1).strip()
@@ -189,24 +188,19 @@ class _HTMLFeatureExtractor(BaseHTMLParser):
                 title=title,
                 description=title,
                 priority=priority,
-                related_section=self._current_section
+                related_section=self._current_section,
             )
 
-    def _extract_element_feature(
-        self,
-        element_type: str,
-        attrs: dict,
-        default_desc: str
-    ):
+    def _extract_element_feature(self, element_type: str, attrs: dict, default_desc: str):
         """提取元素为功能点"""
         # 从id、name、placeholder、aria-label等属性提取
         feature_name = (
-            attrs.get("id") or
-            attrs.get("name") or
-            attrs.get("aria-label") or
-            attrs.get("placeholder") or
-            attrs.get("title") or
-            default_desc
+            attrs.get("id")
+            or attrs.get("name")
+            or attrs.get("aria-label")
+            or attrs.get("placeholder")
+            or attrs.get("title")
+            or default_desc
         )
 
         if not feature_name:
@@ -215,9 +209,7 @@ class _HTMLFeatureExtractor(BaseHTMLParser):
         # 检查是否应该创建新功能点
         # 如果当前没有未完成的功能点，或者属性中有明确的功能标记
         should_create = (
-            self._current_feature is None or
-            "data-feature" in attrs or
-            "data-requirement" in attrs
+            self._current_feature is None or "data-feature" in attrs or "data-requirement" in attrs
         )
 
         if should_create:
@@ -239,7 +231,7 @@ class _HTMLFeatureExtractor(BaseHTMLParser):
                 description=f"{element_type} - {feature_name}",
                 priority=priority,
                 related_section=self._current_section,
-                acceptance_criteria=acceptance
+                acceptance_criteria=acceptance,
             )
 
     def _finalize_feature(self):
@@ -276,8 +268,8 @@ class _HTMLFeatureExtractor(BaseHTMLParser):
             metadata={
                 "parser_version": "1.0",
                 "content_length": len(raw_content),
-                "source_type": "html"
-            }
+                "source_type": "html",
+            },
         )
 
 
@@ -309,7 +301,7 @@ class HTMLParser:
             ValueError: If content exceeds MAX_CONTENT_SIZE
         """
         # Security: Validate input size before processing
-        if len(content.encode('utf-8')) > MAX_CONTENT_SIZE:
+        if len(content.encode("utf-8")) > MAX_CONTENT_SIZE:
             raise ValueError(
                 f"Content size exceeds maximum allowed size of {MAX_CONTENT_SIZE} bytes"
             )
@@ -328,30 +320,24 @@ class HTMLParser:
         return extractor.get_result(content)
 
     def _extract_structural_features(
-        self,
-        content: str,
-        extractor: Optional[_HTMLFeatureExtractor] = None
+        self, content: str, extractor: Optional[_HTMLFeatureExtractor] = None
     ) -> _HTMLFeatureExtractor:
         """从HTML结构中提取功能点"""
         if extractor is None:
             extractor = _HTMLFeatureExtractor()
 
         # 提取页面标题
-        title_match = re.search(r'<title[^>]*>([^<]+)</title>', content, re.IGNORECASE)
+        title_match = re.search(r"<title[^>]*>([^<]+)</title>", content, re.IGNORECASE)
         if title_match:
             extractor._title = title_match.group(1).strip()
 
         # 提取h1作为主标题
-        h1_match = re.search(r'<h1[^>]*>([^<]+)</h1>', content, re.IGNORECASE)
+        h1_match = re.search(r"<h1[^>]*>([^<]+)</h1>", content, re.IGNORECASE)
         if h1_match and extractor._title == "Untitled HTML Document":
             extractor._title = h1_match.group(1).strip()
 
         # 提取所有标题作为章节
-        heading_matches = re.findall(
-            r'<h([1-6])[^>]*>([^<]+)</h\1>',
-            content,
-            re.IGNORECASE
-        )
+        heading_matches = re.findall(r"<h([1-6])[^>]*>([^<]+)</h\1>", content, re.IGNORECASE)
         for level, title in heading_matches:
             level = int(level)
             if level > 1:
@@ -364,14 +350,10 @@ class HTMLParser:
 
         return extractor
 
-    def _extract_comments_as_features(
-        self,
-        content: str,
-        extractor: _HTMLFeatureExtractor
-    ):
+    def _extract_comments_as_features(self, content: str, extractor: _HTMLFeatureExtractor):
         """从HTML注释中提取功能点"""
         # 使用正则表达式提取HTML注释
-        comment_pattern = re.compile(r'<!--(.*?)-->', re.DOTALL)
+        comment_pattern = re.compile(r"<!--(.*?)-->", re.DOTALL)
         comments = comment_pattern.findall(content)
 
         # 用于跟踪已处理的注释，避免重复
@@ -390,9 +372,9 @@ class HTMLParser:
             # 检查功能点标记 - 支持 Feature:, Must:, Should:, Could:, Requirement:, 需求:, 必填:
             # 匹配模式: 标记: 描述 (必须从行首开始匹配)
             match = re.match(
-                r'^(?:feature|功能|requirement|需求|req|must|should|could|必填|必须|应该|建议|可选)[:\s]+([^\n\-]+)',
+                r"^(?:feature|功能|requirement|需求|req|must|should|could|必填|必须|应该|建议|可选)[:\s]+([^\n\-]+)",
                 comment,
-                re.IGNORECASE
+                re.IGNORECASE,
             )
             if match:
                 title = match.group(1).strip()
@@ -404,15 +386,11 @@ class HTMLParser:
                     title=title,
                     description=title,
                     priority=priority,
-                    related_section=extractor._current_section
+                    related_section=extractor._current_section,
                 )
                 extractor._feature_points.append(fp)
 
-    def _extract_elements_as_features(
-        self,
-        content: str,
-        extractor: _HTMLFeatureExtractor
-    ):
+    def _extract_elements_as_features(self, content: str, extractor: _HTMLFeatureExtractor):
         """从HTML元素中提取功能点"""
         element_patterns = [
             # 表单相关
@@ -423,21 +401,18 @@ class HTMLParser:
             (r'<input[^>]*(?:type=["\']radio["\'])', "单选按钮"),
             (r'<select[^>]*(?:id|name)=["\']([^"\']+)["\'][^>]*>', "下拉选择"),
             (r'<textarea[^>]*(?:id|name)=["\']([^"\']+)["\'][^>]*>', "文本域"),
-
             # 导航相关
             (r'<nav[^>]*(?:id|name)=["\']([^"\']+)["\'][^>]*>', "导航"),
             (r'<a[^>]*(?:href)=["\']([^"\']+)["\'][^>]*>', "链接"),
-
             # 交互相关
-            (r'<modal[^>]*>', "模态框"),
-            (r'<dialog[^>]*>', "对话框"),
-            (r'<tab[^>]*>', "标签页"),
-            (r'<accordion[^>]*>', "折叠面板"),
-
+            (r"<modal[^>]*>", "模态框"),
+            (r"<dialog[^>]*>", "对话框"),
+            (r"<tab[^>]*>", "标签页"),
+            (r"<accordion[^>]*>", "折叠面板"),
             # 数据显示
             (r'<table[^>]*(?:id|name)=["\']([^"\']+)["\'][^>]*>', "表格"),
-            (r'<card[^>]*>', "卡片"),
-            (r'<list[^>]*>', "列表"),
+            (r"<card[^>]*>", "卡片"),
+            (r"<list[^>]*>", "列表"),
         ]
 
         for pattern, desc in element_patterns:
@@ -451,7 +426,7 @@ class HTMLParser:
                     title=element_name if element_name else desc,
                     description=f"{desc}: {element_name}",
                     priority=Priority.SHOULD,
-                    related_section=extractor._current_section
+                    related_section=extractor._current_section,
                 )
                 extractor._feature_points.append(fp)
 
@@ -480,7 +455,7 @@ class HTMLParser:
                     f"File path '{file_path}' escapes allowed directory '{allowed_dir}'"
                 )
 
-        with open(resolved_path, 'r', encoding='utf-8') as f:
+        with open(resolved_path, encoding="utf-8") as f:
             content = f.read()
         return self.parse(content)
 

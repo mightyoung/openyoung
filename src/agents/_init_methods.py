@@ -194,7 +194,7 @@ def init_memory_facade(self) -> None:
 
         # 尝试获取 MemoryFacade
         self._memory_facade = loop.run_until_complete(get_memory_facade())
-        print(f"[MemoryFacade] Initialized (Layered Memory System)")
+        print("[MemoryFacade] Initialized (Layered Memory System)")
     except Exception as e:
         self._logger.warning(f"MemoryFacade init failed: {e}")
         self._memory_facade = None
@@ -342,9 +342,7 @@ def load_skills(self) -> None:
                     skill_config = yaml.safe_load(f)
                 entry = skill_config.get("entry", "SKILL.md")
                 content_file = skill_dir / entry
-                content = (
-                    content_file.read_text(encoding="utf-8") if content_file.exists() else ""
-                )
+                content = content_file.read_text(encoding="utf-8") if content_file.exists() else ""
                 self._loaded_skills[skill_name] = {
                     "config": skill_config,
                     "content": content,

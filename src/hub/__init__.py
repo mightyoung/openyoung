@@ -86,13 +86,13 @@ except ImportError:
 # 版本管理 (统一使用 package_manager 版本)
 try:
     from src.package_manager.version_manager import (
-        VersionManager,
+        AgentVersion,
         VersionError,
         VersionHistory,
-        AgentVersion,
-        parse_semver,
+        VersionManager,
         compare_versions,
         get_version_manager,
+        parse_semver,
     )
 except ImportError:
     VersionManager = None

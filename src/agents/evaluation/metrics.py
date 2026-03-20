@@ -5,8 +5,8 @@ Metrics - 评估指标
 """
 
 from src.hub.evaluate.metrics import (
-    TrialMetrics,
     EvalMetrics,
+    TrialMetrics,
     compute_pass_at_k,
     compute_pass_rate,
 )

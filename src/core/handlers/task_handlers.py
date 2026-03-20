@@ -219,7 +219,9 @@ class ErrorHandler:
                 event.metadata["recovery_state"] = last_checkpoint.state
                 logger.info(f"Recovery checkpoint found: {last_checkpoint.id}")
             else:
-                logger.warning(f"No checkpoint found for recovery: agent={agent_id}, task={task_id}")
+                logger.warning(
+                    f"No checkpoint found for recovery: agent={agent_id}, task={task_id}"
+                )
         except Exception as e:
             logger.warning(f"Failed to attempt recovery: {e}")
 
@@ -257,6 +259,7 @@ class HeartbeatHandler:
         phase = data.get("phase", "unknown")
 
         import time
+
         current_time = time.time()
 
         # 1. 记录心跳时间戳
@@ -292,7 +295,9 @@ class HeartbeatHandler:
         except Exception as e:
             logger.debug(f"Failed to update checkpoint: {e}")
 
-    async def _check_timeout(self, agent_id: str, task_id: Optional[str], current_time: float) -> None:
+    async def _check_timeout(
+        self, agent_id: str, task_id: Optional[str], current_time: float
+    ) -> None:
         """检查是否超时"""
         if not task_id:
             return
@@ -390,7 +395,7 @@ evaluation_handler = EvaluationHandler()
 # 注册处理器到 EventBus
 def register_event_handlers() -> None:
     """注册所有事件处理器"""
-    from src.core.events import EventBus, get_event_bus, EventType
+    from src.core.events import EventBus, EventType, get_event_bus
 
     bus = get_event_bus()
 
@@ -411,4 +416,6 @@ def register_event_handlers() -> None:
     bus.subscribe_async(EventType.EVALUATION_STARTED, evaluation_handler.handle)
     bus.subscribe_async(EventType.EVALUATION_COMPLETED, evaluation_handler.handle)
 
-    logger.info("Event handlers registered: TASK_STARTED, TASK_COMPLETED, ERROR, HEARTBEAT, EVALUATION")
+    logger.info(
+        "Event handlers registered: TASK_STARTED, TASK_COMPLETED, ERROR, HEARTBEAT, EVALUATION"
+    )

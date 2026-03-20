@@ -3,12 +3,13 @@ ContractBuilder - 构建可执行合约
 
 M1.3: 构建ExecutionContract
 """
+
 import uuid
 from datetime import datetime
 from typing import Optional
 
-from ..types.document import ParsedDocument, Priority, FeaturePoint
-from ..types.contract import IntentSpec, ContractRequirement, ExecutionContract
+from ..types.contract import ContractRequirement, ExecutionContract, IntentSpec
+from ..types.document import FeaturePoint, ParsedDocument, Priority
 from ..types.verification import VerificationStatus
 
 
@@ -26,11 +27,7 @@ class ContractBuilder:
         """
         self.llm = llm_client
 
-    def build(
-        self,
-        doc: ParsedDocument,
-        intent: Optional[IntentSpec] = None
-    ) -> ExecutionContract:
+    def build(self, doc: ParsedDocument, intent: Optional[IntentSpec] = None) -> ExecutionContract:
         """构建执行合约
 
         Args:
@@ -55,7 +52,7 @@ class ContractBuilder:
                 "total_features": len(doc.feature_points),
                 "must_count": len(doc.must_features),
                 "should_count": len(doc.should_features),
-            }
+            },
         )
 
     def _create_requirement(self, fp: FeaturePoint) -> ContractRequirement:
@@ -79,7 +76,7 @@ class ContractBuilder:
             metadata={
                 "section": fp.related_section,
                 "acceptance_criteria": fp.acceptance_criteria,
-            }
+            },
         )
 
     def _determine_verification_method(self, fp: FeaturePoint) -> str:
@@ -127,10 +124,7 @@ class ContractBuilder:
 请判断实现是否满足该功能点的需求，并给出简短理由。"""
 
 
-def build_contract(
-    doc: ParsedDocument,
-    intent: Optional[IntentSpec] = None
-) -> ExecutionContract:
+def build_contract(doc: ParsedDocument, intent: Optional[IntentSpec] = None) -> ExecutionContract:
     """构建合约的便捷函数
 
     Args:

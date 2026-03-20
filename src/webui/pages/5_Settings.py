@@ -98,7 +98,7 @@ def main():
                 api_url = st.text_input(
                     "API Base URL",
                     value=saved_settings.get("api_url", config.API_BASE_URL),
-                    help="OpenYoung API 服务器地址"
+                    help="OpenYoung API 服务器地址",
                 )
 
             with col2:
@@ -106,7 +106,7 @@ def main():
                     "API Key",
                     value=saved_settings.get("api_key", config.API_KEY),
                     type="password",
-                    help="API 认证密钥"
+                    help="API 认证密钥",
                 )
 
             submitted = st.form_submit_button("💾 Save to YAML")
@@ -145,7 +145,11 @@ def main():
         col1, col2 = st.columns([1, 2])
 
         with col1:
-            selected_env = st.selectbox("Current Environment", env_options, index=env_options.index(current_env) if current_env in env_options else 0)
+            selected_env = st.selectbox(
+                "Current Environment",
+                env_options,
+                index=env_options.index(current_env) if current_env in env_options else 0,
+            )
 
         with col2:
             if st.button("Switch Environment"):
@@ -163,13 +167,13 @@ def main():
             env_url = st.text_input(
                 "API URL",
                 value=env_settings.get("api_url", ""),
-                placeholder="https://api.example.com"
+                placeholder="https://api.example.com",
             )
             env_key = st.text_input(
                 "API Key",
                 value=env_settings.get("api_key", ""),
                 type="password",
-                placeholder="Your API key"
+                placeholder="Your API key",
             )
 
             if st.form_submit_button("Save Environment"):

@@ -202,9 +202,7 @@ class APIClient:
         response.raise_for_status()
         return response.json()
 
-    async def stream_evaluation(
-        self, evaluation_id: str
-    ) -> AsyncGenerator[Dict[str, Any], None]:
+    async def stream_evaluation(self, evaluation_id: str) -> AsyncGenerator[Dict[str, Any], None]:
         """流式获取评估进度"""
         async with self.client.stream(
             "GET", f"/api/v1/evaluations/{evaluation_id}/stream"

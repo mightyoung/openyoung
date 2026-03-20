@@ -1,10 +1,11 @@
 """
 Contract types for PEAS
 """
+
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional
-import uuid
 
 # Import Priority from document module
 from .document import Priority
@@ -13,6 +14,7 @@ from .document import Priority
 @dataclass
 class ContractRequirement:
     """合约需求"""
+
     req_id: str  # "REQ-001"
     description: str
     priority: Priority
@@ -27,6 +29,7 @@ class ContractRequirement:
 @dataclass
 class IntentSpec:
     """意图规格"""
+
     primary_goals: list[str] = field(default_factory=list)
     constraints: list[str] = field(default_factory=list)
     quality_bar: str = "default"
@@ -39,6 +42,7 @@ class IntentSpec:
 @dataclass
 class ExecutionContract:
     """执行合约"""
+
     contract_id: str
     version: str
     created_at: datetime
@@ -52,7 +56,7 @@ class ExecutionContract:
         requirements: list[ContractRequirement],
         intent: Optional[IntentSpec] = None,
         version: str = "1.0",
-        metadata: dict = None
+        metadata: dict = None,
     ) -> "ExecutionContract":
         """创建合约的工厂方法"""
         return cls(
@@ -61,7 +65,7 @@ class ExecutionContract:
             created_at=datetime.now(),
             requirements=requirements,
             metadata=metadata or {},
-            intent=intent
+            intent=intent,
         )
 
     def get_requirement(self, req_id: str) -> ContractRequirement:

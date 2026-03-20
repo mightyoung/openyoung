@@ -173,7 +173,9 @@ class HeartbeatScheduler:
         if callback in self._callbacks[phase]:
             self._callbacks[phase].remove(callback)
 
-    async def _emit_event(self, event_type: str, data: dict, priority: EventPriority = EventPriority.NORMAL):
+    async def _emit_event(
+        self, event_type: str, data: dict, priority: EventPriority = EventPriority.NORMAL
+    ):
         """发送事件到 EventBus"""
         if self._event_bus:
             try:
@@ -184,7 +186,7 @@ class HeartbeatScheduler:
                     source="heartbeat",
                 )
                 # 判断是否为异步方法
-                if hasattr(self._event_bus, 'publish_async'):
+                if hasattr(self._event_bus, "publish_async"):
                     await self._event_bus.publish_async(event)
                 else:
                     self._event_bus.publish(event)
@@ -313,7 +315,7 @@ class HeartbeatScheduler:
                 logger.warning(f"Phase {phase.value} failed: {result.message}")
 
             # 记录阶段结果到知识库
-            if self._knowledge and hasattr(self._knowledge, 'record_phase_result'):
+            if self._knowledge and hasattr(self._knowledge, "record_phase_result"):
                 try:
                     await self._knowledge.record_phase_result(
                         phase=phase.value,
@@ -337,13 +339,15 @@ class HeartbeatScheduler:
         )
 
         # 记录到知识库（如果可用）
-        if self._knowledge and hasattr(self._knowledge, 'record_heartbeat_cycle'):
+        if self._knowledge and hasattr(self._knowledge, "record_heartbeat_cycle"):
             phase_results = []
             for phase in self.config.phases_enabled:
-                phase_results.append({
-                    "phase": phase.value,
-                    "success": self._stats["phase_stats"][phase.value]["success"] > 0,
-                })
+                phase_results.append(
+                    {
+                        "phase": phase.value,
+                        "success": self._stats["phase_stats"][phase.value]["success"] > 0,
+                    }
+                )
             try:
                 await self._knowledge.record_heartbeat_cycle(
                     phases=[p.value for p in self.config.phases_enabled],
@@ -414,7 +418,7 @@ class HeartbeatScheduler:
             insights_extracted = 0
 
             # 获取近期学习记录用于比较
-            if self._knowledge and hasattr(self._knowledge, 'learnings'):
+            if self._knowledge and hasattr(self._knowledge, "learnings"):
                 try:
                     recent = await self._knowledge.learnings.get_recent_learnings(limit=10)
                     existing_topics = set()
@@ -423,12 +427,14 @@ class HeartbeatScheduler:
 
                     # 评估每个摄入项目的价值
                     for topic in existing_topics:
-                        scored_items.append({
-                            "topic": topic,
-                            "relevance_score": 0.7,  # 简化评分
-                            "novelty_score": 0.5,
-                            "retained": True,
-                        })
+                        scored_items.append(
+                            {
+                                "topic": topic,
+                                "relevance_score": 0.7,  # 简化评分
+                                "novelty_score": 0.5,
+                                "retained": True,
+                            }
+                        )
                     insights_extracted = len(scored_items)
                 except Exception as e:
                     logger.debug(f"Could not access learnings for value judgment: {e}")
@@ -439,7 +445,9 @@ class HeartbeatScheduler:
                 message=f"Value judgment: Evaluated {insights_extracted} items for quality",
                 data={
                     "items_evaluated": insights_extracted,
-                    "high_value_items": len([i for i in scored_items if i.get("relevance_score", 0) > 0.7]),
+                    "high_value_items": len(
+                        [i for i in scored_items if i.get("relevance_score", 0) > 0.7]
+                    ),
                     "insights_extracted": insights_extracted,
                 },
             )
@@ -456,7 +464,7 @@ class HeartbeatScheduler:
             suggestions = []
 
             # 尝试访问 LearningsManager 合成洞察
-            if self._knowledge and hasattr(self._knowledge, 'learnings'):
+            if self._knowledge and hasattr(self._knowledge, "learnings"):
                 try:
                     # 获取近期错误和纠正
                     recent_errors = await self._knowledge.learnings.get_recent_errors(limit=5)
@@ -477,10 +485,14 @@ class HeartbeatScheduler:
 
                     # 生成待处理问题的建议
                     for err in unresolved[:3]:
-                        suggestions.append({
-                            "issue": err.title,
-                            "priority": err.priority.value if hasattr(err, 'priority') else "medium",
-                        })
+                        suggestions.append(
+                            {
+                                "issue": err.title,
+                                "priority": err.priority.value
+                                if hasattr(err, "priority")
+                                else "medium",
+                            }
+                        )
                 except Exception as e:
                     logger.debug(f"Could not synthesize knowledge: {e}")
 
@@ -507,22 +519,24 @@ class HeartbeatScheduler:
             notifications = []
 
             # 检查 EventBus 是否有积压事件
-            if self._event_bus and hasattr(self._event_bus, 'get_pending_count'):
+            if self._event_bus and hasattr(self._event_bus, "get_pending_count"):
                 try:
                     pending_events = self._event_bus.get_pending_count()
                 except Exception:
                     pass
 
             # 检查知识库中的未处理项
-            if self._knowledge and hasattr(self._knowledge, 'learnings'):
+            if self._knowledge and hasattr(self._knowledge, "learnings"):
                 try:
                     unresolved = await self._knowledge.learnings.get_unresolved_errors()
                     if unresolved:
-                        notifications.append({
-                            "type": "unresolved_errors",
-                            "count": len(unresolved),
-                            "priority": "medium",
-                        })
+                        notifications.append(
+                            {
+                                "type": "unresolved_errors",
+                                "count": len(unresolved),
+                                "priority": "medium",
+                            }
+                        )
                 except Exception:
                     pass
 
@@ -549,7 +563,7 @@ class HeartbeatScheduler:
             improvement_areas = []
 
             # 从知识库获取近期表现
-            if self._knowledge and hasattr(self._knowledge, 'learnings'):
+            if self._knowledge and hasattr(self._knowledge, "learnings"):
                 try:
                     recent_errors = await self._knowledge.learnings.get_recent_errors(limit=5)
                     recent_learnings = await self._knowledge.learnings.get_recent_learnings(limit=5)
@@ -563,7 +577,9 @@ class HeartbeatScheduler:
                     # 识别最常见的错误类型
                     if error_types:
                         most_common = max(error_types.items(), key=lambda x: x[1])
-                        improvement_areas.append(f"Frequent error type: {most_common[0]} ({most_common[1]} occurrences)")
+                        improvement_areas.append(
+                            f"Frequent error type: {most_common[0]} ({most_common[1]} occurrences)"
+                        )
 
                     # 反思学习效果
                     if len(recent_learnings) > len(recent_errors):
@@ -581,7 +597,9 @@ class HeartbeatScheduler:
                 data={
                     "reflections": reflections,
                     "improvement_areas": improvement_areas,
-                    "self_assessment": "positive" if reflections and "positive" in reflections[0] else "needs_attention",
+                    "self_assessment": "positive"
+                    if reflections and "positive" in reflections[0]
+                    else "needs_attention",
                 },
             )
 
@@ -609,30 +627,39 @@ class HeartbeatScheduler:
                 for meta in all_metadata[:10]:  # 检查前10个
                     has_deps, missing = loader.check_requirements(meta)
                     if not has_deps:
-                        missing_dependencies.append({
-                            "skill": meta.name,
-                            "missing": missing,
-                        })
-                    skill_status.append({
-                        "name": meta.name,
-                        "available": has_deps,
-                        "source": meta.source,
-                    })
+                        missing_dependencies.append(
+                            {
+                                "skill": meta.name,
+                                "missing": missing,
+                            }
+                        )
+                    skill_status.append(
+                        {
+                            "name": meta.name,
+                            "available": has_deps,
+                            "source": meta.source,
+                        }
+                    )
             except ImportError:
                 logger.debug("SkillLoader not available for skill check")
             except Exception as e:
                 logger.debug(f"Could not check skills: {e}")
 
             # 基于错误记录识别缺失技能
-            if self._knowledge and hasattr(self._knowledge, 'learnings'):
+            if self._knowledge and hasattr(self._knowledge, "learnings"):
                 try:
                     recent_errors = await self._knowledge.learnings.get_recent_errors(limit=3)
                     for err in recent_errors:
-                        if "ImportError" in err.description or "ModuleNotFoundError" in err.description:
-                            new_skills_needed.append({
-                                "reason": "missing_module",
-                                "error": err.title,
-                            })
+                        if (
+                            "ImportError" in err.description
+                            or "ModuleNotFoundError" in err.description
+                        ):
+                            new_skills_needed.append(
+                                {
+                                    "reason": "missing_module",
+                                    "error": err.title,
+                                }
+                            )
                 except Exception:
                     pass
 
@@ -664,6 +691,7 @@ class HeartbeatScheduler:
             # 获取当前系统状态
             try:
                 import psutil
+
                 process = psutil.Process()
                 memory_info = process.memory_info()
                 current_load = {
@@ -675,7 +703,7 @@ class HeartbeatScheduler:
                 if current_load["rss_mb"] > 500:  # > 500MB
                     optimizations_performed.append("high_memory_detected")
                     # 清理过期数据 (如果 KnowledgeManager 有此功能)
-                    if self._knowledge and hasattr(self._knowledge, 'cleanup'):
+                    if self._knowledge and hasattr(self._knowledge, "cleanup"):
                         try:
                             await self._knowledge.cleanup()
                             optimizations_performed.append("knowledge_cache_cleared")

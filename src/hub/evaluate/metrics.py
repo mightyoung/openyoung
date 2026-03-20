@@ -216,7 +216,9 @@ class EvalMetrics:
             "successful_trials": self.successful_trials,
             "failed_trials": self.failed_trials,
             "eval_started_at": self.eval_started_at.isoformat(),
-            "eval_finished_at": self.eval_finished_at.isoformat() if self.eval_finished_at else None,
+            "eval_finished_at": self.eval_finished_at.isoformat()
+            if self.eval_finished_at
+            else None,
         }
 
     def summary(self) -> str:

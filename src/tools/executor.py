@@ -89,10 +89,10 @@ FORBIDDEN_PATTERNS = [
 ]
 
 # Dangerous character pattern - blocks shell metacharacters
-DANGEROUS_CHARS_PATTERN = re.compile(r'[;&|`$><>()\[\]{}@!#%^~*?\n\r]')
+DANGEROUS_CHARS_PATTERN = re.compile(r"[;&|`$><>()\[\]{}@!#%^~*?\n\r]")
 
 # Path traversal patterns - blocks .., ~, absolute paths, sensitive files
-TRAVERSAL_PATTERN = re.compile(r'\.\./|\.\.\\|%2e%2e|/etc/passwd|/etc/shadow|~/(?:\.ssh)?')
+TRAVERSAL_PATTERN = re.compile(r"\.\./|\.\.\\|%2e%2e|/etc/passwd|/etc/shadow|~/(?:\.ssh)?")
 
 
 class ToolExecutor:

@@ -15,10 +15,10 @@ if TYPE_CHECKING:
     from src.agents.components import file_validation
     from src.agents.components.file_validation import FileValidationResult
     from src.agents.dispatcher import TaskDispatcher
-    from src.agents.evaluation_coordinator import EvaluationContext, EvaluationCoordinator
     from src.agents.eval_store import EvalStore
+    from src.agents.evaluation_coordinator import EvaluationContext, EvaluationCoordinator
     from src.agents.sub_agent import SubAgent
-    from src.core.events import Event, EventType, EventPriority, SystemEvents
+    from src.core.events import Event, EventPriority, EventType, SystemEvents
     from src.core.heartbeat import HeartbeatScheduler
     from src.core.knowledge import KnowledgeManager
     from src.datacenter.datacenter import TraceRecord, TraceStatus
@@ -26,13 +26,15 @@ if TYPE_CHECKING:
     from src.hub.evaluate.harness import EvaluationHarness
     from src.runtime import AISandbox, SandboxPool
 
+from src.agents._checkpoint_methods import save_checkpoint, trigger_hooks
+
 
 async def run(
     self,
     user_input: str,
 ) -> str:
     """Main execution method for YoungAgent."""
-    from src.core.events import Event, EventType, EventPriority, SystemEvents
+    from src.core.events import Event, EventPriority, EventType, SystemEvents
 
     # 启动 harness
     if self._harness:
@@ -63,7 +65,7 @@ async def run(
             print(f"[YoungAgent] EventBus start event error: {e}")
 
     # ========== Hooks: pre_task ==========
-    self._trigger_hooks("pre_task", {"input": user_input})
+    trigger_hooks(self, "pre_task", {"input": user_input})
 
     if not await self._permission.can_run(user_input):
         return "Permission denied"
@@ -103,7 +105,7 @@ async def run(
         "tools_used": [m.role.value for m in self._history if m.role.value == "tool"],
         "result_summary": result[:200] if result else "",
     }
-    self._trigger_hooks("post_task", hook_context)
+    trigger_hooks(self, "post_task", hook_context)
 
     # 记录结束时间
     end_time = datetime.now()
@@ -202,13 +204,15 @@ async def run(
                 print(f"[FileValidation] Files verified: {file_validation['files_found']}")
 
             # 记录到轻量 eval store（Harness 系统使用 BenchmarkTask 评估）
-            self._eval_store.add_result({
-                "metric": "task_completion",
-                "score": quality_score,
-                "task_type": eval_report.task_type,
-                "completion_rate": eval_report.completion_rate,
-                "file_validation": file_validation,
-            })
+            self._eval_store.add_result(
+                {
+                    "metric": "task_completion",
+                    "score": quality_score,
+                    "task_type": eval_report.task_type,
+                    "completion_rate": eval_report.completion_rate,
+                    "file_validation": file_validation,
+                }
+            )
 
         except Exception as e:
             print(f"[EvaluationCoordinator] Error: {e}, using default score")
@@ -253,7 +257,7 @@ async def run(
 
     # ========== 7. Checkpoint - 保存状态 ==========
     # 任务完成后自动保存 checkpoint
-    await self._save_checkpoint(reason="task_complete")
+    await save_checkpoint(self, reason="task_complete")
 
     return result
 
@@ -279,7 +283,7 @@ async def run_streaming(
         - data: Phase-specific data
         - partial_output: Streaming text output if any
     """
-    from src.core.events import Event, EventType, EventPriority, TaskProgress
+    from src.core.events import Event, EventPriority, EventType, TaskProgress
 
     # Start harness
     if self._harness:
@@ -343,7 +347,12 @@ async def run_streaming(
     }
 
     # Use TaskCompiler to compile task into HarnessGraph
-    task_compiler = self._task_executor._flow_skill._task_compiler if hasattr(self._task_executor, '_flow_skill') and hasattr(self._task_executor._flow_skill, '_task_compiler') else None
+    task_compiler = (
+        self._task_executor._flow_skill._task_compiler
+        if hasattr(self._task_executor, "_flow_skill")
+        and hasattr(self._task_executor._flow_skill, "_task_compiler")
+        else None
+    )
 
     if task_compiler is None:
         # Fallback: execute directly without streaming
@@ -383,7 +392,9 @@ async def run_streaming(
             try:
                 progress_event = TaskProgress(
                     task_id=task.id,
-                    phase=partial.phase.value if hasattr(partial.phase, 'value') else str(partial.phase),
+                    phase=partial.phase.value
+                    if hasattr(partial.phase, "value")
+                    else str(partial.phase),
                     progress=partial.progress,
                     iteration=partial.iteration,
                     partial_output=partial.partial_output,
@@ -433,16 +444,17 @@ async def run_streaming(
 
     # Record history
     from src.core.types import Message, MessageRole
+
     self._history.append(Message(role=MessageRole.USER, content=user_input))
     self._history.append(Message(role=MessageRole.ASSISTANT, content=result))
     if len(self._history) > self._max_history:
-        self._history = self._history[-self._max_history:]
+        self._history = self._history[-self._max_history :]
 
     # Save all
     _save_all(self)
 
     # Checkpoint
-    await self._save_checkpoint(reason="task_complete")
+    await save_checkpoint(self, reason="task_complete")
 
     # Final yield
     yield {
@@ -483,8 +495,8 @@ async def _apply_result_analysis(self, result: str) -> None:
                 print(f"[ResultAnalyzer] Workflow: {flowskill_config.get('workflow', [])}")
 
                 # 保存分析结果
-                import os
                 import json
+                import os
 
                 os.makedirs(self._data_dir, exist_ok=True)
                 analysis_path = os.path.join(self._data_dir, "analysis.json")
@@ -547,8 +559,8 @@ def _save_all(self):
 async def _parse_input(self, user_input: str) -> "Task":
     """解析用户输入 - 支持 @mention 触发 SubAgent"""
     import re
-    from src.core.types import SubAgentType
-    from src.core.types import Task
+
+    from src.core.types import SubAgentType, Task
 
     # 参考 Claude Code Task 协议: @subagent task_description
     match = re.match(r"@(\w+)\s+(.+)", user_input.strip())

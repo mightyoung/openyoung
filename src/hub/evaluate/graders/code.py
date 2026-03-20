@@ -169,19 +169,24 @@ class CodeGrader(BaseGrader):
             for ext in extensions:
                 for f in base.rglob(f"*{ext}"):
                     # 跳过 node_modules, .venv 等
-                    if any(n in f.parts for n in ("node_modules", ".venv", "venv", ".git", "__pycache__")):
+                    if any(
+                        n in f.parts
+                        for n in ("node_modules", ".venv", "venv", ".git", "__pycache__")
+                    ):
                         continue
                     try:
                         content = f.read_text(encoding="utf-8", errors="ignore")
                         for pattern in self.forbidden_patterns:
                             if pattern in content:
                                 line_num = content[: content.index(pattern)].count("\n") + 1
-                                findings.append(f"{f.relative_to(base)}:{line_num}: forbidden '{pattern}'")
+                                findings.append(
+                                    f"{f.relative_to(base)}:{line_num}: forbidden '{pattern}'"
+                                )
                     except OSError:
                         continue
 
         if findings:
-            return False, 0.0, f"Security issues found:\n  " + "\n  ".join(findings[:10])
+            return False, 0.0, "Security issues found:\n  " + "\n  ".join(findings[:10])
 
         return True, 1.0, "No security issues detected"
 
@@ -206,7 +211,9 @@ class CodeGrader(BaseGrader):
 
         return False, 0.0, f"Tool '{self.expected_pattern}' was NOT called. Called: {all_tools}"
 
-    def _check_state(self, outcome: dict[str, Any], context: dict[str, Any]) -> tuple[bool, float, str]:
+    def _check_state(
+        self, outcome: dict[str, Any], context: dict[str, Any]
+    ) -> tuple[bool, float, str]:
         """检查最终环境状态"""
         expected = self.params.get("expected_state", {})
 
@@ -249,7 +256,7 @@ class CodeGrader(BaseGrader):
                     continue
 
         if issues:
-            return False, 0.0, f"File pattern issues:\n  " + "\n  ".join(issues[:10])
+            return False, 0.0, "File pattern issues:\n  " + "\n  ".join(issues[:10])
 
         return True, 1.0, "All file patterns satisfied"
 

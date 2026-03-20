@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional, Type, Callable, Awaitable
+from typing import Any, Awaitable, Callable, Optional, Type
 
 from pydantic import BaseModel, Field
 
@@ -117,11 +117,13 @@ class BaseTool(ABC):
             result.execution_time_ms = (time.time() - start_time) * 1000
 
             # 记录历史
-            self._execution_history.append({
-                "timestamp": datetime.now().isoformat(),
-                "input": input,
-                "result": result.to_dict(),
-            })
+            self._execution_history.append(
+                {
+                    "timestamp": datetime.now().isoformat(),
+                    "input": input,
+                    "result": result.to_dict(),
+                }
+            )
 
             return result
 

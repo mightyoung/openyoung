@@ -9,8 +9,8 @@ Evaluation Package - Agent 评估相关模块
 # Re-export from hub.evaluate
 from src.hub.evaluate.harness import EvaluationHarness
 from src.hub.evaluate.metrics import (
-    TrialMetrics,
     EvalMetrics,
+    TrialMetrics,
     compute_pass_at_k,
     compute_pass_rate,
 )

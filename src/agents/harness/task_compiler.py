@@ -43,11 +43,13 @@ class TaskCompiler:
 
         # 单任务：直接作为根节点
         if hasattr(task, "description"):
-            graph["nodes"].append({
-                "id": "root",
-                "type": "task",
-                "label": task.description[:100],
-            })
+            graph["nodes"].append(
+                {
+                    "id": "root",
+                    "type": "task",
+                    "label": task.description[:100],
+                }
+            )
 
         return HarnessGraph(graph, config=kwargs)
 
@@ -63,11 +65,13 @@ class TaskCompiler:
         Returns:
             更新后的 Graph
         """
-        graph["nodes"].append({
-            "id": node_id,
-            "type": node_type,
-            "label": label,
-        })
+        graph["nodes"].append(
+            {
+                "id": node_id,
+                "type": node_type,
+                "label": label,
+            }
+        )
         return graph
 
     def add_edge(self, graph: dict, from_id: str, to_id: str, edge_type: str = "next") -> dict:
@@ -82,9 +86,11 @@ class TaskCompiler:
         Returns:
             更新后的 Graph
         """
-        graph["edges"].append({
-            "from": from_id,
-            "to": to_id,
-            "type": edge_type,
-        })
+        graph["edges"].append(
+            {
+                "from": from_id,
+                "to": to_id,
+                "type": edge_type,
+            }
+        )
         return graph

@@ -10,23 +10,24 @@ M3.1: 与Harness引擎集成
 4. 执行任务并验证
 5. 检测偏离并报告
 """
-from typing import Any, Optional, AsyncGenerator, Callable
-import logging
 
-from src.agents.harness.engine import HarnessEngine, HarnessConfig
+import logging
+from typing import Any, AsyncGenerator, Callable, Optional
+
+from src.agents.harness.engine import HarnessConfig, HarnessEngine
 from src.agents.harness.types import ExecutionPhase
-from src.peas.understanding.markdown_parser import MarkdownParser
 from src.peas.contract.builder import ContractBuilder
-from src.peas.verification.tracker import FeatureTracker
-from src.peas.verification.drift_detector import DriftDetector
 from src.peas.learning.preference_learner import PreferenceLearner
 from src.peas.types import (
-    ParsedDocument,
+    DriftReport,
     ExecutionContract,
     FeatureStatus,
-    DriftReport,
+    ParsedDocument,
     Priority,
 )
+from src.peas.understanding.markdown_parser import MarkdownParser
+from src.peas.verification.drift_detector import DriftDetector
+from src.peas.verification.tracker import FeatureTracker
 
 logger = logging.getLogger(__name__)
 
@@ -83,8 +84,7 @@ class PEASHarnessIntegration:
         """
         self._parsed_doc = self._parser.parse(spec_content)
         logger.info(
-            f"Parsed spec: {self._parsed_doc.title}, "
-            f"{self._parsed_doc.total_features} features"
+            f"Parsed spec: {self._parsed_doc.title}, {self._parsed_doc.total_features} features"
         )
         return self._parsed_doc
 
@@ -306,15 +306,15 @@ class PEASHarnessIntegration:
 
     def _create_executor(self):
         """创建Harness执行器回调"""
+
         async def executor(task_description: str, context: dict) -> str:
-            raise NotImplementedError(
-                "Subclass must implement executor or provide custom executor"
-            )
+            raise NotImplementedError("Subclass must implement executor or provide custom executor")
 
         return executor
 
     def _create_evaluator(self):
         """创建Harness评估器回调"""
+
         async def evaluator(result: Any, phase: ExecutionPhase, context: dict) -> bool:
             if not self._tracker:
                 return True

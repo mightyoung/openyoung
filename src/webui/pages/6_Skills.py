@@ -14,10 +14,11 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-from webui.utils.config import config
-from skills.registry import SkillRegistry
-from skills.loader import SkillLoader
 from pathlib import Path
+
+from skills.loader import SkillLoader
+from skills.registry import SkillRegistry
+from webui.utils.config import config
 
 
 def render_sidebar():
@@ -51,11 +52,13 @@ def load_skills() -> list:
                 if skill_dir.is_dir():
                     skill_yaml = skill_dir / "skill.yaml"
                     if skill_yaml.exists():
-                        skills.append({
-                            "name": skill_dir.name,
-                            "source": "local",
-                            "file_path": str(skill_yaml)
-                        })
+                        skills.append(
+                            {
+                                "name": skill_dir.name,
+                                "source": "local",
+                                "file_path": str(skill_yaml),
+                            }
+                        )
 
     return skills
 
@@ -73,8 +76,12 @@ def render_skill_list(skills: list):
     filtered = skills
     if search_query:
         query = search_query.lower()
-        filtered = [s for s in skills if query in str(s.get("name", "")).lower() or
-                   query in str(s.get("description", "")).lower()]
+        filtered = [
+            s
+            for s in skills
+            if query in str(s.get("name", "")).lower()
+            or query in str(s.get("description", "")).lower()
+        ]
 
     # 显示
     for skill in filtered:

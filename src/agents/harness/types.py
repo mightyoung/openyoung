@@ -74,7 +74,9 @@ class PartialResult:
             "phase": self.phase.value if isinstance(self.phase, ExecutionPhase) else self.phase,
             "progress": self.progress,
             "iteration": self.iteration,
-            "status": self.status.value if isinstance(self.status, ExecutionStatus) else self.status,
+            "status": self.status.value
+            if isinstance(self.status, ExecutionStatus)
+            else self.status,
             "data": self.data,
             "partial_output": self.partial_output,
             "timestamp": self.timestamp.isoformat() if self.timestamp else None,

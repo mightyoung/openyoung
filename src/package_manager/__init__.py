@@ -17,12 +17,19 @@ from .manager import PackageManager
 # MCP 服务器管理
 from .mcp_manager import (
     AgentMCPLoader,
+    MCPConnectionResult,
     MCPServerConfig,
     MCPServerManager,
-    MCPConnectionResult,
     load_agent_with_mcps,
     load_agent_with_mcps_strict,
 )
+
+# 扩展加载
+from .provider import ProviderManager
+
+# Agent 注册
+from .registry import AgentRegistry, AgentSpec
+from .storage import LLMProviderConfig, LockManager, PackageMetadata, PackageStorage
 
 # 版本管理
 from .version_manager import (
@@ -34,13 +41,6 @@ from .version_manager import (
     get_version_manager,
     parse_semver,
 )
-
-# 扩展加载
-from .provider import ProviderManager
-
-# Agent 注册
-from .registry import AgentRegistry, AgentSpec
-from .storage import LLMProviderConfig, LockManager, PackageMetadata, PackageStorage
 
 __all__ = [
     # 核心

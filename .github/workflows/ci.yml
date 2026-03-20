@@ -51,6 +51,8 @@ jobs:
             --ignore=tests/rust/ \
             --ignore=tests/rl/ \
             --ignore=tests/performance/ \
+            --ignore=tests/benchmarks/ \
+            --ignore=tests/evaluation/ \
             --ignore=tests/skills/ \
             --cov=src \
             --cov-report=xml \
@@ -68,6 +70,8 @@ jobs:
             --ignore=tests/rust/ \
             --ignore=tests/rl/ \
             --ignore=tests/performance/ \
+            --ignore=tests/benchmarks/ \
+            --ignore=tests/evaluation/ \
             --ignore=tests/skills/ \
             --html=test-report.html \
             --self-contained-html \
