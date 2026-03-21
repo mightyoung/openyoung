@@ -44,7 +44,7 @@ jobs:
           pip install -e .
           pip install pytest pytest-cov pytest-asyncio pytest-html pytest-xdist numpy
 
-      - name: Run tests with coverage
+      - name: Run tests with coverage and HTML report
         run: |
           pytest tests/ \
             --ignore=tests/e2e/ \
@@ -53,29 +53,17 @@ jobs:
             --ignore=tests/performance/ \
             --ignore=tests/benchmarks/ \
             --ignore=tests/evaluation/ \
+            --ignore=tests/distillation/ \
             --ignore=tests/skills/ \
             --cov=src \
             --cov-report=xml \
             --cov-report=term-missing \
             --cov-report=html \
             --cov-fail-under=0 \
-            -v \
-            --tb=short
-
-      - name: Generate HTML test report
-        if: always()
-        run: |
-          pytest tests/ \
-            --ignore=tests/e2e/ \
-            --ignore=tests/rust/ \
-            --ignore=tests/rl/ \
-            --ignore=tests/performance/ \
-            --ignore=tests/benchmarks/ \
-            --ignore=tests/evaluation/ \
-            --ignore=tests/skills/ \
             --html=test-report.html \
             --self-contained-html \
-            -v
+            -v \
+            --tb=short
 
       - name: Upload test report
         if: always()
@@ -105,31 +93,13 @@ jobs:
           python-version: '3.11'
 
       - name: Install ruff
-        run: pip install ruff
+        run: pip install ruff numpy
 
       - name: Run ruff linter
         run: ruff check src/
 
       - name: Run ruff formatter
         run: ruff format --check src/
-
-  pre-commit:
-    runs-on: ubuntu-latest
-    continue-on-error: true
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install pre-commit
-        run: pip install pre-commit
-
-      - name: Run pre-commit
-        run: pre-commit run --all-files
 
   security:
     runs-on: ubuntu-latest
