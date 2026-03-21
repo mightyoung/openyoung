@@ -24,6 +24,11 @@ class SecretType(Enum):
     PRIVATE_KEY = "private_key"
     DATABASE_URL = "database_url"
     JWT_TOKEN = "jwt_token"
+    # PII Types
+    CHINA_ID = "china_id"
+    PHONE = "phone"
+    BANK_CARD = "bank_card"
+    EMAIL = "email"
 
 
 @dataclass
@@ -76,6 +81,15 @@ class SecretScanner:
         SecretType.PRIVATE_KEY: r"-----BEGIN\s+(RSA\s+)?PRIVATE\s+KEY-----",
         SecretType.DATABASE_URL: r"(?i)(mysql|postgresql|mongodb|redis)://[^'\"]+:[^'\"]+@",
         SecretType.JWT_TOKEN: r"eyJ[a-zA-Z0-9_-]*\.eyJ[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*",
+        # PII Patterns
+        # Chinese ID card: 18 digits, first digit cannot be 0
+        SecretType.CHINA_ID: r"\b[1-9]\d{5}(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])\d{3}[\dXx]\b",
+        # Chinese mobile phone: 11 digits, starting with 1
+        SecretType.PHONE: r"\b1[3-9]\d{9}\b",
+        # Bank card: 16-19 digits
+        SecretType.BANK_CARD: r"\b(?:(?![12]\d{5}(?:19|20)\d{2})\d){16,19}\b|\b(?:\d{4}[\s-]){3,4}\d{4}\b",
+        # Email address
+        SecretType.EMAIL: r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b",
     }
 
     # 需要熵检测的密钥类型（避免假阳性）
@@ -219,6 +233,35 @@ class SecretScanner:
             if len(text) > 4:
                 return text[:2] + "*" * (len(text) - 4) + text[-2:]
             return "*" * len(text)
+
+        # PII types redaction
+        if secret_type == SecretType.EMAIL:
+            # Mask email: first char + *** + domain
+            if "@" in text:
+                parts = text.split("@")
+                if len(parts) == 2 and len(parts[0]) > 1:
+                    return f"{parts[0][0]}***@{parts[1]}"
+            return "***@***"
+
+        if secret_type == SecretType.PHONE:
+            # Mask phone: first 3 + **** + last 4
+            if len(text) >= 7:
+                return f"{text[:3]}****{text[-4:]}"
+            return "***-****-****"
+
+        if secret_type == SecretType.CHINA_ID:
+            # Mask ID: first 6 + *** + last 4
+            if len(text) >= 10:
+                return f"{text[:6]}****{text[-4:]}"
+            return "**********"
+
+        if secret_type == SecretType.BANK_CARD:
+            # Mask bank card: first 4 + **** + last 4
+            # Normalize first: remove spaces/dashes
+            normalized = text.replace(" ", "").replace("-", "")
+            if len(normalized) >= 8:
+                return f"{normalized[:4]}****{normalized[-4:]}"
+            return "****-****-****-****"
 
         # 对于 API key，保留前4个字符
         if len(text) > 8:

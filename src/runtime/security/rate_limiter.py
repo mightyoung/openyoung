@@ -43,7 +43,7 @@ class TokenBucket:
         self.capacity = capacity
         self.refill_rate = refill_rate
         self.tokens = float(capacity)
-        self.last_refill = time.time()
+        self.last_refill = time.monotonic()
         self._lock = threading.Lock()
 
     def consume(self, tokens: int = 1) -> bool:
@@ -66,7 +66,7 @@ class TokenBucket:
 
     def _refill(self) -> None:
         """补充令牌"""
-        now = time.time()
+        now = time.monotonic()
         elapsed = now - self.last_refill
 
         # 计算应该补充的令牌数

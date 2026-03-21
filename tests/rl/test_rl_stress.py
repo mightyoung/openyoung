@@ -90,9 +90,10 @@ class TestBenchmark:
         hardware = HardwareSpec(backend=ComputeBackend.CPU, device_name="cpu", memory_gb=0.0)
         engine = create_grpo_engine(config, hardware)
 
-        # 多次计算优势
+        # 多次计算优势 - GRPO 需要 2D rewards [batch_size, seq_len]
+        # batch_size 必须能被 group_size (4) 整除
         iterations = 1000
-        rewards = np.random.randn(1000)
+        rewards = np.random.randn(100, 10)  # 2D, 100 % 4 == 0
 
         start = time.time()
         for _ in range(iterations):
@@ -132,6 +133,7 @@ class TestBenchmark:
 
     def test_gigpo_two_layer_advantage(self):
         """测试 GiGPO 双层优势计算"""
+        import torch
         from src.agents.rl import (
             create_gigpo_engine, GiGPOConfig,
             HardwareSpec, ComputeBackend,
@@ -141,15 +143,16 @@ class TestBenchmark:
         hardware = HardwareSpec(backend=ComputeBackend.CPU, device_name="cpu", memory_gb=0.0)
         engine = create_gigpo_engine(config, hardware)
 
-        # 多 episode 数据
+        # 多 episode 数据 - 使用 torch tensors
+        # 注意: step_rewards 需要是 1D 因为 compute_step_advantage 期望 [batch_size]
         num_episodes = 10
         steps_per_episode = 20
 
-        episode_adv = np.random.randn(num_episodes, steps_per_episode)
-        step_adv = np.random.randn(num_episodes, steps_per_episode)
-        mask = np.ones((num_episodes, steps_per_episode))
-        episode_ids = np.arange(num_episodes)
-        anchor_obs = None
+        episode_adv = torch.randn(num_episodes, steps_per_episode)
+        step_adv = torch.randn(num_episodes)  # 1D for step rewards
+        mask = torch.ones((num_episodes, steps_per_episode))
+        episode_ids = torch.arange(num_episodes)
+        anchor_obs = [None] * num_episodes
 
         start = time.time()
         for _ in range(100):
@@ -201,7 +204,7 @@ class TestEdgeCases:
         advantages = engine.compute_advantages(rewards, mask)
 
         # 负奖励应该产生负优势
-        assert np.all(advantages <= 0)
+        assert np.all(advantages.numpy() <= 0)
 
     def test_masked_positions(self):
         """测试掩码位置"""
@@ -214,13 +217,25 @@ class TestEdgeCases:
         hardware = HardwareSpec(backend=ComputeBackend.CPU, device_name="cpu", memory_gb=0.0)
         engine = create_grpo_engine(config, hardware)
 
-        rewards = np.array([[1.0, 2.0, 3.0, 0.0, 0.0]])  # 2D for GRPO
-        mask = np.array([1.0, 1.0, 1.0, 0.0, 0.0])  # 掩码掉最后两个
+        # GRPO requires batch_size divisible by group_size (4)
+        # Use different rewards so group-relative advantage is non-zero
+        rewards = np.array([
+            [1.0, 2.0, 3.0, 0.0, 0.0],
+            [4.0, 5.0, 6.0, 0.0, 0.0],
+            [7.0, 8.0, 9.0, 0.0, 0.0],
+            [10.0, 11.0, 12.0, 0.0, 0.0],
+        ])  # 2D for GRPO, batch_size=4, different rewards
+        mask = np.array([
+            [1.0, 1.0, 1.0, 0.0, 0.0],
+            [1.0, 1.0, 1.0, 0.0, 0.0],
+            [1.0, 1.0, 1.0, 0.0, 0.0],
+            [1.0, 1.0, 1.0, 0.0, 0.0],
+        ])  # 掩码掉最后两个
 
         advantages = engine.compute_advantages(rewards, mask)
 
-        # 前三个位置应该有值
-        assert not np.allclose(advantages[:3], 0.0)
+        # 前三个位置应该有非零优势（因为不同组的相对排名不同）
+        assert not np.allclose(advantages.numpy()[0, :3], 0.0)
 
     def test_single_sample(self):
         """测试单样本"""
@@ -233,8 +248,10 @@ class TestEdgeCases:
         hardware = HardwareSpec(backend=ComputeBackend.CPU, device_name="cpu", memory_gb=0.0)
         engine = create_grpo_engine(config, hardware)
 
-        rewards = np.array([[1.0]])  # 2D for GRPO
-        mask = np.array([[1.0]])
+        # GRPO requires batch_size divisible by group_size (4)
+        # So we use 4 identical samples
+        rewards = np.array([[1.0], [1.0], [1.0], [1.0]])  # 2D for GRPO, batch_size=4
+        mask = np.array([[1.0], [1.0], [1.0], [1.0]])
 
         advantages = engine.compute_advantages(rewards, mask)
 
@@ -262,8 +279,9 @@ class TestNumericalStability:
         advantages = engine.compute_advantages(rewards, mask)
 
         # 不应该产生 NaN
-        assert not np.any(np.isnan(advantages))
-        assert not np.any(np.isinf(advantages))
+        advantages_np = advantages.numpy()
+        assert not np.any(np.isnan(advantages_np))
+        assert not np.any(np.isinf(advantages_np))
 
     def test_small_values(self):
         """测试小值"""
@@ -283,8 +301,9 @@ class TestNumericalStability:
         advantages = engine.compute_advantages(rewards, mask)
 
         # 不应该产生 NaN
-        assert not np.any(np.isnan(advantages))
-        assert not np.any(np.isinf(advantages))
+        advantages_np = advantages.numpy()
+        assert not np.any(np.isnan(advantages_np))
+        assert not np.any(np.isinf(advantages_np))
 
     def test_clipping_stability(self):
         """测试裁剪稳定性 - 直接测试 numpy 操作"""

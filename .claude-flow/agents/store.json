@@ -36,6 +36,71 @@
       "createdAt": "2026-03-08T01:56:15.176Z",
       "model": "sonnet",
       "modelRoutedBy": "default"
+    },
+    "mcp-implementer-v2": {
+      "agentId": "mcp-implementer-v2",
+      "agentType": "coder",
+      "status": "terminated",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "model": "sonnet"
+      },
+      "createdAt": "2026-03-20T13:12:28.374Z",
+      "model": "sonnet",
+      "modelRoutedBy": "explicit"
+    },
+    "adapter-coder-v2": {
+      "agentId": "adapter-coder-v2",
+      "agentType": "coder",
+      "status": "terminated",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "model": "sonnet"
+      },
+      "createdAt": "2026-03-20T13:12:28.825Z",
+      "model": "sonnet",
+      "modelRoutedBy": "explicit"
+    },
+    "pii-scanner-v2": {
+      "agentId": "pii-scanner-v2",
+      "agentType": "coder",
+      "status": "terminated",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "model": "sonnet"
+      },
+      "createdAt": "2026-03-20T13:12:29.265Z",
+      "model": "sonnet",
+      "modelRoutedBy": "explicit"
+    },
+    "network-guard-v2": {
+      "agentId": "network-guard-v2",
+      "agentType": "coder",
+      "status": "terminated",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "model": "sonnet"
+      },
+      "createdAt": "2026-03-20T13:12:29.734Z",
+      "model": "sonnet",
+      "modelRoutedBy": "explicit"
+    },
+    "doc-fixer-v2": {
+      "agentId": "doc-fixer-v2",
+      "agentType": "coder",
+      "status": "terminated",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "model": "sonnet"
+      },
+      "createdAt": "2026-03-20T13:12:30.379Z",
+      "model": "sonnet",
+      "modelRoutedBy": "explicit"
     }
   },
   "version": "3.0.0"

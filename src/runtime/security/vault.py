@@ -6,12 +6,13 @@
 
 import base64
 import hashlib
-import json
 import os
 import secrets
 import time
 from dataclasses import dataclass, field
 from typing import Optional
+
+from cryptography.fernet import Fernet
 
 
 @dataclass
@@ -40,8 +41,8 @@ class Credential:
 class Vault:
     """凭据保险库
 
-    提供安全的凭据存储和检索
-    支持加密、访问控制、过期时间
+    提供凭据存储和检索
+    使用 Fernet AES 加密、访问控制、过期时间
     """
 
     def __init__(self, master_key: Optional[str] = None):
@@ -63,6 +64,20 @@ class Vault:
         """派生加密密钥"""
         return hashlib.pbkdf2_hmac("sha256", key.encode(), salt, 100000, dklen=32)
 
+    def _get_fernet(self, salt: bytes) -> Fernet:
+        """
+        从主密钥和盐值获取Fernet实例
+
+        Args:
+            salt: 用于派生密钥的盐值
+
+        Returns:
+            Fernet 实例
+        """
+        derived_key = self._derive_key(self._master_key, salt)
+        fernet_key = base64.urlsafe_b64encode(derived_key)
+        return Fernet(fernet_key)
+
     def _encrypt(self, plaintext: str) -> tuple[str, bytes, bytes]:
         """
         加密数据
@@ -70,28 +85,19 @@ class Vault:
         Returns:
             (encrypted_base64, salt, iv)
         """
-        # 生成随机 salt 和 IV
+        # 生成随机 salt
         salt = os.urandom(16)
-        iv = os.urandom(16)
 
-        # 派生密钥
-        derived_key = self._derive_key(self._master_key, salt)
+        # 使用 Fernet AES 加密
+        fernet = self._get_fernet(salt)
+        encrypted = fernet.encrypt(plaintext.encode())
 
-        # 简单 XOR 加密（实际使用应该用更安全的加密库）
-        plaintext_bytes = plaintext.encode()
-        key_bytes = derived_key[: len(plaintext_bytes)]
-        encrypted = bytes(a ^ b for a, b in zip(plaintext_bytes, key_bytes))
-
-        return base64.b64encode(encrypted).decode(), salt, iv
+        return encrypted.decode(), salt, b""  # iv为空，Fernet内部处理
 
     def _decrypt(self, encrypted: str, salt: bytes, iv: bytes) -> str:
         """解密数据"""
-        derived_key = self._derive_key(self._master_key, salt)
-
-        encrypted_bytes = base64.b64decode(encrypted)
-        key_bytes = derived_key[: len(encrypted_bytes)]
-        decrypted = bytes(a ^ b for a, b in zip(encrypted_bytes, key_bytes))
-
+        fernet = self._get_fernet(salt)
+        decrypted = fernet.decrypt(encrypted.encode())
         return decrypted.decode()
 
     def store(self, key: str, value: str, **metadata) -> bool:

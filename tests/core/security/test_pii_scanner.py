@@ -66,10 +66,10 @@ class TestPIIScanner:
 
     def test_detect_phone_various_prefixes(self):
         """Test phone detection with different prefixes."""
-        text = "Phones: 134, 135, 147, 150, 151, 152, 153, 155, 156, 157, 158, 159, 166, 170, 171, 172, 173, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 191, 193, 195, 197, 198, 199"
-        # Just check we can scan without errors and detect valid 11-digit phones
+        text = "Phones: 13456789012, 14712345678, 19812345678"
         matches = self.scanner.scan(text, [PIIType.PHONE])
         # All valid 11-digit mobile phones should be detected
+        assert len(matches) == 3
 
     # ==================== China ID Tests ====================
 
@@ -105,6 +105,25 @@ class TestPIIScanner:
         matches = self.scanner.scan(text, [PIIType.CHINA_ID])
 
         assert len(matches) == 0
+
+    # ==================== China Passport Tests ====================
+
+    def test_detect_china_passport(self):
+        """Test Chinese passport detection."""
+        text = "Passport: G12345678"
+        matches = self.scanner.scan(text, [PIIType.CHINA_PASSPORT])
+
+        assert len(matches) == 1
+        assert matches[0].pii_type == PIIType.CHINA_PASSPORT
+        assert matches[0].value == "G12345678"
+
+    def test_detect_china_passport_E(self):
+        """Test Chinese passport with E prefix."""
+        text = "Passport: E87654321"
+        matches = self.scanner.scan(text, [PIIType.CHINA_PASSPORT])
+
+        assert len(matches) == 1
+        assert matches[0].value == "E87654321"
 
     # ==================== Bank Card Tests ====================
 
@@ -149,6 +168,185 @@ class TestPIIScanner:
         # Card number starts with 62, not 19/20, so should match
         assert len(matches) == 1
 
+    # ==================== Luhn Validation Tests ====================
+
+    def test_luhn_valid_card(self):
+        """Test Luhn validation with a valid card number."""
+        # A known valid test card number
+        valid_card = "4532015112830366"
+        matches = self.scanner.scan(valid_card, [PIIType.BANK_CARD])
+
+        assert len(matches) == 1
+        assert matches[0].is_valid is True
+
+    def test_luhn_invalid_card(self):
+        """Test Luhn validation with an invalid card number."""
+        # Invalid card number (changed last digit)
+        invalid_card = "4532015112830367"
+        matches = self.scanner.scan(invalid_card, [PIIType.BANK_CARD])
+
+        assert len(matches) == 1
+        assert matches[0].is_valid is False
+
+    def test_luhn_disabled_validation(self):
+        """Test bank card detection with Luhn validation disabled."""
+        scanner_no_luhn = PIIScanner(validate_bank_cards=False)
+        invalid_card = "4532015112830367"
+        matches = scanner_no_luhn.scan(invalid_card, [PIIType.BANK_CARD])
+
+        assert len(matches) == 1
+        # When validation is disabled, is_valid should be True (not validated)
+        assert matches[0].is_valid is True
+
+    def test_luhn_too_short(self):
+        """Test Luhn validation rejects too-short numbers."""
+        short_card = "123456789012"
+        matches = self.scanner.scan(short_card, [PIIType.BANK_CARD])
+
+        assert len(matches) == 0  # Should not match at all
+
+    def test_luhn_too_long(self):
+        """Test Luhn validation rejects too-long numbers."""
+        long_card = "12345678901234567890"
+        matches = self.scanner.scan(long_card, [PIIType.BANK_CARD])
+
+        assert len(matches) == 0  # Should not match at all
+
+    # ==================== US SSN Tests ====================
+
+    def test_detect_us_ssn_dashed(self):
+        """Test US SSN with dashes detection."""
+        text = "SSN: 123-45-6789"
+        matches = self.scanner.scan(text, [PIIType.US_SSN])
+
+        assert len(matches) == 1
+        assert matches[0].pii_type == PIIType.US_SSN
+        assert matches[0].value == "123-45-6789"
+
+    def test_detect_us_ssn_no_dashes(self):
+        """Test US SSN without dashes detection."""
+        text = "SSN: 123456789"
+        matches = self.scanner.scan(text, [PIIType.US_SSN])
+
+        assert len(matches) == 1
+        assert matches[0].value == "123456789"
+
+    def test_us_ssn_masking(self):
+        """Test SSN masking."""
+        text = "SSN: 123-45-6789"
+        matches = self.scanner.scan(text, [PIIType.US_SSN])
+
+        assert matches[0].masked_value == "123***6789"
+
+    # ==================== UK NIN Tests ====================
+
+    def test_detect_uk_nin(self):
+        """Test UK National Insurance Number detection."""
+        text = "NIN: QQ 12 34 56 C"
+        matches = self.scanner.scan(text, [PIIType.UK_NIN])
+
+        assert len(matches) == 1
+        assert matches[0].pii_type == PIIType.UK_NIN
+        assert matches[0].value == "QQ 12 34 56 C"
+
+    def test_detect_uk_nin_no_spaces(self):
+        """Test UK NIN without spaces detection."""
+        text = "NIN: QQ123456C"
+        matches = self.scanner.scan(text, [PIIType.UK_NIN])
+
+        assert len(matches) == 1
+
+    def test_uk_nin_masking(self):
+        """Test UK NIN masking."""
+        text = "NIN: QQ 12 34 56 C"
+        matches = self.scanner.scan(text, [PIIType.UK_NIN])
+
+        assert matches[0].masked_value == "QQ***56 C"
+
+    # ==================== EU National ID Tests ====================
+
+    def test_detect_eu_german_id(self):
+        """Test German ID detection."""
+        text = "ID: 123456789A"
+        matches = self.scanner.scan(text, [PIIType.EU_NATIONAL_ID])
+
+        assert len(matches) == 1
+        assert matches[0].pii_type == PIIType.EU_NATIONAL_ID
+
+    def test_detect_eu_french_id(self):
+        """Test French ID detection."""
+        text = "ID: AB123456CD"
+        matches = self.scanner.scan(text, [PIIType.EU_NATIONAL_ID])
+
+        assert len(matches) == 1
+        assert matches[0].pii_type == PIIType.EU_NATIONAL_ID
+
+    def test_detect_eu_italy_id(self):
+        """Test Italian ID detection."""
+        text = "ID: CA1234567B"
+        matches = self.scanner.scan(text, [PIIType.EU_NATIONAL_ID])
+
+        assert len(matches) == 1
+        assert matches[0].pii_type == PIIType.EU_NATIONAL_ID
+
+    def test_detect_eu_spain_dni(self):
+        """Test Spanish DNI detection."""
+        text = "DNI: A12345678B"
+        matches = self.scanner.scan(text, [PIIType.EU_NATIONAL_ID])
+
+        assert len(matches) == 1
+        assert matches[0].pii_type == PIIType.EU_NATIONAL_ID
+
+    def test_eu_id_masking(self):
+        """Test EU ID masking."""
+        text = "ID: AB123456CD"
+        matches = self.scanner.scan(text, [PIIType.EU_NATIONAL_ID])
+
+        assert matches[0].masked_value == "AB****6CD"
+
+    # ==================== Passport Tests ====================
+
+    def test_detect_passport(self):
+        """Test general passport detection."""
+        text = "Passport: A1234567"
+        matches = self.scanner.scan(text, [PIIType.PASSPORT])
+
+        assert len(matches) == 1
+        assert matches[0].pii_type == PIIType.PASSPORT
+
+    def test_passport_masking(self):
+        """Test passport masking."""
+        text = "Passport: A12345678"
+        matches = self.scanner.scan(text, [PIIType.PASSPORT])
+
+        assert matches[0].masked_value == "A12****78"
+
+    # ==================== IP Address Tests ====================
+
+    def test_detect_ip_address(self):
+        """Test IP address detection."""
+        text = "Server IP: 192.168.1.1"
+        matches = self.scanner.scan(text, [PIIType.IP_ADDRESS])
+
+        assert len(matches) == 1
+        assert matches[0].pii_type == PIIType.IP_ADDRESS
+        assert matches[0].value == "192.168.1.1"
+
+    def test_detect_ip_address_public(self):
+        """Test public IP address detection."""
+        text = "Public IP: 8.8.8.8"
+        matches = self.scanner.scan(text, [PIIType.IP_ADDRESS])
+
+        assert len(matches) == 1
+        assert matches[0].value == "8.8.8.8"
+
+    def test_ip_address_masking(self):
+        """Test IP address masking."""
+        text = "IP: 192.168.1.100"
+        matches = self.scanner.scan(text, [PIIType.IP_ADDRESS])
+
+        assert matches[0].masked_value == "192.168.1.***"
+
     # ==================== Mixed PII Tests ====================
 
     def test_detect_multiple_pii_types(self):
@@ -158,6 +356,14 @@ class TestPIIScanner:
 
         assert len(matches) == 3
         assert {m.pii_type for m in matches} == {PIIType.EMAIL, PIIType.PHONE, PIIType.CHINA_ID}
+
+    def test_detect_international_pii(self):
+        """Test detection of international PII types."""
+        text = "SSN: 123-45-6789, NIN: QQ 12 34 56 C, ID: AB123456CD"
+        matches = self.scanner.scan(text)
+
+        assert len(matches) == 3
+        assert {m.pii_type for m in matches} == {PIIType.US_SSN, PIIType.UK_NIN, PIIType.EU_NATIONAL_ID}
 
     def test_scan_specific_types_only(self):
         """Test scanning for specific PII types only."""
@@ -238,6 +444,13 @@ class TestPIIScanner:
         # 19 digits: first 4 + **** + last 4 = 6222****0123
         assert matches[0].masked_value == "6222****0123"
 
+    def test_china_passport_masked_value(self):
+        """Test China passport masking."""
+        text = "G12345678"
+        matches = self.scanner.scan(text, [PIIType.CHINA_PASSPORT])
+
+        assert matches[0].masked_value == "G1****78"
+
 
 class TestPIIMatch:
     """Test PIIMatch dataclass."""
@@ -256,6 +469,7 @@ class TestPIIMatch:
         assert match.value == "test@example.com"
         assert match.start == 0
         assert match.end == 16
+        assert match.is_valid is True
 
     def test_auto_masking(self):
         """Test automatic masking when not provided."""
@@ -268,3 +482,59 @@ class TestPIIMatch:
         )
 
         assert match.masked_value == "138****5678"
+
+    def test_match_with_invalid_flag(self):
+        """Test creating a PIIMatch with invalid flag."""
+        match = PIIMatch(
+            pii_type=PIIType.BANK_CARD,
+            value="4532015112830367",  # Invalid Luhn
+            start=0,
+            end=16,
+            masked_value="4532****0367",
+            is_valid=False,
+        )
+
+        assert match.is_valid is False
+
+
+class TestLuhnAlgorithm:
+    """Test the Luhn algorithm implementation."""
+
+    def setup_method(self):
+        """Set up test scanner."""
+        self.scanner = PIIScanner()
+
+    def test_luhn_valid_numbers(self):
+        """Test known valid card numbers."""
+        valid_cards = [
+            "4532015112830366",  # Visa
+            "5425233430109903",  # MasterCard
+            "374245455400126",   # American Express
+            "6011000991001201",  # Discover
+        ]
+        for card in valid_cards:
+            assert self.scanner._validate_luhn(card) is True, f"Card {card} should be valid"
+
+    def test_luhn_invalid_numbers(self):
+        """Test known invalid card numbers."""
+        invalid_cards = [
+            "4532015112830367",  # Wrong checksum
+            "1234567890123456",  # Random
+            "1111111111111111",  # All ones (fails Luhn)
+        ]
+        for card in invalid_cards:
+            assert self.scanner._validate_luhn(card) is False, f"Card {card} should be invalid"
+
+    def test_luhn_non_digits(self):
+        """Test that non-digit strings return False."""
+        assert self.scanner._validate_luhn("abcd1234567890") is False
+        assert self.scanner._validate_luhn("1234-5678-9012-3456") is False  # Has dashes
+
+    def test_luhn_edge_cases(self):
+        """Test edge cases for Luhn validation."""
+        # Too short
+        assert self.scanner._validate_luhn("123456789012") is False
+        # Too long
+        assert self.scanner._validate_luhn("12345678901234567890") is False
+        # Empty
+        assert self.scanner._validate_luhn("") is False

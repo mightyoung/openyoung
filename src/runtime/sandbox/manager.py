@@ -2,10 +2,37 @@
 Sandbox Manager - 沙箱管理器
 
 提供统一的沙箱接口，自动选择后端
-支持: E2B > Docker > Process
+支持: E2B > Docker > ERROR
+
+安全策略:
+========
+ProcessSandbox 已禁用! 默认使用 E2B 或 Docker 后端。
+
+- E2B: 提供 microVM 级别的安全隔离 (推荐)
+- Docker: 提供容器级隔离 (需要 Docker 守护进程运行)
+- Process: 已禁用 - 不再作为后备选项
+
+如果 E2B 和 Docker 都不可用，将抛出 SandboxUnavailableError。
+
+使用示例:
+```python
+from src.runtime.sandbox.manager import SandboxManager, SandboxConfig, SandboxBackend
+from src.runtime.sandbox.security_policy import SandboxPolicy
+
+# 默认配置 - 自动选择 E2B 或 Docker
+manager = SandboxManager()
+
+# 强制指定后端
+config = SandboxConfig(backend=SandboxBackend.E2B)
+manager = SandboxManager(config)
+
+# 执行代码
+result = await manager.execute("print('hello')", "python")
+```
 """
 
 import logging
+import shutil
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
@@ -22,12 +49,38 @@ from .security_policy import RiskLevel, SandboxPolicy, SecurityPolicyEngine
 logger = logging.getLogger(__name__)
 
 
+class SandboxUnavailableError(Exception):
+    """Raised when no secure sandbox backend is available."""
+
+    pass
+
+
+def _check_docker_available() -> bool:
+    """检查 Docker 是否可用"""
+    return shutil.which("docker") is not None and _docker_daemon_running()
+
+
+def _docker_daemon_running() -> bool:
+    """检查 Docker 守护进程是否运行"""
+    import subprocess
+
+    try:
+        result = subprocess.run(
+            ["docker", "info"],
+            capture_output=True,
+            timeout=5,
+        )
+        return result.returncode == 0
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        return False
+
+
 class SandboxBackend(str, Enum):
     """沙箱后端类型"""
 
     E2B = "e2b"
     DOCKER = "docker"
-    PROCESS = "process"
+    PROCESS = "process"  # DEPRECATED: ProcessSandbox is disabled for security
 
 
 @dataclass
@@ -44,6 +97,14 @@ class SandboxConfig:
     max_memory_mb: int = 512
     max_execution_time_seconds: int = 300
     enable_evaluator: bool = False
+
+    def __post_init__(self):
+        """验证配置安全性"""
+        if self.backend == SandboxBackend.PROCESS:
+            raise ValueError(
+                "PROCESS backend is disabled for security reasons. "
+                "Use E2B or DOCKER backend instead."
+            )
 
 
 class SandboxBackendBase(ABC):
@@ -66,7 +127,12 @@ class SandboxBackendBase(ABC):
 
 
 class DockerSandbox(SandboxBackendBase):
-    """Docker 沙箱后端 (未来实现)"""
+    """
+    Docker 沙箱后端
+
+    使用 Docker 容器提供隔离执行环境。
+    需要 Docker 守护进程运行。
+    """
 
     def __init__(self, config: SandboxConfig):
         self.config = config
@@ -88,10 +154,41 @@ class DockerSandbox(SandboxBackendBase):
 
 
 class ProcessSandbox(SandboxBackendBase):
-    """进程沙箱后端 (使用现有sandbox.py)"""
+    """
+    进程沙箱后端 (已禁用!)
+
+    WARNING: ProcessSandbox 使用 subprocess.run() 执行代码，不提供真正的进程隔离。
+    此后端已禁用，不再作为后备选项。
+
+    如需真正的沙箱隔离，请使用 E2B 或 Docker 后端。
+    """
+
+    # 网络操作命令模式
+    _NETWORK_PATTERNS = ["curl", "wget", "nc", "netcat", "ssh", "scp", "rsync", "telnet", "ftp", "sftp"]
 
     def __init__(self, config: SandboxConfig):
         self.config = config
+
+    def _check_network_access(self, command: str) -> bool:
+        """
+        检查命令是否允许网络访问
+
+        Args:
+            command: 要执行的命令
+
+        Returns:
+            bool: 是否允许网络访问
+        """
+        # 如果配置允许网络，则直接通过
+        if getattr(self.config.policy, 'allow_network', False):
+            return True
+
+        # 检查命令是否包含网络操作模式
+        for pattern in self._NETWORK_PATTERNS:
+            if pattern in command:
+                return False
+
+        return True
 
     async def execute(self, code: str, language: str) -> ExecutionResult:
         """使用本地进程执行 (演示用)"""
@@ -99,6 +196,21 @@ class ProcessSandbox(SandboxBackendBase):
         import time
 
         start_time = time.time()
+
+        # 构建命令用于网络检查
+        if language.lower() in ("python", "py"):
+            cmd_str = f"python3 -c {code}"
+        else:
+            cmd_str = f"bash -c {code}"
+
+        # 检查网络访问权限
+        if not self._check_network_access(cmd_str):
+            return ExecutionResult(
+                output="",
+                error="Network access blocked: command attempts to access network",
+                exit_code=1,
+                duration_ms=0,
+            )
 
         try:
             if language.lower() in ("python", "py"):
@@ -166,7 +278,8 @@ class SandboxManager:
     自动选择最佳后端:
     1. E2B (推荐)
     2. Docker
-    3. Process (后备)
+
+    注意: ProcessSandbox 已禁用，不再作为后备选项。
     """
 
     def __init__(self, config: Optional[SandboxConfig] = None):
@@ -175,23 +288,42 @@ class SandboxManager:
         self._security_engine = SecurityPolicyEngine(self.config.policy)
 
     def _create_backend(self) -> SandboxBackendBase:
-        """创建后端实例"""
+        """创建后端实例 (E2B > Docker > Error)"""
         if self.config.backend == SandboxBackend.E2B:
             if E2B_AVAILABLE:
                 logger.info("Using E2B backend")
                 return create_e2b_sandbox(
                     template=self.config.template,
                     timeout=self.config.timeout,
+                    fallback=False,  # 不使用后备实现
                 )
             else:
-                logger.warning("E2B not available, falling back to Process")
-                return ProcessSandbox(self.config)
+                # E2B 不可用，尝试 Docker
+                logger.info("E2B not available, trying Docker")
+                return self._create_docker_backend()
 
         elif self.config.backend == SandboxBackend.DOCKER:
-            return DockerSandbox(self.config)
+            return self._create_docker_backend()
 
         else:
-            return ProcessSandbox(self.config)
+            # PROCESS 后端已在 SandboxConfig.__post_init__ 中被禁用
+            # 此处不会执行到
+            raise SandboxUnavailableError(
+                "Process backend is disabled. Use E2B or Docker instead."
+            )
+
+    def _create_docker_backend(self) -> SandboxBackendBase:
+        """创建 Docker 后端或抛出错误"""
+        if _check_docker_available():
+            logger.info("Using Docker backend")
+            return DockerSandbox(self.config)
+        else:
+            raise SandboxUnavailableError(
+                "No secure sandbox backend available. "
+                f"E2B available: {E2B_AVAILABLE}, "
+                f"Docker available: {_check_docker_available()}. "
+                "Please install E2B SDK or start Docker daemon."
+            )
 
     async def execute(
         self,
@@ -232,12 +364,11 @@ class SandboxManager:
         code: str,
         language: str,
     ) -> ExecutionResult:
-        """本地执行 (非沙箱)"""
-        # 简化实现 - 使用ProcessSandbox
-        if self._backend is None:
-            self._backend = ProcessSandbox(self.config)
-
-        return await self._backend.execute(code, language)
+        """本地执行 (非沙箱) - 禁用中"""
+        raise SandboxUnavailableError(
+            "Local execution is disabled for security reasons. "
+            "Use a secure sandbox backend (E2B or Docker) instead."
+        )
 
     async def install(self, packages: list[str]) -> bool:
         """安装依赖"""

@@ -63,9 +63,10 @@ class TestRLFullPipeline:
         # 模拟训练批次
         batch = {
             "log_probs": np.random.randn(8, 10),
-            "old_log_probs": np.random.randn(8, 10),
-            "advantages": np.random.randn(8),
-            "rewards": np.random.randn(8),
+            "new_log_probs": np.random.randn(8, 10),
+            "advantages": np.random.randn(8, 10),
+            "rewards": np.random.randn(8, 10),
+            "mask": np.ones((8, 10)),
         }
 
         result = engine.train_step(batch)
@@ -89,15 +90,16 @@ class TestRLFullPipeline:
                 step_advantage_weight=0.4,
             )
         )
-        hardware = HardwareSpec(backend=ComputeBackend.CUDA, device_name="cuda:0", memory_gb=8.0)
+        hardware = HardwareSpec(backend=ComputeBackend.CPU, device_name="cpu", memory_gb=8.0)
         engine = RLEngine(config, hardware)
 
-        # 模拟多 episode 批次
+        # 模拟多 episode 批次 - GiGPO 使用 2D [batch_size, seq_len]
         batch = {
-            "log_probs": np.random.randn(4, 5, 10),
-            "old_log_probs": np.random.randn(4, 5, 10),
-            "advantages": np.random.randn(4, 5),
-            "rewards": np.random.randn(4, 5),
+            "log_probs": np.random.randn(4, 10),
+            "new_log_probs": np.random.randn(4, 10),
+            "advantages": np.random.randn(4, 10),
+            "rewards": np.random.randn(4, 10),
+            "mask": np.ones((4, 10)),
         }
 
         result = engine.train_step(batch)
@@ -255,9 +257,10 @@ class TestPerformance:
         batch_size = 100
         batch = {
             "log_probs": np.random.randn(batch_size, 50),
-            "old_log_probs": np.random.randn(batch_size, 50),
-            "advantages": np.random.randn(batch_size),
-            "rewards": np.random.randn(batch_size),
+            "new_log_probs": np.random.randn(batch_size, 50),
+            "advantages": np.random.randn(batch_size, 50),
+            "rewards": np.random.randn(batch_size, 50),
+            "mask": np.ones((batch_size, 50)),
         }
 
         # 测量处理时间
@@ -287,9 +290,10 @@ class TestMemoryManagement:
         # 创建大批次
         large_batch = {
             "log_probs": np.random.randn(1000, 100),
-            "old_log_probs": np.random.randn(1000, 100),
-            "advantages": np.random.randn(1000),
-            "rewards": np.random.randn(1000),
+            "new_log_probs": np.random.randn(1000, 100),
+            "advantages": np.random.randn(1000, 100),
+            "rewards": np.random.randn(1000, 100),
+            "mask": np.ones((1000, 100)),
         }
 
         # 验证可以处理

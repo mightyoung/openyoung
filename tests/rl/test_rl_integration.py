@@ -80,9 +80,10 @@ class TestRLTrainingPipeline:
         for i in range(5):
             batch = {
                 "log_probs": np.random.randn(8, 10),
-                "old_log_probs": np.random.randn(8, 10),
-                "advantages": np.random.randn(8),
-                "rewards": np.random.randn(8),
+                "new_log_probs": np.random.randn(8, 10),
+                "advantages": np.random.randn(8, 10),
+                "rewards": np.random.randn(8, 10),
+                "mask": np.ones((8, 10)),
             }
             result = engine.train_step(batch)
             results.append(result)
@@ -263,9 +264,10 @@ class TestRLEndToEnd:
         for step in range(10):
             batch = {
                 "log_probs": np.random.randn(8, 10),
-                "old_log_probs": np.random.randn(8, 10),
-                "advantages": np.random.randn(8),
-                "rewards": np.random.randn(8),
+                "new_log_probs": np.random.randn(8, 10),
+                "advantages": np.random.randn(8, 10),
+                "rewards": np.random.randn(8, 10),
+                "mask": np.ones((8, 10)),
             }
 
             result = engine.train_step(batch)

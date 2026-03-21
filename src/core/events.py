@@ -292,7 +292,7 @@ class EventBus:
     - Hook 注册表 (Claude Code 风格)
     """
 
-    def __init__(self, use_queue: bool = False):
+    def __init__(self, use_queue: bool = False, hook_registry=None):
         # 同步订阅者
         self._subscribers: dict[EventType, list[tuple[EventPriority, Callable]]] = {}
         # 异步订阅者
@@ -306,7 +306,7 @@ class EventBus:
         self._running = False
         self._processor_task: asyncio.Task | None = None
         # Hook 注册表
-        self._hook_registry = hook_registry
+        self._hook_registry = hook_registry if hook_registry is not None else get_hook_registry()
 
     def subscribe(
         self,

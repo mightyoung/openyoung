@@ -494,8 +494,12 @@ def init_core_runtime(self, config) -> None:
     from src.core.heartbeat import HeartbeatConfig, HeartbeatScheduler, get_heartbeat_scheduler
     from src.core.knowledge import get_knowledge_manager
 
-    # EventBus - 事件总线
-    self._event_bus = get_event_bus()
+    # EventBus - 事件总线 (use DI container if available)
+    if self.container is not None:
+        from src.core.dependencies import DIToken
+        self._event_bus = self.container.resolve(DIToken.EVENT_BUS)
+    else:
+        self._event_bus = get_event_bus()
 
     # Knowledge Manager - 知识管理
     self._knowledge_manager = get_knowledge_manager()

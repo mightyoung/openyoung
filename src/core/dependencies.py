@@ -7,6 +7,7 @@ Note: EvaluationHub 已移除 — 评估功能迁移到 src/hub/evaluate/ (Harne
 """
 
 from src.agents.permission import PermissionEvaluator
+from src.core.events import EventBus, EventRegistry
 from src.core.memory.impl.checkpoint import CheckpointManager
 from src.datacenter.datacenter import DataCenter
 from src.evolver.engine import EvolutionEngine
@@ -26,6 +27,8 @@ class DIToken:
     HARNESS = "harness"
     DATACENTER = "datacenter"
     EVOLVER = "evolver"
+    EVENT_BUS = "event_bus"
+    HOOK_REGISTRY = "hook_registry"
 
 
 def register_young_agent_dependencies(container) -> None:
@@ -73,5 +76,19 @@ def register_young_agent_dependencies(container) -> None:
     container.register(
         DIToken.EVOLVER,
         lambda: EvolutionEngine(),
+        singleton=True,
+    )
+
+    # EventRegistry
+    container.register(
+        DIToken.HOOK_REGISTRY,
+        lambda: EventRegistry(),
+        singleton=True,
+    )
+
+    # EventBus (depends on EventRegistry)
+    container.register(
+        DIToken.EVENT_BUS,
+        lambda: EventBus(hook_registry=container.resolve(DIToken.HOOK_REGISTRY)),
         singleton=True,
     )

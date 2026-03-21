@@ -61,15 +61,16 @@ class TestGiGPOEngine:
         from src.agents.rl import create_gigpo_engine, GiGPOConfig, HardwareSpec, ComputeBackend
 
         config = GiGPOConfig()
-        hardware = HardwareSpec(backend=ComputeBackend.CUDA, device_name="cuda:0", memory_gb=8.0)
+        hardware = HardwareSpec(backend=ComputeBackend.CPU, device_name="cpu", memory_gb=8.0)
         engine = create_gigpo_engine(config, hardware)
 
-        # 模拟批次数据
+        # 模拟批次数据 - GiGPO 使用 2D [batch_size, seq_len]
         batch = {
-            "log_probs": np.random.randn(4, 5, 10),
-            "old_log_probs": np.random.randn(4, 5, 10),
-            "advantages": np.random.randn(4, 5),
-            "rewards": np.random.randn(4, 5),
+            "log_probs": np.random.randn(4, 10),
+            "new_log_probs": np.random.randn(4, 10),
+            "advantages": np.random.randn(4, 10),
+            "rewards": np.random.randn(4, 10),
+            "mask": np.ones((4, 10)),
         }
 
         result = engine.train_step(batch)

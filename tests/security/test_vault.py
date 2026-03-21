@@ -173,3 +173,65 @@ class TestCredential:
         assert cred.key == "test_key"
         assert cred.value == "encrypted_value"
         assert cred.use_count == 0
+
+
+class TestVaultFernetEncryption:
+    """Fernet AES 加密测试"""
+
+    def test_fernet_encrypt_decrypt(self):
+        """Fernet 加密解密测试"""
+        vault = Vault()
+        master_key = vault.get_master_key()
+
+        # 存储凭据
+        vault.store("fernet_key", "fernet_secret_data_12345")
+
+        # 获取凭据
+        value = vault.get("fernet_key")
+        assert value == "fernet_secret_data_12345"
+
+        # 验证加密后数据不是明文
+        cred = vault._credentials["fernet_key"]
+        assert cred.value != "fernet_secret_data_12345"
+        assert cred.salt is not None
+
+    def test_fernet_different_salts(self):
+        """不同盐值生成不同加密结果"""
+        vault = Vault()
+
+        vault.store("key1", "same_value")
+        vault.store("key2", "same_value")
+
+        # 不同加密结果
+        val1 = vault._credentials["key1"].value
+        val2 = vault._credentials["key2"].value
+        assert val1 != val2
+
+    def test_fernet_rejects_tampered_data(self):
+        """Fernet 拒绝篡改数据"""
+        vault = Vault()
+        vault.store("api_key", "secret")
+
+        # 篡改加密数据
+        cred = vault._credentials["api_key"]
+        tampered_value = cred.value[:-5] + "XXXXX"
+        cred.value = tampered_value
+
+        # 解密应该失败
+        result = vault.get("api_key")
+        assert result is None
+
+    def test_fernet_encrypted_value_is_base64(self):
+        """Fernet 加密结果是有效的 base64"""
+        vault = Vault()
+        vault.store("api_key", "secret_value")
+
+        import base64
+        cred = vault._credentials["api_key"]
+
+        # 应该能成功解码
+        try:
+            decoded = base64.b64decode(cred.value)
+            assert len(decoded) > 0
+        except Exception:
+            assert False, "Fernet encrypted value should be valid base64"

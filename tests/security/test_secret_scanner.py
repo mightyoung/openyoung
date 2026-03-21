@@ -155,6 +155,110 @@ class TestSecretScannerEdgeCases:
         assert len(result.secrets_found) >= 2
 
 
+class TestSecretScannerPII:
+    """PII 检测测试"""
+
+    def test_email_detected(self):
+        """邮箱应该被检测"""
+        scanner = SecretScanner()
+        result = scanner.scan("Contact: test@example.com")
+        assert result.has_secrets == True
+        assert any(s.type == SecretType.EMAIL for s in result.secrets_found)
+
+    def test_email_masked(self):
+        """邮箱应该被正确脱敏"""
+        scanner = SecretScanner(redact=True)
+        result = scanner.scan("Email: test@example.com")
+        assert result.redacted_content is not None
+        assert "test@example.com" not in result.redacted_content
+        assert "t***@example.com" in result.redacted_content
+
+    def test_phone_detected(self):
+        """手机号应该被检测"""
+        scanner = SecretScanner()
+        result = scanner.scan("Phone: 13812345678")
+        assert result.has_secrets == True
+        assert any(s.type == SecretType.PHONE for s in result.secrets_found)
+
+    def test_phone_masked(self):
+        """手机号应该被正确脱敏"""
+        scanner = SecretScanner(redact=True)
+        result = scanner.scan("Phone: 13812345678")
+        assert result.redacted_content is not None
+        assert "13812345678" not in result.redacted_content
+        assert "138****5678" in result.redacted_content
+
+    def test_china_id_detected(self):
+        """身份证号应该被检测"""
+        scanner = SecretScanner()
+        result = scanner.scan("My ID is 110101199001011234")
+        assert result.has_secrets == True
+        assert any(s.type == SecretType.CHINA_ID for s in result.secrets_found)
+
+    def test_china_id_with_x(self):
+        """带X的身份证号应该被检测"""
+        scanner = SecretScanner()
+        result = scanner.scan("ID: 11010119900101123X")
+        assert result.has_secrets == True
+        assert any(s.type == SecretType.CHINA_ID for s in result.secrets_found)
+
+    def test_china_id_masked(self):
+        """身份证号应该被正确脱敏"""
+        scanner = SecretScanner(redact=True)
+        result = scanner.scan("My ID is 110101199001011234")
+        assert result.redacted_content is not None
+        assert "110101199001011234" not in result.redacted_content
+        assert "110101****1234" in result.redacted_content
+
+    def test_bank_card_detected(self):
+        """银行卡号应该被检测"""
+        scanner = SecretScanner()
+        result = scanner.scan("Card: 6222021234567890123")
+        assert result.has_secrets == True
+        assert any(s.type == SecretType.BANK_CARD for s in result.secrets_found)
+
+    def test_bank_card_with_spaces(self):
+        """带空格的银行卡号应该被检测"""
+        scanner = SecretScanner()
+        result = scanner.scan("Card: 6222 0212 3456 7890 1234")
+        assert result.has_secrets == True
+        assert any(s.type == SecretType.BANK_CARD for s in result.secrets_found)
+
+    def test_bank_card_masked(self):
+        """银行卡号应该被正确脱敏"""
+        scanner = SecretScanner(redact=True)
+        result = scanner.scan("Card: 6222021234567890123")
+        assert result.redacted_content is not None
+        assert "6222021234567890123" not in result.redacted_content
+        assert "6222****0123" in result.redacted_content
+
+    def test_multiple_pii_types(self):
+        """应该检测多种PII类型"""
+        scanner = SecretScanner()
+        content = "Email: test@example.com, Phone: 13812345678, ID: 110101199001011234"
+        result = scanner.scan(content)
+        assert result.has_secrets == True
+        found_types = {s.type for s in result.secrets_found}
+        assert SecretType.EMAIL in found_types
+        assert SecretType.PHONE in found_types
+        assert SecretType.CHINA_ID in found_types
+
+    def test_mixed_secrets_and_pii(self):
+        """应该同时检测密钥和PII"""
+        scanner = SecretScanner()
+        content = """
+        api_key = 'sk-12345678901234567890'
+        email = 'user@company.com'
+        phone = '13912345678'
+        """
+        result = scanner.scan(content)
+        assert result.has_secrets == True
+        found_types = {s.type for s in result.secrets_found}
+        assert SecretType.OPENAI_API_KEY in found_types
+        assert SecretType.EMAIL in found_types
+        assert SecretType.PHONE in found_types
+
+
 class TestSecretScannerRealAttacks:
     """真实样本测试"""
 

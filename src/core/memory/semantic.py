@@ -9,6 +9,7 @@ Semantic Memory (L2) - LLM 推理知识检索
 - 知识分类和标签
 """
 
+import asyncio
 import json
 import logging
 from dataclasses import dataclass, field
@@ -64,6 +65,9 @@ class SemanticMemory:
         self.database_url = database_url
         self.llm_client = llm_client
         self._pool: Optional[asyncpg.Pool] = None
+        self._in_memory_mode: bool = False
+        self._memory_store: dict[str, KnowledgeEntry] = {}
+        self._lock: asyncio.Lock = asyncio.Lock()
 
     async def initialize(self) -> None:
         """初始化数据库连接"""
@@ -76,7 +80,6 @@ class SemanticMemory:
                     "DATABASE_URL not configured, SemanticMemory will use in-memory mode"
                 )
                 self._in_memory_mode = True
-                self._memory_store: dict[str, KnowledgeEntry] = {}
                 return
 
         self._pool = await asyncpg.create_pool(self.database_url)
@@ -158,7 +161,8 @@ class SemanticMemory:
                 created_at=now,
                 updated_at=now,
             )
-            self._memory_store[entry_id] = entry
+            async with self._lock:
+                self._memory_store[entry_id] = entry
             return entry_id
 
         async with self._pool.acquire() as conn:
@@ -185,9 +189,10 @@ class SemanticMemory:
     async def get(self, entry_id: str) -> Optional[KnowledgeEntry]:
         """获取知识条目"""
         if self._in_memory_mode:
-            entry = self._memory_store.get(entry_id)
-            if entry:
-                entry.access_count += 1
+            async with self._lock:
+                entry = self._memory_store.get(entry_id)
+                if entry:
+                    entry.access_count += 1
             return entry
 
         async with self._pool.acquire() as conn:
@@ -195,17 +200,16 @@ class SemanticMemory:
                 "SELECT * FROM semantic_memory WHERE id = $1",
                 entry_id,
             )
+            if not row:
+                return None
 
-        if not row:
-            return None
+            # 更新访问计数
+            await conn.execute(
+                "UPDATE semantic_memory SET access_count = access_count + 1 WHERE id = $1",
+                entry_id,
+            )
 
-        # 更新访问计数
-        await conn.execute(
-            "UPDATE semantic_memory SET access_count = access_count + 1 WHERE id = $1",
-            entry_id,
-        )
-
-        return self._row_to_entry(row)
+            return self._row_to_entry(row)
 
     async def list_by_category(
         self,
@@ -214,7 +218,8 @@ class SemanticMemory:
     ) -> list[KnowledgeEntry]:
         """按分类列出知识"""
         if self._in_memory_mode:
-            return [e for e in self._memory_store.values() if e.category == category][:limit]
+            async with self._lock:
+                return [e for e in self._memory_store.values() if e.category == category][:limit]
 
         async with self._pool.acquire() as conn:
             rows = await conn.fetch(
@@ -237,9 +242,10 @@ class SemanticMemory:
     ) -> list[KnowledgeEntry]:
         """按标签列出知识"""
         if self._in_memory_mode:
-            return [e for e in self._memory_store.values() if any(t in e.tags for t in tags)][
-                :limit
-            ]
+            async with self._lock:
+                return [e for e in self._memory_store.values() if any(t in e.tags for t in tags)][
+                    :limit
+                ]
 
         async with self._pool.acquire() as conn:
             rows = await conn.fetch(
@@ -306,7 +312,8 @@ class SemanticMemory:
     ) -> list[RetrievalResult]:
         """简单关键词检索"""
         if self._in_memory_mode:
-            entries = list(self._memory_store.values())
+            async with self._lock:
+                entries = list(self._memory_store.values())
         else:
             async with self._pool.acquire() as conn:
                 rows = await conn.fetch(
@@ -422,14 +429,18 @@ Return in format:
 # ====================
 
 _semantic_memory_instance: Optional[SemanticMemory] = None
+_semantic_memory_lock: asyncio.Lock = asyncio.Lock()
 
 
 async def get_semantic_memory() -> SemanticMemory:
     """获取全局 SemanticMemory 实例"""
     global _semantic_memory_instance
     if _semantic_memory_instance is None:
-        _semantic_memory_instance = SemanticMemory()
-        await _semantic_memory_instance.initialize()
+        async with _semantic_memory_lock:
+            # Double-check after acquiring lock
+            if _semantic_memory_instance is None:
+                _semantic_memory_instance = SemanticMemory()
+                await _semantic_memory_instance.initialize()
     return _semantic_memory_instance
 
 
