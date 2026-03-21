@@ -17,6 +17,7 @@ from src.config import (
     get_user_config,
     load_user_config,
     save_user_config,
+    set_user_config,
 )
 
 
@@ -72,7 +73,7 @@ class ConfigManager:
 
     def set(self, key: str, value: str) -> bool:
         """设置配置值"""
-        return set_config(key, value)
+        return set_user_config(key, value)
 
     def reset(self) -> bool:
         """重置配置"""

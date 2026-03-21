@@ -11,6 +11,10 @@ from pathlib import Path
 
 import yaml
 
+from src.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 def init_flow_skill(self, config) -> None:
     """初始化 FlowSkill - 执行流程编排
@@ -42,7 +46,7 @@ def init_flow_skill(self, config) -> None:
     try:
         _load_flow_skill_by_name(self, flow_name, flow_config)
     except Exception as e:
-        self._logger.warning(f"FlowSkill init failed: {e}")
+        logger.warning(f"FlowSkill init failed: {e}")
         self._flow_skill = None
 
 
@@ -133,7 +137,7 @@ def init_hooks(self) -> None:
         if self._hooks:
             print(f"[Hooks] Loaded {len(self._hooks)} hooks")
     except Exception as e:
-        self._logger.warning(f"Hooks init failed: {e}")
+        logger.warning(f"Hooks init failed: {e}")
         self._hooks = []
 
 
@@ -153,7 +157,7 @@ def init_mcp_servers(self) -> None:
         print(f"[MCP] Found {len(servers)} MCP servers: {', '.join(servers.keys())}")
         print("[MCP] Use 'openyoung mcp start <name>' to start a server")
     except Exception as e:
-        self._logger.warning(f"MCP init failed: {e}")
+        logger.warning(f"MCP init failed: {e}")
         self._mcp_manager = None
 
 
@@ -170,7 +174,7 @@ def init_checkpoint(self) -> None:
         self._checkpoint_manager = CheckpointManager(checkpoint_dir=checkpoint_dir)
         print(f"[Checkpoint] Initialized at {checkpoint_dir}")
     except Exception as e:
-        self._logger.warning(f"Checkpoint init failed: {e}")
+        logger.warning(f"Checkpoint init failed: {e}")
         self._checkpoint_manager = None
 
 
@@ -195,7 +199,7 @@ def init_memory_facade(self) -> None:
         self._memory_facade = loop.run_until_complete(get_memory_facade())
         print("[MemoryFacade] Initialized (Layered Memory System)")
     except Exception as e:
-        self._logger.warning(f"MemoryFacade init failed: {e}")
+        logger.warning(f"MemoryFacade init failed: {e}")
         self._memory_facade = None
 
 
@@ -439,7 +443,7 @@ def init_default_genes(self) -> None:
         )
         self._evolver._matcher.register_gene(gene)
     except Exception as e:
-        self._logger.warning(f"Default genes init failed: {e}")
+        logger.warning(f"Default genes init failed: {e}")
 
 
 # --- Factory methods ---
@@ -452,7 +456,7 @@ def create_harness(self):
 
         return Harness()
     except Exception as e:
-        self._logger.warning(f"Harness init failed: {e}")
+        logger.warning(f"Harness init failed: {e}")
         return None
 
 
@@ -463,7 +467,7 @@ def create_datacenter(self):
 
         return DataCenter()
     except Exception as e:
-        self._logger.warning(f"DataCenter init failed: {e}")
+        logger.warning(f"DataCenter init failed: {e}")
         return None
 
 
@@ -477,7 +481,7 @@ def create_evolver(self):
         init_default_genes(self)
         return engine
     except Exception as e:
-        self._logger.warning(f"EvolutionEngine init failed: {e}")
+        logger.warning(f"EvolutionEngine init failed: {e}")
         return None
 
 
@@ -494,7 +498,7 @@ def init_core_runtime(self, config) -> None:
     from src.core.knowledge import get_knowledge_manager
 
     # EventBus - 事件总线 (use DI container if available)
-    if self.container is not None:
+    if getattr(self, '_container', None) is not None:
         from src.core.dependencies import DIToken
         self._event_bus = self.container.resolve(DIToken.EVENT_BUS)
     else:
@@ -542,13 +546,13 @@ def init_llm_and_evaluation(self) -> None:
 
             self._llm = LLMClient()
         except Exception as e:
-            self._logger.warning(f"LLM client init failed: {e}")
+            logger.warning(f"LLM client init failed: {e}")
 
     # EvaluationCoordinator - 任务质量评估
     try:
         self._eval_coordinator = EvaluationCoordinator(llm_client=self._llm)
     except Exception as e:
-        self._logger.warning(f"EvaluationCoordinator init failed: {e}")
+        logger.warning(f"EvaluationCoordinator init failed: {e}")
         self._eval_coordinator = None
 
 

@@ -80,6 +80,7 @@ class YoungAgent:
         self._stats = {"total_tokens": 0, "tool_calls": 0, "errors": 0}
         self._permission = PermissionEvaluator(config.permission)
         self._dispatcher = TaskDispatcher(self._sub_agents)
+        self._container = container
         self._flow_skill = None
         self._package_manager = package_manager or PackageManager()
         self._llm = llm_client
