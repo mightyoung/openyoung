@@ -4,13 +4,10 @@ ContractBuilder - 构建可执行合约
 M1.3: 构建ExecutionContract
 """
 
-import uuid
-from datetime import datetime
 from typing import Optional
 
 from ..types.contract import ContractRequirement, ExecutionContract, IntentSpec
 from ..types.document import FeaturePoint, ParsedDocument, Priority
-from ..types.verification import VerificationStatus
 
 
 class ContractBuilder:

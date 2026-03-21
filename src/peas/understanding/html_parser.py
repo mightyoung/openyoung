@@ -7,7 +7,6 @@ M1.2: HTML原型解析器
 
 import html as html_escape
 import re
-from dataclasses import dataclass
 from html.parser import HTMLParser as BaseHTMLParser
 from pathlib import Path
 from typing import Optional

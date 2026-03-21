@@ -8,18 +8,17 @@ Memory Facade - 统一记忆入口
 """
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Optional
 
 from .checkpoint_integration import (
-    AgentCheckpoint,
     load_agent_state,
     restore_from_latest,
     save_agent_state,
 )
-from .semantic import KnowledgeEntry, RetrievalResult, SemanticMemory, get_semantic_memory
-from .working import TaskContext, WorkingMemory, get_working_memory
+from .semantic import RetrievalResult, SemanticMemory, get_semantic_memory
+from .working import WorkingMemory, get_working_memory
 
 logger = logging.getLogger(__name__)
 

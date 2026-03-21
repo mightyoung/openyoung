@@ -16,7 +16,7 @@ Data Quality Scoring System - 数据质量评分系统
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 
 class QualityDimension(Enum):
@@ -240,7 +240,7 @@ class DataQualityScorer:
             # 获取最新时间戳
             ts = data.get("timestamp") or data.get("start_time")
             if isinstance(ts, str):
-                from datetime import datetime, timedelta
+                from datetime import datetime
 
                 record_time = datetime.fromisoformat(ts.replace("Z", "+00:00"))
                 now = datetime.now(record_time.tzinfo)

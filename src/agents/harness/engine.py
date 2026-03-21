@@ -20,10 +20,7 @@ from enum import Enum
 from typing import Any, AsyncGenerator, Callable, Optional
 
 from src.agents.harness.types import (
-    EvaluationResult,
-    ExecutionPhase,
     ExecutionStatus,
-    FeedbackAction,
     StreamingExecutionResult,
 )
 

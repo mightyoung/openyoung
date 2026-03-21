@@ -12,10 +12,17 @@ Note: 支持两种模式:
 import asyncio
 import json
 import os
-from dataclasses import dataclass
 from typing import AsyncGenerator, Optional
 
-from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import (
+    APIRouter,
+    Depends,
+    FastAPI,
+    Header,
+    HTTPException,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 

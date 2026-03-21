@@ -16,7 +16,6 @@ Context Collector - 完整上下文收集器
 import json
 import os
 import socket
-import subprocess
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path

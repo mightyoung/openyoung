@@ -8,8 +8,8 @@ import logging
 from typing import Any, Dict, Optional
 
 from .config import GiGPOConfig, GRPOConfig, RLConfig, RLMode
-from .gigpo_engine import GiGPOEngine, create_gigpo_engine
-from .grpo_engine import GRPOEngine, create_grpo_engine
+from .gigpo_engine import create_gigpo_engine
+from .grpo_engine import create_grpo_engine
 from .hardware import ComputeBackend, HardwareDetector, HardwareSpec
 
 logger = logging.getLogger(__name__)

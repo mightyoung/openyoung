@@ -15,7 +15,6 @@ from pathlib import Path
 from typing import Optional
 
 from .models import (
-    InstallOptions,
     MarketplaceSkill,
 )
 from .registry import MarketplaceRegistry

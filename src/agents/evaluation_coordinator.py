@@ -17,7 +17,6 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from src.core.exception_handler import (
-    EvaluationError,
     ExceptionContext,
     get_exception_handler,
     handle_exceptions,

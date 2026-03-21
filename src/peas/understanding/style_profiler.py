@@ -5,7 +5,7 @@ M1.3: 分析文档写作风格，用于生成符合项目风格的输出
 """
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 

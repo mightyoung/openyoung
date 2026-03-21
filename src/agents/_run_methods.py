@@ -4,7 +4,6 @@ Run Methods - Core execution methods extracted from YoungAgent
 Contains the main run() method and its helper methods.
 """
 
-import json
 import os
 import re
 import uuid
@@ -12,19 +11,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, AsyncGenerator
 
 if TYPE_CHECKING:
-    from src.agents.components import file_validation
-    from src.agents.components.file_validation import FileValidationResult
-    from src.agents.dispatcher import TaskDispatcher
-    from src.agents.eval_store import EvalStore
-    from src.agents.evaluation_coordinator import EvaluationContext, EvaluationCoordinator
-    from src.agents.sub_agent import SubAgent
-    from src.core.events import Event, EventPriority, EventType, SystemEvents
-    from src.core.heartbeat import HeartbeatScheduler
-    from src.core.knowledge import KnowledgeManager
-    from src.datacenter.datacenter import TraceRecord, TraceStatus
-    from src.evolver.result_analyzer import ResultAnalyzer
-    from src.hub.evaluate.harness import EvaluationHarness
-    from src.runtime import AISandbox, SandboxPool
+    from src.agents.evaluation_coordinator import EvaluationContext
 
 from src.agents._checkpoint_methods import save_checkpoint, trigger_hooks
 
@@ -511,7 +498,6 @@ async def _apply_result_analysis(self, result: str) -> None:
 
 def _save_all(self):
     """保存所有组件数据到磁盘"""
-    import os
 
     os.makedirs(self._data_dir, exist_ok=True)
 
@@ -558,7 +544,6 @@ def _save_all(self):
 
 async def _parse_input(self, user_input: str) -> "Task":
     """解析用户输入 - 支持 @mention 触发 SubAgent"""
-    import re
 
     from src.core.types import SubAgentType, Task
 

@@ -8,9 +8,8 @@ Metadata Enricher - 元数据丰富器
 - 性能预测
 """
 
-import asyncio
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from .schema import AgentMetadata, CompatibilityInfo, PerformanceMetrics
 

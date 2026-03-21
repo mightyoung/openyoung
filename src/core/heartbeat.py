@@ -16,13 +16,12 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable
 
 # 使用 core events
 from src.core.events import (
     Event,
     EventPriority,
-    EventType,
     SystemEvents,
     get_event_bus,
 )

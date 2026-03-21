@@ -21,7 +21,6 @@ from src.peas.learning.preference_learner import PreferenceLearner
 from src.peas.types import (
     DriftReport,
     ExecutionContract,
-    FeatureStatus,
     ParsedDocument,
     Priority,
 )

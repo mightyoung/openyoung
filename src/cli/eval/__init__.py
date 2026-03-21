@@ -4,7 +4,6 @@ Eval CLI Commands - 使用新 harness (src/hub/evaluate/)
 从旧的 src/evaluation/ 迁移到 src/hub/evaluate/ 评估系统。
 """
 
-import asyncio
 import json
 
 import click
@@ -125,8 +124,6 @@ def compare_evals(eval_a, eval_b):
     The new harness uses aggregate_eval_metrics() for comparison.
     Use the WebUI Dashboard for visual comparison.
     """
-    from src.hub.evaluate.metrics import aggregate_task_metrics, compute_pass_at_k
-
     click.echo("⚠️  'eval compare' is deprecated.")
     click.echo("   Use WebUI Dashboard for evaluation comparison.")
     click.echo("   Or use aggregate_eval_metrics() from src.hub.evaluate.metrics")

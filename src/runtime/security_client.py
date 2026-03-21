@@ -8,7 +8,7 @@
 import logging
 import os
 import sys
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 # 添加 tests/rust 目录到 Python 路径
 _rust_proto_dir = os.path.join(os.path.dirname(__file__), "..", "..", "tests", "rust")
@@ -44,7 +44,7 @@ class SecurityServiceClient:
         """初始化 Rust 客户端"""
         try:
             import grpc
-            import security_pb2 as security__pb2
+            import security_pb2 as security__pb2  # noqa: F401
             import security_pb2_grpc as security__pb2_grpc
 
             # 创建 insecure channel（生产环境应使用 TLS）
@@ -404,7 +404,7 @@ class AgentControlClient:
     def connect(self) -> bool:
         """连接到 gRPC 服务"""
         try:
-            import agent_control_pb2 as agent_control__pb2
+            import agent_control_pb2 as agent_control__pb2  # noqa: F401
             import agent_control_pb2_grpc as agent_control__pb2_grpc
             import grpc
 

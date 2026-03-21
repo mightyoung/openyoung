@@ -6,7 +6,6 @@ Skill Publish Service - 技能发布服务
 
 import json
 import logging
-import shutil
 import tarfile
 import tempfile
 from pathlib import Path

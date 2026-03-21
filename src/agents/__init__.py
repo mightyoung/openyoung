@@ -2,6 +2,8 @@
 YoungAgent Package
 """
 
+# Agent adapters for EvalRunner compatibility
+from .adapters import AgentAdapter, EvalAgent, adapt_subagent
 from .base import (
     AgentConfig,
     AgentContext,
@@ -30,9 +32,6 @@ from .protocols import (
 )
 from .sub_agent import SubAgent
 from .young_agent import PermissionEvaluator, YoungAgent
-
-# Agent adapters for EvalRunner compatibility
-from .adapters import AgentAdapter, EvalAgent, adapt_subagent
 
 __all__ = [
     # Base classes

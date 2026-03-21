@@ -5,7 +5,6 @@ LangGraph 状态定义
 参考: https://langchain-ai.github.io/langgraph/concepts/low_level/#state
 """
 
-from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import Annotated, Any, Optional

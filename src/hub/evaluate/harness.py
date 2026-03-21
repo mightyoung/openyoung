@@ -9,14 +9,13 @@ Evaluation Harness - 评估基础设施核心编排器
 - 检查点持久化
 """
 
-import asyncio
 import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
-from .benchmark import BenchmarkTask, EvalType, TaskSuite
+from .benchmark import BenchmarkTask, TaskSuite
 from .metrics import (
     EvalMetrics,
     EvalTrial,
@@ -26,7 +25,6 @@ from .metrics import (
 )
 from .middleware import (
     BaseMiddleware,
-    MiddlewareResult,
     get_default_middleware,
 )
 from .runner import EvalRunner, RunnerConfig

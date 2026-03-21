@@ -7,7 +7,6 @@ MCP Security Adapter - MCP 服务器安全适配器
 
 import json
 import logging
-import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional

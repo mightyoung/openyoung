@@ -5,7 +5,6 @@ Structured JSON logging for PEAS
 import json
 import logging
 from datetime import datetime
-from typing import Any, Dict, Optional
 
 
 class JSONFormatter(logging.Formatter):

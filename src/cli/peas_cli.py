@@ -26,11 +26,10 @@ from src.peas import (
     FeatureStatus,
     MarkdownParser,
     ParsedDocument,
-    StyleProfiler,
     StyleProfile,
+    StyleProfiler,
     VerificationStatus,
 )
-
 
 # ============================================================================
 # Data Models for Report Generator
@@ -48,21 +47,6 @@ class Status(Enum):
     FAILED = "failed"
     PENDING = "pending"
     NA = "na"
-
-
-class DriftLevel(Enum):
-    NONE = "NONE"
-    MINOR = "MINOR"
-    MODERATE = "MODERATE"
-    SEVERE = "SEVERE"
-    CRITICAL = "CRITICAL"
-
-
-class VerificationStatus(Enum):
-    PASS = "pass"
-    FAIL = "fail"
-    PENDING = "pending"
-    SKIP = "skip"
 
 
 # ============================================================================
@@ -260,9 +244,9 @@ def generate_report(data: dict[str, Any], output_file: Path | None = None) -> st
     lines.append(f"# {data.get('project_name', '项目')}\n")
     lines.append("| 字段 | 值 |")
     lines.append("|------|-----|")
-    lines.append(f"| 文档版本 | v1.0 |")
+    lines.append("| 文档版本 | v1.0 |")
     lines.append(f"| 生成时间 | {report_date} |")
-    lines.append(f"| PEAS 版本 | 3.0.0 |")
+    lines.append("| PEAS 版本 | 3.0.0 |")
     lines.append(f"| 验证目标 | {data.get('prd_version', 'v1.0')} |")
     lines.append("")
     lines.append("---")
@@ -295,7 +279,7 @@ def generate_report(data: dict[str, Any], output_file: Path | None = None) -> st
     lines.append(f"| 验证目标 | {data.get('prd_version', 'v1.0')} |")
     lines.append(f"| 验证时间 | {report_date} |")
     lines.append(f"| 验证方法 | {data.get('verification_method', '代码分析 + 静态检查')} |")
-    lines.append(f"| 验证模式 | 标准模式 (MUST 100% + SHOULD >50% = MINOR) |")
+    lines.append("| 验证模式 | 标准模式 (MUST 100% + SHOULD >50% = MINOR) |")
     lines.append("")
     lines.append("### 1.2 关键指标")
     lines.append("")
@@ -355,7 +339,7 @@ def generate_report(data: dict[str, Any], output_file: Path | None = None) -> st
         status_icon = "✅" if impl_status == "verified" else "⚠️" if impl_status == "partial" else "⏳"
         lines.append(f"| {fp.get('user_story_id', '-')} | {fp.get('id', '-')} | {fp.get('id', '-')}-AC1 | {fp.get('priority', '-')} | {status_icon} |")
     if len(feature_points) > 20:
-        lines.append(f"| ... | ... | ... | ... | ... |")
+        lines.append("| ... | ... | ... | ... | ... |")
     lines.append("")
     lines.append("---")
     lines.append("")
@@ -521,7 +505,7 @@ def generate_report(data: dict[str, Any], output_file: Path | None = None) -> st
     lines.append("- TC: Test Case (测试用例)")
     lines.append("")
     lines.append("### B. 工具配置")
-    lines.append(f"- PEAS 版本: 3.0.0")
+    lines.append("- PEAS 版本: 3.0.0")
     lines.append(f"- 生成时间: {report_date}")
     lines.append("")
     lines.append("---")
@@ -530,7 +514,7 @@ def generate_report(data: dict[str, Any], output_file: Path | None = None) -> st
     lines.append("")
     lines.append("| 统计项 | 数值 |")
     lines.append("|--------|-----|")
-    lines.append(f"| 报告版本 | v1.0 |")
+    lines.append("| 报告版本 | v1.0 |")
     lines.append(f"| 生成时间 | {report_date} |")
     lines.append(f"| 功能点总数 | {total_fp} |")
     lines.append(f"| 测试用例总数 | {len(test_cases)} |")

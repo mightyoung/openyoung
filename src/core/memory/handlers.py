@@ -11,7 +11,6 @@ import logging
 from typing import Any, Optional
 
 from ..events import Event, EventBus, EventType, get_event_bus
-from .events import MemoryEventType
 from .facade import MemoryFacade, get_memory_facade
 
 logger = logging.getLogger(__name__)

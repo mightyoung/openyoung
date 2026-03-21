@@ -4,7 +4,6 @@ OpenYoung CLI - 命令行入口
 提供 openyoung 命令行工具的入口点
 """
 
-import asyncio
 import sys
 from pathlib import Path
 
@@ -41,7 +40,6 @@ def register_commands():
     from src.cli.commands import (
         agent_group,
         channel_group,
-        config_group,
         data_group,
         deprecated_subagent_group,
         eval_group,

@@ -3,8 +3,7 @@ Human Grader - 人工判定
 用于需要人工审核的评估场景
 """
 
-import time
-from typing import Any, Optional
+from typing import Any
 
 from ..benchmark import GraderConfig, GraderType, HumanGraderConfig
 from .base import BaseGrader, GraderOutput

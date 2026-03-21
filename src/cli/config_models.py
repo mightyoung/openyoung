@@ -4,7 +4,6 @@ Configuration Models - 使用 Pydantic 的配置模型
 提供类型安全的配置定义和验证。
 """
 
-from pathlib import Path
 from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator

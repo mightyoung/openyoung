@@ -515,26 +515,6 @@ def get_event_bus() -> EventBus:
 # ====================
 
 
-def on(event_type: EventType):
-    """装饰器: 订阅事件"""
-
-    def decorator(func: Callable):
-        event_bus.subscribe(event_type, func)
-        return func
-
-    return decorator
-
-
-def on_async(event_type: EventType):
-    """装饰器: 异步订阅事件"""
-
-    def decorator(func: Callable):
-        event_bus.subscribe_async(event_type, func)
-        return func
-
-    return decorator
-
-
 def emit(event_type: EventType, **data):
     """便捷函数: 发布事件"""
     event = Event(type=event_type, data=data)

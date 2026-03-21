@@ -2,42 +2,22 @@
 YoungAgent - Main Agent Class with full system integration
 """
 
-import json
 import uuid
-from datetime import datetime
 from typing import Any, AsyncGenerator
 
-from src.agents.components import (
-    DEFAULT_WEIGHTS,
-    DIMENSION_THRESHOLDS,
-    TASK_TYPE_WEIGHTS,
-    calculate_weighted_score,
-    check_threshold_violations,
-)
-from src.agents.components.file_validation import validate_file_creation
 from src.agents.dispatcher import TaskDispatcher
 from src.agents.eval_store import EvalStore
-from src.agents.evaluation_coordinator import EvaluationContext, EvaluationCoordinator
 from src.agents.permission import PermissionEvaluator
-from src.agents.ralph_loop import AgentCategory
-from src.agents.sub_agent import SubAgent
 
 # Core 模块 - EventBus, Heartbeat, Knowledge (已迁移到 _init_methods.py)
 from src.core.logger import get_logger
 from src.core.types import (
-    Message,
-    MessageRole,
-    SubAgentConfig,
     Task,
 )
 
 # 模块级 logger
 logger = get_logger(__name__)
 # Extracted methods from _checkpoint_methods.py
-from src.agents._checkpoint_methods import (
-    save_checkpoint,
-    trigger_hooks,
-)
 
 # Extracted methods from _init_methods.py
 from src.agents._init_methods import (
@@ -68,14 +48,9 @@ from src.agents._run_methods import (
 )
 
 # Extracted methods from _sandbox_methods.py
-from src.agents._sandbox_methods import (
-    enable_sandbox,
-    enable_sandbox_pool,
-)
 from src.package_manager.manager import PackageManager
 
 # AI Docker - Runtime
-from src.runtime import AISandbox, PoolConfig, SandboxConfig, SandboxPool
 from src.tools.executor import ToolExecutor
 
 

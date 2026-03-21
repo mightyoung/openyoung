@@ -9,16 +9,15 @@ import logging
 import uuid
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List
 
-from .hardware import ComputeBackend, DeviceManager, HardwareSpec
+from .hardware import DeviceManager, HardwareSpec
 
 logger = logging.getLogger(__name__)
 
 # 尝试导入 torch
 try:
     import torch
-    import torch.nn.functional as F
 
     TORCH_AVAILABLE = True
 except ImportError:

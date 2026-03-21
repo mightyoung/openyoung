@@ -7,9 +7,8 @@ Agent Executor Client - Agent 执行器封装
 
 import re
 import uuid
-from typing import Any
 
-from src.core.types import Message, MessageRole, SubAgentType, Task
+from src.core.types import Message, SubAgentType, Task
 
 
 class AgentExecutorClient:

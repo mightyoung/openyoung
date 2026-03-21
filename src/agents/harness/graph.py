@@ -11,7 +11,6 @@ from src.agents.harness.types import (
     ExecutionPhase,
     ExecutionStatus,
     PartialResult,
-    StreamingExecutionResult,
 )
 
 logger = logging.getLogger(__name__)

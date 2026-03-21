@@ -4,7 +4,7 @@ API Client - OpenYoung WebUI Backend Communication
 
 import json
 import re
-from typing import Any, AsyncGenerator, Dict, List, Optional
+from typing import Any, AsyncGenerator, Dict, List
 
 import httpx
 

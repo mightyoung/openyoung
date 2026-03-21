@@ -10,7 +10,7 @@ from typing import Awaitable, Callable, List, Optional
 
 from .embedding import QwenEmbeddingService
 from .models import Action, ActionType, Experience, State, TaskCategory
-from .rewards import RewardCalculator, RewardResult
+from .rewards import RewardCalculator
 from .store import ExperienceStore
 
 

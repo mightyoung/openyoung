@@ -6,8 +6,8 @@ JSON-RPC 2.0 Protocol - JSON-RPC 2.0 协议处理
 
 import json
 import logging
-from dataclasses import dataclass, field
-from typing import Any, Optional, Union
+from dataclasses import dataclass
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -53,8 +53,8 @@ class JSONRPCRequest:
     """JSON-RPC 2.0 请求对象"""
 
     method: str
-    params: Optional[Union[dict[str, Any], list[Any]]] = None
-    id: Optional[Union[str, int]] = None
+    params: Optional[dict[str, Any] | list[Any]] = None
+    id: Optional[str | int] = None
 
     @property
     def jsonrpc(self) -> str:
@@ -84,7 +84,7 @@ class JSONRPCRequest:
 class JSONRPCResponse:
     """JSON-RPC 2.0 响应对象"""
 
-    id: Optional[Union[str, int]]
+    id: Optional[str | int]
     result: Optional[Any] = None
     error: Optional[JSONRPCError] = None
 
@@ -115,14 +115,14 @@ class JSONRPCResponse:
         )
 
     @classmethod
-    def success(cls, id: Optional[Union[str, int]], result: Any) -> "JSONRPCResponse":
+    def success(cls, id: Optional[str | int], result: Any) -> "JSONRPCResponse":
         """创建成功响应"""
         return cls(id=id, result=result)
 
     @classmethod
-    def error(
+    def error_response(
         cls,
-        id: Optional[Union[str, int]],
+        id: Optional[str | int],
         code: int,
         message: str,
         data: Optional[Any] = None,

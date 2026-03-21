@@ -10,7 +10,6 @@ from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import StreamingResponse
 
 # 使用 sse-starlette 实现 Server-Sent Events
 try:

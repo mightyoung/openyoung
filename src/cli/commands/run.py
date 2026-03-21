@@ -5,9 +5,6 @@ Run Command - 运行命令
 """
 
 import asyncio
-import os
-import sys
-from pathlib import Path
 
 import click
 

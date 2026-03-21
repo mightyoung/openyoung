@@ -10,7 +10,6 @@ Entropy Scanners - 熵检测扫描器
 
 import re
 from pathlib import Path
-from typing import Any
 
 from .types import EntropyIssue, EntropyType, Severity
 

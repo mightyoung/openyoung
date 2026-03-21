@@ -4,7 +4,7 @@ RalphLoop - 自主循环直到任务完成
 """
 
 import asyncio
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Callable
 

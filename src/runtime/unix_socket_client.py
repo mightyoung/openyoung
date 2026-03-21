@@ -8,7 +8,7 @@ instead of gRPC for lower latency.
 import json
 import os
 import socket
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 
 class UnixSocketClient:

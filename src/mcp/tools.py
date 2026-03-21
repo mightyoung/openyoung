@@ -4,11 +4,9 @@ MCP Tools - MCP 工具注册协议
 提供 MCP 工具的注册、发现和调用功能
 """
 
-import asyncio
 import inspect
 import logging
-from dataclasses import dataclass, field
-from functools import wraps
+from dataclasses import dataclass
 from typing import Any, Callable, Optional
 
 logger = logging.getLogger(__name__)

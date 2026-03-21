@@ -6,9 +6,9 @@
 
 import logging
 from datetime import datetime
-from typing import Any, Optional
+from typing import Optional
 
-from src.core.agent_checkpoint import AgentCheckpointManager, get_checkpoint_manager
+from src.core.agent_checkpoint import get_checkpoint_manager
 from src.core.events import Event, EventType
 from src.core.knowledge import get_knowledge_manager
 
@@ -395,7 +395,7 @@ evaluation_handler = EvaluationHandler()
 # 注册处理器到 EventBus
 def register_event_handlers() -> None:
     """注册所有事件处理器"""
-    from src.core.events import EventBus, EventType, get_event_bus
+    from src.core.events import get_event_bus
 
     bus = get_event_bus()
 

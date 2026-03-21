@@ -7,7 +7,7 @@ M3.3: 学习用户验证偏好，自动调整验证阈值
 import logging
 from collections import deque
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Optional
 
 from ..types.document import Priority

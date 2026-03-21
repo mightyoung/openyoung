@@ -6,7 +6,6 @@ YoungAgent Initialization Methods
 """
 
 import asyncio
-import uuid
 from datetime import datetime
 from pathlib import Path
 
@@ -491,7 +490,7 @@ def init_core_runtime(self, config) -> None:
     这些组件提供事件驱动和心跳机制，是Agent运行的基础设施。
     """
     from src.core.events import get_event_bus
-    from src.core.heartbeat import HeartbeatConfig, HeartbeatScheduler, get_heartbeat_scheduler
+    from src.core.heartbeat import HeartbeatConfig, HeartbeatScheduler
     from src.core.knowledge import get_knowledge_manager
 
     # EventBus - 事件总线 (use DI container if available)

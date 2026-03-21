@@ -40,11 +40,10 @@ from typing import Optional
 
 from .e2b_adapter import (
     E2B_AVAILABLE,
-    E2BSandbox,
     ExecutionResult,
     create_e2b_sandbox,
 )
-from .security_policy import RiskLevel, SandboxPolicy, SecurityPolicyEngine
+from .security_policy import SandboxPolicy, SecurityPolicyEngine
 
 logger = logging.getLogger(__name__)
 

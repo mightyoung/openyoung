@@ -11,7 +11,7 @@ Model-Based Grader - LLM-as-Judge
 """
 
 import os
-from typing import Any, Optional
+from typing import Any
 
 from ..benchmark import GraderType, ModelGraderConfig
 from .base import BaseGrader, GraderOutput
@@ -235,7 +235,6 @@ REASONING: <brief explanation of your decision>
 
     async def _call_anthropic(self, prompt: str) -> dict[str, Any]:
         """调用 Anthropic API"""
-        import json
 
         try:
             import anthropic
@@ -255,7 +254,6 @@ REASONING: <brief explanation of your decision>
 
     async def _call_openai(self, prompt: str) -> dict[str, Any]:
         """调用 OpenAI API"""
-        import json
 
         try:
             import openai

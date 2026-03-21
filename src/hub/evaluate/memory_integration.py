@@ -16,7 +16,7 @@ import logging
 from typing import Any, Optional
 
 from .benchmark import BenchmarkTask
-from .metrics import EvalTrial, TaskMetrics
+from .metrics import TaskMetrics
 from .middleware import BaseMiddleware, MiddlewareResult
 
 logger = logging.getLogger(__name__)

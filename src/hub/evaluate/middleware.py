@@ -10,7 +10,7 @@ Harness Middleware - 评估中间件链
 参考 LangChain/OpenAI/ Anthropic 最佳实践
 """
 
-from abc import ABC, abstractmethod
+from abc import ABC
 from dataclasses import dataclass
 from typing import Any
 

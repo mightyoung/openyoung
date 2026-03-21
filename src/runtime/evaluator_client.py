@@ -70,7 +70,7 @@ class EvaluatorClient:
         """连接到 Rust 服务"""
         try:
             import grpc
-            import rust.evaluator_pb2 as evaluator__pb2
+            import rust.evaluator_pb2 as evaluator__pb2  # noqa: F401
             import rust.evaluator_pb2_grpc as evaluator__pb2_grpc
 
             # 使用同步 channel，因为异步流有兼容性问题

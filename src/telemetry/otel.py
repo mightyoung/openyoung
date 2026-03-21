@@ -24,7 +24,6 @@ logger = logging.getLogger(__name__)
 try:
     # Metrics support
     from opentelemetry import metrics, trace
-    from opentelemetry.context import Context
     from opentelemetry.sdk.metrics import MeterProvider
     from opentelemetry.sdk.metrics.export import (
         ConsoleMetricExporter,
@@ -34,7 +33,6 @@ try:
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
     from opentelemetry.trace import SpanKind, Status, StatusCode
-    from opentelemetry.trace.propagation import set_span_in_context
 
     # OTLP exporter
     try:

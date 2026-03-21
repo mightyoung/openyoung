@@ -6,7 +6,6 @@ YoungAgent 依赖注册
 Note: EvaluationHub 已移除 — 评估功能迁移到 src/hub/evaluate/ (Harness 系统)
 """
 
-from src.agents.permission import PermissionEvaluator
 from src.core.events import EventBus, EventRegistry
 from src.core.memory.impl.checkpoint import CheckpointManager
 from src.datacenter.datacenter import DataCenter

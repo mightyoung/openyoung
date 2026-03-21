@@ -4,7 +4,6 @@ Config Command - 配置命令
 提供配置管理命令
 """
 
-import os
 from pathlib import Path
 
 import click

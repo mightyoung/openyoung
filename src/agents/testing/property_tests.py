@@ -9,7 +9,6 @@ HYPOTHESIS_AVAILABLE = False
 
 try:
     import hypothesis.strategies as st
-    from hypothesis import Verbosity, given, settings
 
     HYPOTHESIS_AVAILABLE = True
 except ImportError:

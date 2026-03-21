@@ -4,7 +4,6 @@ Init Command - 初始化向导命令
 提供 openyoung init 命令
 """
 
-import os
 from pathlib import Path
 
 import click

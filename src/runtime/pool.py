@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional
 
-from .sandbox import AISandbox, SandboxConfig, SandboxInstance, SandboxType
+from .sandbox import AISandbox, SandboxConfig, SandboxInstance
 
 logger = logging.getLogger(__name__)
 

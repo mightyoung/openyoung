@@ -12,8 +12,6 @@ import json
 from pathlib import Path
 from typing import Any, Optional
 
-from pydantic import ValidationError
-
 from .loader import ConfigLoader
 
 # 全局配置实例

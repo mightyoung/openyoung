@@ -3,7 +3,6 @@ WebUI Configuration - OpenYoung Streamlit WebUI
 """
 
 import os
-from typing import Optional
 
 
 class Config:

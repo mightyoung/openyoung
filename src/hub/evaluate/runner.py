@@ -4,16 +4,12 @@ Runner - 评估执行引擎
 """
 
 import asyncio
-import json
-import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
-from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
 from .benchmark import (
     BenchmarkTask,
-    EvalType,
     GraderConfig,
     GradingMode,
     TaskSuite,
@@ -25,8 +21,6 @@ from .metrics import (
     TaskMetrics,
     TrialMetrics,
     aggregate_task_metrics,
-    compute_pass_at_k,
-    compute_pass_rate,
     compute_weighted_score,
 )
 

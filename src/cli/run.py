@@ -9,7 +9,6 @@ import asyncio
 import click
 
 from src.agents.young_agent import YoungAgent
-from src.config.loader import ConfigLoader
 
 
 @click.command("run")

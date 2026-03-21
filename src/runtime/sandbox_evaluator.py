@@ -6,14 +6,14 @@ Delegates iterative evaluation to sandbox_evaluator_iterative module.
 """
 
 import asyncio
-from typing import Optional
 
-from src.core.exception_handler import handle_exceptions
+from .sandbox_evaluator_iterative import (
+    _consume_logs_background,
+)
 
 # Import iterative evaluation functions
 from .sandbox_evaluator_iterative import (
     evaluate_iterative as _evaluate_iterative,
-    _consume_logs_background,
 )
 
 

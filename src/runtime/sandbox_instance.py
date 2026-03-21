@@ -11,12 +11,9 @@ import time
 from pathlib import Path
 from typing import Optional
 
-from src.core.exception_handler import handle_exceptions
-
 from .sandbox_config import (
     ExecutionResult,
     SandboxConfig,
-    SandboxType,
     SecurityCheckResult,
 )
 from .sandbox_evaluator import SandboxEvaluator

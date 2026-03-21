@@ -5,7 +5,6 @@ Reward Calculator - 奖励计算器
 """
 
 from dataclasses import dataclass
-from typing import Optional
 
 from .models import Experience
 

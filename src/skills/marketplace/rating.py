@@ -5,10 +5,8 @@ Skill Rating Service - 技能评价服务
 """
 
 from datetime import datetime
-from typing import Optional
 
 from .models import (
-    MarketplaceSkill,
     SkillReview,
 )
 from .registry import MarketplaceRegistry

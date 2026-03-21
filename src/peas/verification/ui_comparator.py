@@ -8,7 +8,6 @@ M2.1: UIComparator组件
 - 差异报告生成
 """
 
-import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional

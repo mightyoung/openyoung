@@ -23,7 +23,6 @@ from .types import (
 )
 from .understanding import HTMLParser, IntentExtractor, MarkdownParser, StyleProfile, StyleProfiler
 from .verification import DriftDetector, FeatureTracker, UIComparator
-from .verification.ui_comparator import UIComparator
 
 __all__ = [
     # Types

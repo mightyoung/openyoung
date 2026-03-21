@@ -4,7 +4,6 @@ Learnings - 结构化的"记忆"
 实现 OpenClaw 风格的经验日志系统，自动记录错误和学习，形成可复用的长期记忆。
 """
 
-import json
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime

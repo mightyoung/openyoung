@@ -4,8 +4,6 @@ API Routes - 统一API路由管理
 这个模块统一导出所有API路由，便于在server.py中集中注册
 """
 
-from fastapi import APIRouter
-
 # 导入各个模块的router
 # 注意: session_api 同时支持 router模式和app模式
 

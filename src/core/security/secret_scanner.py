@@ -8,11 +8,11 @@ Integrates with PIIScanner to detect:
 """
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
-from src.core.security.pii_scanner import PIIScanner, PIIMatch, PIIType
+from src.core.security.pii_scanner import PIIMatch, PIIScanner
 
 
 class SecretType(Enum):

@@ -4,9 +4,8 @@
 参考 FastAPI 依赖注入系统设计
 """
 
-from collections import defaultdict
 from dataclasses import dataclass
-from typing import Any, Callable, Optional, Type, TypeVar
+from typing import Any, Callable, Optional, TypeVar
 
 T = TypeVar("T")
 

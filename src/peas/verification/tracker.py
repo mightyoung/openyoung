@@ -4,11 +4,8 @@ FeatureTracker - 功能点追踪器
 M2.1: 追踪功能点执行状态
 """
 
-import re
-from typing import Optional
 
 from ..types.contract import ContractRequirement, ExecutionContract
-from ..types.document import Priority
 from ..types.verification import FeatureStatus, VerificationStatus
 
 

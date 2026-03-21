@@ -6,13 +6,11 @@
 
 import uuid
 from datetime import datetime
-from typing import Any
 
 from .base_storage import BaseStorage
 from .evaluation_record import (
     EvaluationDimension,
     EvaluationRecord,
-    EvaluationStatus,
     EvaluatorType,
 )
 

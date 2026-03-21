@@ -5,7 +5,6 @@ Task Compiler - Task → Harness Graph
 用于将自然语言任务转换为可执行的 Harness 步骤图。
 """
 
-from typing import Any
 
 from src.agents.harness.graph import HarnessGraph
 

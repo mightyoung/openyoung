@@ -3,13 +3,11 @@ Code-Based Grader - 确定性检查
 支持: unit_test, lint, security, tool_call, state_check, file_pattern, command
 """
 
-import asyncio
 import re
 import subprocess
 from pathlib import Path
 from typing import Any
 
-from ..benchmark import CodeGraderConfig
 from .base import BaseGrader, GraderOutput
 
 

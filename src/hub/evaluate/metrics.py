@@ -5,7 +5,6 @@ Metrics - 评估指标计算模块
 参考 Anthropic eval metrics 设计
 """
 
-import math
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Optional

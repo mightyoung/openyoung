@@ -39,14 +39,6 @@ except ImportError:
         get_heartbeat_scheduler,
     )
 
-# Knowledge - 从 core 导入
-try:
-    from src.core.knowledge import (
-        KnowledgeManager,
-        get_knowledge_manager,
-    )
-except ImportError:
-    pass  # 可选模块
 from .learnings import (
     LearningEntry,
     LearningsManager,
@@ -112,11 +104,10 @@ __all__ = [
 ]
 
 # 保持向后兼容
-import importlib.util
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 @dataclass

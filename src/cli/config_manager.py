@@ -7,7 +7,6 @@ Config Manager - 配置管理模块
 保留仅用于向后兼容
 """
 
-import json
 from pathlib import Path
 from typing import Any, Optional
 
@@ -15,11 +14,9 @@ from pydantic import ValidationError
 
 # 使用统一的配置入口
 from src.config import (
-    UserConfigManager,
     get_user_config,
     load_user_config,
     save_user_config,
-    set_user_config,
 )
 
 
@@ -39,11 +36,6 @@ def get_config(key: str, default: Any = None) -> Any:
     return get_user_config(key, default)
 
 
-def set_config(key: str, value: str) -> bool:
-    """设置配置值 (兼容旧接口)"""
-    return set_user_config(key, value)
-
-
 # 导入配置模型
 from src.cli.config_models import (
     AgentConfigModel,
@@ -57,23 +49,6 @@ _CONFIG_FILE = _CONFIG_DIR / "config.json"
 
 
 # 保留 ConfigManager 类，但内部使用新实现
-
-
-class ConfigManager(UserConfigManager):
-    """配置管理器类 - 支持 Pydantic 验证"""
-
-    def __init__(self, config_dir: Optional[Path] = None):
-        super().__init__(config_dir)
-        # 兼容旧接口
-        self.config_dir = config_dir or _CONFIG_DIR
-        self.config_file = self.config_dir / "config.json"
-
-
-def set_config(key: str, value: str) -> bool:
-    """设置配置值"""
-    config = load_config()
-    config[key] = value
-    return save_config(config)
 
 
 class ConfigManager:

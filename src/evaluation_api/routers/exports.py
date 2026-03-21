@@ -5,7 +5,6 @@ Exports Router - 数据导出 API
 """
 
 import io
-import json
 from datetime import datetime
 from typing import Optional
 
@@ -13,7 +12,7 @@ import pandas as pd
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import StreamingResponse
 
-from src.datacenter import EvaluationRecord, EvaluationStore
+from src.datacenter import EvaluationStore
 
 router = APIRouter()
 

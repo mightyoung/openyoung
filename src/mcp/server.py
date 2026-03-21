@@ -9,8 +9,8 @@ import logging
 import sys
 from typing import Any, Optional
 
-from .protocol import JSONRPCProtocol, JSONRPCRequest, JSONRPCResponse, JSONRPCErrorCode
-from .tools import MCPToolRegistry, MCPTool
+from .protocol import JSONRPCErrorCode, JSONRPCProtocol, JSONRPCResponse
+from .tools import MCPTool, MCPToolRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +83,6 @@ class MCPServer:
             subagent_runner: SubAgent 运行器 (具有 run(task, context) 方法)
         """
         from src.core.types import Task
-        from src.core.types.agent import TaskStatus
 
         async def subagent_handler(**params) -> str:
             """SubAgent 工具处理器

@@ -10,7 +10,7 @@ Progressive Loader - 渐进式加载器
 
 import asyncio
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from .schema import AgentMetadata, MetadataLevel
 

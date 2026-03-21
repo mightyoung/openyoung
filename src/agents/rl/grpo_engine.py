@@ -7,7 +7,7 @@ GRPO Engine - GRPO 强化学习引擎
 
 import logging
 from dataclasses import dataclass
-from typing import Dict, Optional, Tuple
+from typing import Dict
 
 import numpy as np
 
@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 # 尝试导入 torch
 try:
     import torch
-    import torch.nn.functional as F
 
     TORCH_AVAILABLE = True
 except ImportError:

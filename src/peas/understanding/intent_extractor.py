@@ -5,10 +5,9 @@ M1.2: 从ParsedDocument提取核心意图
 """
 
 import re
-from dataclasses import dataclass, field
 from typing import Optional
 
-from ..types import FeaturePoint, ParsedDocument, Priority
+from ..types import ParsedDocument, Priority
 from ..types.contract import IntentSpec
 
 

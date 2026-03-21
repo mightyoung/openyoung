@@ -10,8 +10,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Optional
 
-from src.agents.metadata.schema import AgentMetadata, MetadataLevel
-from src.package_manager.agent_retriever import AgentRetriever, SearchMode, SearchResult
+from src.package_manager.agent_retriever import AgentRetriever, SearchMode
 
 logger = logging.getLogger(__name__)
 

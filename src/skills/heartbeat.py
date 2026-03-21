@@ -11,7 +11,7 @@ Heartbeat - 自主驱动的"脉搏"
 import asyncio
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import Callable, Optional
@@ -19,10 +19,6 @@ from typing import Callable, Optional
 from .external_sources import (
     ExternalSourcesConfig,
     ExternalSourcesFetcher,
-    NewsItem,
-    SourceConfig,
-    SourceType,
-    get_external_sources_fetcher,
 )
 
 logger = logging.getLogger(__name__)

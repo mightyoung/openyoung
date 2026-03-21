@@ -9,7 +9,6 @@ Metadata Extractor - 元数据提取器
 - 子 Agent 配置提取
 """
 
-import asyncio
 import logging
 import re
 from dataclasses import dataclass

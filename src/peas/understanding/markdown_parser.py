@@ -6,7 +6,6 @@ M1.1: 核心Parser实现
 
 import html as html_escape
 import re
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 

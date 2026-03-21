@@ -4,12 +4,9 @@ OpenYoung WebUI - Streamlit 主应用入口
 提供可视化 Agent 对话体验和执行监控
 """
 
-from typing import Optional
-
 import streamlit as st
 
 from webui.services.api_client import APIClient
-from webui.services.session_service import session_service
 from webui.utils.config import config
 
 

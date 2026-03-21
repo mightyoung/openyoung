@@ -5,7 +5,7 @@ Harness - 运行时状态管理
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class HarnessStatus(str, Enum):
